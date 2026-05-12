@@ -10,11 +10,11 @@ class User(AbstractUser):
 
     phone_number = models.CharField(max_length=15, blank=True, null=True)
 
-    # 🔐 control fields
+    
     is_verified = models.BooleanField(default=False)
-    is_blocked = models.BooleanField(default=False)
+    # is_blocked = models.BooleanField(default=False)
 
-    # timestamps
+    
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
 
@@ -29,8 +29,20 @@ class User(AbstractUser):
 
 
 class OTP(models.Model):
+
+    PURPOSE_CHOICES = (
+        ("signup", "Signup"),
+        ("forgot_password", "Forgot Password"),
+        ("email_change", "Email Change"),
+    )
+
     user = models.ForeignKey(User, on_delete=models.CASCADE)
+    purpose = models.CharField(max_length=30, choices=PURPOSE_CHOICES)
+
     otp = models.CharField(max_length=6)
+
+    extra_data = models.JSONField(null=True, blank=True)
+
     created_at = models.DateTimeField(auto_now_add=True)
     expires_at = models.DateTimeField()
 
