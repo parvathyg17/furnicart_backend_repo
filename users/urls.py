@@ -1,6 +1,7 @@
 from django.urls import path
 from rest_framework_simplejwt.views import TokenRefreshView
 from core.utils.token_refresh import CookieTokenRefreshView
+from .csrf_views import csrf_token_view
 from .views import ChangePasswordView, ForgotPasswordView, GoogleLoginView, LogoutView, MeView, ResendOTPView, ResetPasswordView, SignupView, LoginView, VerifyOTPView
 
 urlpatterns = [
@@ -15,4 +16,5 @@ urlpatterns = [
     path('change-password/', ChangePasswordView.as_view()),
     path('logout/', LogoutView.as_view()),
     path("token/refresh/", CookieTokenRefreshView.as_view()),
+    path("csrf/", csrf_token_view),
 ]

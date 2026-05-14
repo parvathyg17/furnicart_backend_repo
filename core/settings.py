@@ -30,6 +30,8 @@ SECRET_KEY = os.getenv("SECRET_KEY")
 
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = True
+COOKIE_SECURE = not DEBUG
+COOKIE_SAMESITE = "Lax"
 
 ALLOWED_HOSTS = []
 
@@ -140,6 +142,10 @@ STATIC_URL = "static/"
 
 CORS_ALLOW_CREDENTIALS = True
 
+CSRF_COOKIE_HTTPONLY = False
+CSRF_COOKIE_SECURE = not DEBUG
+CSRF_COOKIE_SAMESITE = "Lax"
+
 CORS_ALLOWED_ORIGINS = [
     "http://localhost:5173",  # Vite frontend
 ]
@@ -157,6 +163,7 @@ MEDIA_ROOT = os.path.join(BASE_DIR, 'media')
 
 AUTHENTICATION_BACKENDS = [
     'users.backends.EmailBackend',
+    'django.contrib.auth.backends.ModelBackend',
 ]
 
 

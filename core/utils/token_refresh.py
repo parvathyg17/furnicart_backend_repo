@@ -1,6 +1,7 @@
 from rest_framework_simplejwt.views import TokenRefreshView
 from rest_framework.response import Response
 from rest_framework import status
+from django.conf import settings
 from rest_framework_simplejwt.serializers import TokenRefreshSerializer
 
 
@@ -40,15 +41,17 @@ class CookieTokenRefreshView(TokenRefreshView):
             key="access_token",
             value=access_token,
             httponly=True,
-            secure=False,
-            samesite="Lax"
+            secure=settings.COOKIE_SECURE,
+            samesite=settings.COOKIE_SAMESITE,
+            path="/"
             )
         if new_refresh_token:
             response.set_cookie(
                 key="refresh_token",
                 value=new_refresh_token,
                 httponly=True,
-                secure=False,
-                samesite="Lax"
+                secure=settings.COOKIE_SECURE,
+                samesite=settings.COOKIE_SAMESITE,
+                path="/"
                 )
         return response

@@ -1,7 +1,7 @@
 # adminpanel/views.py
-
+from django.conf import settings
 from django.contrib.auth import authenticate
-
+from django.db.models import Q
 from django.core.paginator import Paginator
 
 from rest_framework.views import APIView
@@ -83,16 +83,18 @@ class AdminLoginView(APIView):
             key="access_token",
             value=str(refresh.access_token),
             httponly=True,
-            secure=False,
-            samesite="Lax"
+            secure=settings.COOKIE_SECURE,
+            samesite=settings.COOKIE_SAMESITE,
+            path="/",
         )
 
         response.set_cookie(
             key="refresh_token",
             value=str(refresh),
             httponly=True,
-            secure=False,
-            samesite="Lax"
+            secure=settings.COOKIE_SECURE,
+            samesite=settings.COOKIE_SAMESITE,
+            path="/",
         )
 
         return response
@@ -126,21 +128,22 @@ class UserListView(APIView):
             "is_active",
             "is_verified",
             "date_joined"
-        ).order_by("-id")
+        ).order_by("-date_joined")
 
         # SEARCH
         if search:
 
             users = users.filter(
-                email__icontains=search
+                Q(email__icontains=search) |
+                Q(username__icontains=search)
             )
 
-        # PAGINATION
+        
         paginator = Paginator(users, 5)
 
         page_obj = paginator.get_page(page)
 
-        # RESPONSE DATA
+      
         data = [
 
             {
@@ -170,15 +173,13 @@ class UserListView(APIView):
 
             "total_pages": paginator.num_pages,
 
-            "current_page": page,
+            "current_page": page_obj.number,
 
             "users": data
         })
 
 
-# ======================================================
-# BLOCK / UNBLOCK USER
-# ======================================================
+
 
 class BlockUserView(APIView):
 
@@ -200,7 +201,7 @@ class BlockUserView(APIView):
                 status=404
             )
 
-        # prevent self blocking
+      
         if user == request.user:
 
             return Response(
@@ -208,15 +209,15 @@ class BlockUserView(APIView):
                 status=400
             )
 
-        # prevent blocking other admins
-        if user.is_superuser:
+     
+        if user.is_staff or user.is_superuser:
 
             return Response(
                 {"error": "Cannot block another admin"},
                 status=403
             )
 
-        # toggle active status
+        
         user.is_active = not user.is_active
 
         user.save()
@@ -241,9 +242,7 @@ class BlockUserView(APIView):
 })
 
 
-# ======================================================
-# ADMIN LOGOUT
-# ======================================================
+
 
 class AdminLogoutView(APIView):
 
@@ -275,16 +274,19 @@ class AdminLogoutView(APIView):
             "message": "Admin logged out"
         })
 
-        response.delete_cookie("access_token")
-
-        response.delete_cookie("refresh_token")
-
+        response.delete_cookie(
+            "access_token",
+            path="/",
+            samesite=settings.COOKIE_SAMESITE,
+            )
+        response.delete_cookie(
+            "refresh_token",
+            path="/",
+            samesite=settings.COOKIE_SAMESITE,
+            )
         return response
 
 
-# ======================================================
-# ADMIN ME
-# ======================================================
 
 class AdminMeView(APIView):
 
