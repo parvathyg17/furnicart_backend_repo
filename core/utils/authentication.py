@@ -1,5 +1,9 @@
+# core/authentication.py
+
 from rest_framework_simplejwt.authentication import JWTAuthentication
 from rest_framework_simplejwt.exceptions import InvalidToken
+from rest_framework.exceptions import AuthenticationFailed
+
 
 class CookieJWTAuthentication(JWTAuthentication):
 
@@ -7,14 +11,25 @@ class CookieJWTAuthentication(JWTAuthentication):
 
         raw_token = request.COOKIES.get("access_token")
 
-        
         if raw_token is None:
             return None
 
         try:
-            validated_token = self.get_validated_token(raw_token)
 
-            return self.get_user(validated_token), validated_token
+            validated_token = self.get_validated_token(
+                raw_token
+            )
+
+            user = self.get_user(validated_token)
+
+            # BLOCK CHECK
+            if not user.is_active:
+
+                raise AuthenticationFailed(
+                    "Account blocked"
+                )
+
+            return (user, validated_token)
 
         except InvalidToken:
-            raise InvalidToken("Token expired or invalid")
+            return None

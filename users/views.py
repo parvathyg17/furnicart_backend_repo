@@ -66,6 +66,10 @@ class SignupView(APIView):
 
 
 class LoginView(APIView):
+    permission_classes = [AllowAny]
+
+    authentication_classes = []
+
     def post(self, request):
         serializer = LoginSerializer(data=request.data)
 
@@ -324,30 +328,74 @@ class GoogleLoginView(APIView):
 
 
 
+# class LogoutView(APIView):
+#     permission_classes = [IsAuthenticated]
+#     def post(self, request):
+
+#         refresh_token = request.COOKIES.get("refresh_token")
+
+#         if refresh_token:
+
+#             try:
+#                 token = RefreshToken(refresh_token)
+#                 token.blacklist()
+
+#             except Exception:
+#                 pass
+
+#         response = Response({
+#             "message": "Logged out successfully"
+#         })
+
+#         response.delete_cookie("access_token",path="/",samesite=settings.COOKIE_SAMESITE,)
+#         response.delete_cookie(
+#             "refresh_token",
+#             path="/",
+#             samesite=settings.COOKIE_SAMESITE,)
+#         return response
+
 class LogoutView(APIView):
-    permission_classes = [IsAuthenticated]
+
+    permission_classes = [AllowAny]
+
+    authentication_classes = []
+
     def post(self, request):
 
-        refresh_token = request.COOKIES.get("refresh_token")
+        refresh_token = request.COOKIES.get(
+            "refresh_token"
+        )
 
         if refresh_token:
 
             try:
-                token = RefreshToken(refresh_token)
+
+                token = RefreshToken(
+                    refresh_token
+                )
+
                 token.blacklist()
 
             except Exception:
                 pass
 
         response = Response({
-            "message": "Logged out successfully"
+            "message":
+            "Logged out successfully"
         })
 
-        response.delete_cookie("access_token",path="/",samesite=settings.COOKIE_SAMESITE,)
+        response.delete_cookie(
+            "access_token",
+            path="/",
+            samesite=settings.COOKIE_SAMESITE,
+        )
+
         response.delete_cookie(
             "refresh_token",
             path="/",
-            samesite=settings.COOKIE_SAMESITE,)
+            samesite=settings.COOKIE_SAMESITE,
+        )
+
         return response
 
 class MeView(APIView):

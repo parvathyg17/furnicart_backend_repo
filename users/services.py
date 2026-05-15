@@ -5,28 +5,75 @@ from datetime import timedelta
 from core.utils.email import send_otp_email
 
 
-def user_login_service(email, password):
+def user_login_service(
+    email,
+    password
+):
 
-    
     try:
-        user = User.objects.get(email=email)
+
+        user = User.objects.get(
+            email=email
+        )
+
     except User.DoesNotExist:
-        return None, "Invalid email or password"
 
-    
+        return (
+            None,
+            "Invalid email or password"
+        )
+
+    # ==========================
+    # BLOCK ADMIN LOGIN
+    # ==========================
+
+    if (
+        user.is_staff or
+        user.is_superuser
+    ):
+
+        return (
+            None,
+            "Admins must login through admin panel"
+        )
+
+    # ==========================
+    # EMAIL NOT VERIFIED
+    # ==========================
+
     if not user.is_verified:
-        return None, "Email not verified"
-    if not user.is_active:
-        return None, "User is blocked"
 
-   
-    user = authenticate(email=email, password=password)
+        return (
+            None,
+            "Email not verified"
+        )
+
+    # ==========================
+    # BLOCKED USER
+    # ==========================
+
+    if not user.is_active:
+
+        return (
+            None,
+            "User is blocked"
+        )
+
+    # ==========================
+    # AUTHENTICATE
+    # ==========================
+
+    user = authenticate(
+        email=email,
+        password=password
+    )
 
     if user is None:
-        return None, "Invalid email or password"
 
-    if not user.is_verified:
-        return None, "Email not verified"
+        return (
+            None,
+            "Invalid email or password"
+        )
 
     return user, None
 
@@ -82,7 +129,7 @@ def verify_otp_service(user, otp_input, purpose):
     if purpose == "signup":
 
         user.is_verified = True
-        user.is_active = True
+        # user.is_active = True
         user.save()
 
         # delete signup OTP after verification
