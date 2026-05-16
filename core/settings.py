@@ -47,11 +47,12 @@ INSTALLED_APPS = [
     "django.contrib.staticfiles",
     "rest_framework",
     "corsheaders",
-    "users",
+    
     "adminpanel",
-    "addresses",
-    "profiles.apps.ProfilesConfig",
+    
+    
     "rest_framework_simplejwt.token_blacklist",
+    "accounts",
 
     
 
@@ -94,7 +95,7 @@ WSGI_APPLICATION = "core.wsgi.application"
 DATABASES = {
     'default': {
         'ENGINE': 'django.db.backends.postgresql',
-        'NAME': 'furnicarts_db',
+        'NAME': 'furnicarts_new_db',
         'USER': 'postgres',
         'PASSWORD': os.getenv("DB_PASSWORD"),
         'HOST': 'localhost',
@@ -155,14 +156,14 @@ CSRF_TRUSTED_ORIGINS = [
 
 
 
-AUTH_USER_MODEL = 'users.User'
+AUTH_USER_MODEL = "accounts.User"
 
 MEDIA_URL = '/media/'
 MEDIA_ROOT = os.path.join(BASE_DIR, 'media')
 
 
 AUTHENTICATION_BACKENDS = [
-    'users.backends.EmailBackend',
+    'accounts.backends.EmailBackend',
     'django.contrib.auth.backends.ModelBackend',
 ]
 

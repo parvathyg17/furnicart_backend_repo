@@ -10,7 +10,7 @@ from rest_framework.permissions import IsAuthenticated
 
 from rest_framework_simplejwt.tokens import RefreshToken
 
-from users.models import User
+from accounts.models.users import User
 
 from core.utils.permissions import IsAdminUserCustom
 
