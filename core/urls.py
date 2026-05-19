@@ -26,6 +26,43 @@ urlpatterns = [
     path('api/users/', include('accounts.urls.auth_urls')),
     path('api/profile/', include('accounts.urls.profile_urls')),
     path('api/address/', include('accounts.urls.address_urls')),
+    path(
+        "api/admin/categories/",
+        include(
+            "catalog.urls.category_urls"
+        )
+    ),
+
+    
+
+    path(
+        "api/admin/products/",
+        include(
+            "catalog.urls.product_urls"
+        )
+    ),
+
+    path(
+        "api/",
+        include(
+            "catalog.urls.user.user_urls"
+        )
+    ),
+
+    path(
+        "api/admin/product-images/",
+        include(
+            "catalog.urls.image_urls"
+        )
+    ),
+    path(
+        "api/admin/products/",
+        include(
+            "catalog.urls.variant_urls"
+        )
+    ),
+  
+    
 
 ]
 

@@ -1,1 +1,0 @@
-from accounts.serializers.auth_serializers import *

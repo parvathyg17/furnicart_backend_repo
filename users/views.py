@@ -1,1 +1,0 @@
-from accounts.views.auth_views import *
