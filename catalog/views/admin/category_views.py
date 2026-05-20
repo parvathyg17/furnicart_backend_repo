@@ -1,7 +1,8 @@
 from core.pagination import CustomPagination
 
+
 from catalog.selectors.category_selectors import (
-    get_filtered_categories
+    get_admin_filtered_categories
 )
 
 from catalog.services.category_services import (
@@ -32,7 +33,7 @@ class CategoryListCreateView(APIView):
 
     def get(self, request):
 
-        categories = get_filtered_categories(
+        categories = get_admin_filtered_categories(
             request.GET
         )
 

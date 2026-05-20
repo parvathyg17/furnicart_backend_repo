@@ -2,7 +2,9 @@ from django.db import models
 from django.utils.text import slugify
 
 from catalog.models.category import Category
-
+from catalog.models.room_type import (
+    RoomType
+)
 
 class Product(models.Model):
 
@@ -10,6 +12,12 @@ class Product(models.Model):
         Category,
         on_delete=models.CASCADE,
         related_name="products"
+    )
+
+    room_types = models.ManyToManyField(
+        RoomType,
+        related_name="products",
+        blank=True
     )
 
     name = models.CharField(
@@ -42,6 +50,8 @@ class Product(models.Model):
     updated_at = models.DateTimeField(
         auto_now=True
     )
+
+    
 
     class Meta:
 

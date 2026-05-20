@@ -25,11 +25,14 @@ def get_user_filtered_products(params):
 
     color = params.get("color")
 
+    room_type = params.get("room_type")
+
     sort = params.get("sort")
 
     products = Product.objects.select_related(
     "category"
 ).prefetch_related(
+    "room_types",
 
     Prefetch(
         "variants",
@@ -91,6 +94,19 @@ def get_user_filtered_products(params):
         except Category.DoesNotExist:
 
             products = products.none()
+
+
+
+    # =========================
+    # ROOM TYPE FILTER
+    # =========================
+
+    if room_type:
+
+        products = products.filter(
+            room_types__slug=room_type,
+            room_types__is_active=True
+        )
 
     # =========================
     # COLOR FILTER
@@ -176,11 +192,14 @@ def get_admin_filtered_products(params):
 
     category = params.get("category")
 
+    room_type = params.get("room_type")
+
     sort = params.get("sort")
 
     products = Product.objects.select_related(
         "category"
     ).prefetch_related(
+        "room_types",
 
         Prefetch(
             "variants",
@@ -235,6 +254,18 @@ def get_admin_filtered_products(params):
         except Category.DoesNotExist:
 
             products = products.none()
+
+
+    # =========================
+    # ROOM TYPE FILTER
+    # =========================
+
+    if room_type:
+
+        products = products.filter(
+            room_types__slug=room_type
+            
+        )
 
     # =========================
     # SORTING

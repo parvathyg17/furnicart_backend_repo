@@ -61,6 +61,13 @@ urlpatterns = [
             "catalog.urls.variant_urls"
         )
     ),
+
+    path(
+        "api/admin/room-types/",
+        include(
+            "catalog.urls.room_type_urls"
+        )
+    ),
   
     
 

@@ -8,14 +8,14 @@ def get_variant_by_id(variant_id):
         return None
 
 
-def delete_variant(variant):
-    product = variant.product
+# def delete_variant(variant):
+#     product = variant.product
 
-    if product.variants.count() <= 1:
-        return False, "Cannot delete last variant"
+#     if product.variants.count() <= 1:
+#         return False, "Cannot delete last variant"
 
-    variant.delete()
-    return True, "Variant deleted"
+#     variant.delete()
+#     return True, "Variant deleted"
 
 
 def toggle_variant_status(variant):

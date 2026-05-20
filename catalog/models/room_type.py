@@ -2,7 +2,7 @@ from django.db import models
 from django.utils.text import slugify
 
 
-class Category(models.Model):
+class RoomType(models.Model):
 
     name = models.CharField(
         max_length=100,
@@ -14,22 +14,10 @@ class Category(models.Model):
         blank=True
     )
 
-    parent = models.ForeignKey(
-        "self",
-        on_delete=models.CASCADE,
-        null=True,
-        blank=True,
-        related_name="children"
-    )
-
-    description = models.TextField(
-        blank=True
-    )
-
     image = models.ImageField(
-    upload_to="categories/",
-    blank=True,
-    null=True
+        upload_to="room-types/",
+        blank=True,
+        null=True
     )
 
     is_active = models.BooleanField(
@@ -46,12 +34,7 @@ class Category(models.Model):
 
     class Meta:
 
-        ordering = ["-created_at"]
-
-        indexes = [
-            models.Index(fields=["name"]),
-            models.Index(fields=["is_active"]),
-        ]
+        ordering = ["name"]
 
     def save(self, *args, **kwargs):
 
@@ -63,7 +46,7 @@ class Category(models.Model):
 
             counter = 1
 
-            while Category.objects.filter(
+            while RoomType.objects.filter(
                 slug=slug
             ).exclude(id=self.id).exists():
 
@@ -76,8 +59,5 @@ class Category(models.Model):
         super().save(*args, **kwargs)
 
     def __str__(self):
-
-        if self.parent:
-            return f"{self.parent.name} -> {self.name}"
 
         return self.name

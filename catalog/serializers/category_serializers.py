@@ -40,7 +40,7 @@ class CategorySerializer(serializers.ModelSerializer):
             "children",
             "description",
             "image",
-            "is_active",
+          
             "created_at",
             "updated_at",
         ]
@@ -51,6 +51,7 @@ class CategorySerializer(serializers.ModelSerializer):
             "created_at",
             "updated_at",
         ]
+      
 
     def validate_name(self, value):
 

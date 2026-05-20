@@ -2,7 +2,8 @@ from django.urls import path
 
 from catalog.views.admin.variant_views import (
     ProductVariantDetailView,
-    VariantImageDeleteView
+    VariantImageDeleteView,
+    ProductVariantToggleStatusView,
 )
 
 urlpatterns = [
@@ -11,8 +12,14 @@ urlpatterns = [
         "variants/<int:variant_id>/",
         ProductVariantDetailView.as_view()
     ),
+
     path(
-    "variant-images/<int:image_id>/",
-    VariantImageDeleteView.as_view()
-),
+        "variants/<int:variant_id>/toggle-status/",
+        ProductVariantToggleStatusView.as_view()
+    ),
+
+    path(
+        "variant-images/<int:image_id>/",
+        VariantImageDeleteView.as_view()
+    ),
 ]

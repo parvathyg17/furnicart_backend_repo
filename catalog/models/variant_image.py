@@ -3,7 +3,7 @@ from django.db import models
 from catalog.models.product_variant import (
     ProductVariant
 )
-
+from django.db.models import Q
 
 class VariantImage(models.Model):
 
@@ -34,6 +34,16 @@ class VariantImage(models.Model):
         ordering = [
             "display_order",
             "-created_at"
+        ]
+
+        constraints = [
+
+            models.UniqueConstraint(
+                fields=["variant"],
+                condition=Q(is_primary=True),
+                name="unique_primary_image_per_variant"
+            )
+
         ]
 
     def save(self, *args, **kwargs):

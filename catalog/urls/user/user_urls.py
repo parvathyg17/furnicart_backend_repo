@@ -1,4 +1,7 @@
 from django.urls import path
+from catalog.views.user.room_type_views import (
+    UserRoomTypeListView
+)
 
 from catalog.views.user.product_views import (
     UserProductListView,
@@ -25,4 +28,9 @@ urlpatterns = [
         "categories/",
         UserCategoryListView.as_view()
     ),
+
+    path(
+    "room-types/",
+    UserRoomTypeListView.as_view()
+),
 ]

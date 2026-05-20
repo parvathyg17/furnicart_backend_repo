@@ -2,10 +2,15 @@ from django.db import transaction
 
 from rest_framework import serializers
 
+
 from catalog.models import (
     Product,
     ProductVariant,
     VariantImage,
+    RoomType,
+)
+from catalog.serializers.room_type_serializers import (
+    RoomTypeSerializer
 )
 
 from catalog.selectors.recommendation_selectors import (
@@ -158,7 +163,22 @@ class ProductSerializer(
         read_only=True
     )
 
+    room_types = RoomTypeSerializer(
+        many=True,
+        read_only=True
+    )
+
+    room_type_ids = serializers.PrimaryKeyRelatedField(
+        queryset=RoomType.objects.filter(
+            is_active=True
+        ),
+        many=True,
+        write_only=True,
+        required=False
+    )
+
     thumbnail = serializers.SerializerMethodField()
+
     related_products = serializers.SerializerMethodField(
     read_only=True)
 
@@ -178,6 +198,8 @@ class ProductSerializer(
             "brand",
             "category",
             "category_name",
+            "room_types",
+            "room_type_ids",
             "breadcrumbs",
             "thumbnail",
             "stock_status",
@@ -293,8 +315,17 @@ class ProductSerializer(
             "variants"
         )
 
+        room_types = validated_data.pop(
+        "room_type_ids",
+        []
+        )
+
         product = Product.objects.create(
             **validated_data
+        )
+
+        product.room_types.set(
+            room_types
         )
 
         for variant_data in variants_data:
@@ -317,11 +348,25 @@ class ProductSerializer(
             None
         )
 
+        room_types = validated_data.pop(
+            "room_type_ids",
+            None
+        )
+
+
         for attr, value in validated_data.items():
 
             setattr(instance, attr, value)
 
         instance.save()
+
+        if room_types is not None:
+
+            instance.room_types.set(
+                room_types
+            )
+
+        
 
         return instance
 
