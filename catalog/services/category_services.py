@@ -22,4 +22,8 @@ def soft_delete_category(category):
 
     category.save()
 
+    for child in category.children.all():
+
+        soft_delete_category(child)
+
     return category

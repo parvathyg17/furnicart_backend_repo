@@ -117,6 +117,28 @@ class ProductVariantSerializer(
             )
 
         return value
+    
+    def validate_sku(self, value):
+
+        queryset = ProductVariant.objects.filter(
+            sku=value
+        )
+
+        # EXCLUDE CURRENT VARIANT DURING UPDATE
+
+        if self.instance:
+
+            queryset = queryset.exclude(
+                id=self.instance.id
+            )
+
+        if queryset.exists():
+
+            raise serializers.ValidationError(
+                "SKU already exists"
+            )
+
+        return value
 
 
 # =====================================================
@@ -227,9 +249,11 @@ class ProductSerializer(
 
     def validate(self, attrs):
 
-        variants = attrs.get("variants", [])
+        variants = attrs.get("variants")
 
-        if not variants:
+        # ONLY REQUIRED DURING CREATE
+
+        if self.instance is None and not variants:
 
             raise serializers.ValidationError({
                 "variants":
@@ -361,10 +385,9 @@ class ProductSerializer(
 
             variant.stock
 
-            for variant in obj.variants.filter(
-                is_active=True
-            )
+            for variant in obj.variants.all()
 
+            if variant.is_active
         )
 
         if total_stock <= 0:

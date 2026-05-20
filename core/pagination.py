@@ -22,7 +22,7 @@ class CustomPagination(
 
         return Response({
 
-            "total_products": self.page.paginator.count,
+            "count": self.page.paginator.count,
 
             "total_pages": self.page.paginator.num_pages,
 

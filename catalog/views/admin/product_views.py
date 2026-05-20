@@ -7,6 +7,7 @@ from catalog.services.product_services import (
     get_admin_product_by_id,
     soft_delete_product,
     toggle_product_status,
+    validate_product_images,
 )
 
 from catalog.serializers.product_serializers import (
@@ -193,6 +194,21 @@ class ProductToggleStatusView(APIView):
                 },
                 status=status.HTTP_404_NOT_FOUND
             )
+        
+        if not product.is_active:
+
+            is_valid, error = validate_product_images(
+                product
+            )
+
+            if not is_valid:
+
+                return Response(
+                    {
+                        "error": error
+                    },
+                    status=status.HTTP_400_BAD_REQUEST
+                )
 
         product = toggle_product_status(
             product

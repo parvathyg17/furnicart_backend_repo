@@ -25,10 +25,35 @@ class VariantImageUploadSerializer(
 
     def validate_image(self, value):
 
+        # =========================
+        # FILE SIZE VALIDATION
+        # =========================
+
         if value.size > 5 * 1024 * 1024:
 
             raise serializers.ValidationError(
                 "Image size must be below 5MB"
+            )
+
+        # =========================
+        # FILE TYPE VALIDATION
+        # =========================
+
+        valid_extensions = [
+            ".jpg",
+            ".jpeg",
+            ".png",
+            ".webp",
+        ]
+
+        file_name = value.name.lower()
+
+        if not file_name.endswith(
+            tuple(valid_extensions)
+        ):
+
+            raise serializers.ValidationError(
+                "Only JPG, JPEG, PNG, WEBP allowed"
             )
 
         return value

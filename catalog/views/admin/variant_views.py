@@ -5,7 +5,9 @@ from rest_framework import status
 from catalog.models import VariantImage
 from catalog.models import ProductVariant
 from catalog.serializers import ProductVariantSerializer
-
+from catalog.services.variant_services import (
+    delete_variant
+)
 from core.utils.permissions import (
     IsAdminUserCustom
 )
@@ -89,28 +91,25 @@ class ProductVariantDetailView(APIView):
                 status=status.HTTP_404_NOT_FOUND
             )
 
-        product = variant.product
+        success, message = delete_variant(
+            variant
+        )
 
-        variant_count = product.variants.count()
-
-        if variant_count <= 1:
+        if not success:
 
             return Response(
                 {
-                    "error":
-                    "Cannot delete the last variant"
+                    "error": message
                 },
                 status=status.HTTP_400_BAD_REQUEST
             )
 
-        variant.delete()
-
-        return Response({
-
-            "message":
-            "Variant deleted successfully"
-
-        }, status=status.HTTP_204_NO_CONTENT)
+        return Response(
+            {
+                "message": message
+            },
+            status=status.HTTP_200_OK
+        )
     
 
 class VariantImageDeleteView(APIView):
@@ -144,4 +143,4 @@ class VariantImageDeleteView(APIView):
             "message":
             "Image deleted successfully"
 
-        }, status=status.HTTP_204_NO_CONTENT)
+        }, status=status.HTTP_200_OK)

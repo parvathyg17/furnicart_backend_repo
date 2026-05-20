@@ -3,6 +3,21 @@ from rest_framework import serializers
 from catalog.models import Category
 
 
+
+class CategoryChildSerializer(
+    serializers.ModelSerializer
+):
+
+    class Meta:
+
+        model = Category
+
+        fields = [
+            "id",
+            "name",
+            "slug",
+            "image",
+        ]
 class CategorySerializer(serializers.ModelSerializer):
 
     parent_name = serializers.CharField(
@@ -54,7 +69,7 @@ class CategorySerializer(serializers.ModelSerializer):
             is_active=True
         )
 
-        serializer = CategorySerializer(
+        serializer = CategoryChildSerializer(
             children,
             many=True,
             context=self.context
@@ -64,10 +79,30 @@ class CategorySerializer(serializers.ModelSerializer):
     
     def validate_parent(self, value):
 
+        # =========================
+        # SELF PARENT CHECK
+        # =========================
+
         if self.instance and value == self.instance:
 
             raise serializers.ValidationError(
                 "Category cannot be parent of itself"
             )
+
+        # =========================
+        # CIRCULAR LOOP CHECK
+        # =========================
+
+        parent = value
+
+        while parent:
+
+            if self.instance and parent == self.instance:
+
+                raise serializers.ValidationError(
+                    "Circular category hierarchy detected"
+                )
+
+            parent = parent.parent
 
         return value
