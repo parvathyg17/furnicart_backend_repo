@@ -12,7 +12,7 @@ from catalog.serializers.room_type_serializers import (
 )
 
 from catalog.selectors.room_type_selectors import (
-    get_filtered_room_types
+    get_admin_filtered_room_types
 )
 
 from catalog.services.room_type_services import (
@@ -20,6 +20,10 @@ from catalog.services.room_type_services import (
     soft_delete_room_type,
 )
 
+from rest_framework.parsers import (
+    MultiPartParser,
+    FormParser
+)
 
 class RoomTypeListCreateView(APIView):
 
@@ -28,9 +32,14 @@ class RoomTypeListCreateView(APIView):
         IsAdminUserCustom
     ]
 
+    parser_classes = [
+        MultiPartParser,
+        FormParser
+    ]
+
     def get(self, request):
 
-        room_types = get_filtered_room_types(
+        room_types = get_admin_filtered_room_types(
             request.GET
         )
 
@@ -78,6 +87,11 @@ class RoomTypeDetailView(APIView):
     permission_classes = [
         IsAuthenticated,
         IsAdminUserCustom
+    ]
+
+    parser_classes = [
+        MultiPartParser,
+        FormParser
     ]
 
     def get(self, request, room_type_id):

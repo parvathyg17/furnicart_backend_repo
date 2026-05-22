@@ -5,7 +5,7 @@ from rest_framework.permissions import (
 )
 
 from catalog.selectors.room_type_selectors import (
-    get_filtered_room_types
+    get_user_filtered_room_types
 )
 
 from catalog.serializers.room_type_serializers import (
@@ -19,7 +19,7 @@ class UserRoomTypeListView(APIView):
 
     def get(self, request):
 
-        room_types = get_filtered_room_types(
+        room_types = get_user_filtered_room_types(
             request.GET
         )
 
