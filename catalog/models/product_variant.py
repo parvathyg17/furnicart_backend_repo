@@ -1,7 +1,7 @@
 from django.db import models
 
 from catalog.models.product import Product
-
+from django.db.models import Q
 
 class ProductVariant(models.Model):
 
@@ -66,6 +66,19 @@ class ProductVariant(models.Model):
         indexes = [
             models.Index(fields=["sku"]),
             models.Index(fields=["is_active"]),
+        ]
+
+        constraints = [
+
+            models.CheckConstraint(
+                condition=Q(price__gt=0),
+                name="variant_price_gt_0"
+            ),
+
+            models.CheckConstraint(
+                condition=Q(stock__gte=0),
+                name="variant_stock_gte_0"
+            ),
         ]
 
     def __str__(self):

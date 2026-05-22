@@ -232,20 +232,42 @@ class ProductSerializer(
 
         request = self.context.get("request")
 
-        primary_image = VariantImage.objects.filter(
-            variant__product=obj,
-            variant__is_active=True,
-            is_primary=True
-        ).first()
+        primary_image = None
 
-        if not primary_image:
+        # =========================
+        # USE PREFETCHED DATA
+        # =========================
 
-            primary_image = VariantImage.objects.filter(
-                variant__product=obj,
-                variant__is_active=True
-            ).order_by(
-                "display_order"
-            ).first()
+        for variant in obj.variants.all():
+
+            if not variant.is_active:
+                continue
+
+            images = sorted(
+                variant.images.all(),
+                key=lambda img: (
+                    img.display_order,
+                    -img.created_at.timestamp()
+                )
+            )
+
+            # FIND PRIMARY IMAGE
+
+            for image in images:
+
+                if image.is_primary:
+
+                    primary_image = image
+                    break
+
+            # FALLBACK FIRST IMAGE
+
+            if not primary_image and images:
+
+                primary_image = images[0]
+
+            if primary_image:
+                break
 
         if not primary_image:
 
@@ -271,7 +293,7 @@ class ProductSerializer(
 
     def validate(self, attrs):
 
-        variants = attrs.get("variants")
+        variants = attrs.get("variants", [])
 
         # ONLY REQUIRED DURING CREATE
 
@@ -297,14 +319,16 @@ class ProductSerializer(
 
             sku_list.append(sku)
 
-            if ProductVariant.objects.filter(
-                sku=sku
-            ).exists():
+            if self.instance is None:
 
-                raise serializers.ValidationError({
-                    "sku":
-                    f"SKU already exists: {sku}"
-                })
+                if ProductVariant.objects.filter(
+                    sku=sku
+                ).exists():
+
+                    raise serializers.ValidationError({
+                        "sku":
+                        f"SKU already exists: {sku}"
+                    })
 
         return attrs
 
@@ -336,7 +360,8 @@ class ProductSerializer(
             )
 
         return product
-
+    
+    @transaction.atomic
     def update(
         self,
         instance,

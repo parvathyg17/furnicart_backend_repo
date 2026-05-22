@@ -137,7 +137,27 @@ class VariantImageDeleteView(APIView):
                 status=status.HTTP_404_NOT_FOUND
             )
 
+        variant = image.variant
+
+        was_primary = image.is_primary
+
         image.delete()
+
+        # =========================
+        # ASSIGN NEW PRIMARY IMAGE
+        # =========================
+
+        if was_primary:
+
+            next_image = variant.images.order_by(
+                "display_order",
+                "-created_at"
+            ).first()
+
+            if next_image:
+
+                next_image.is_primary = True
+                next_image.save()
 
         return Response({
 
