@@ -1,9 +1,10 @@
 from django.db import models
+from django.db.models import Q
+from PIL import Image
 
 from catalog.models.product_variant import (
     ProductVariant
 )
-from django.db.models import Q
 
 class VariantImage(models.Model):
 
@@ -23,6 +24,25 @@ class VariantImage(models.Model):
 
     display_order = models.PositiveIntegerField(
         default=0
+    )
+
+    # ==========================================
+    # IMAGE METADATA
+    # ==========================================
+
+    width = models.PositiveIntegerField(
+        null=True,
+        blank=True
+    )
+
+    height = models.PositiveIntegerField(
+        null=True,
+        blank=True
+    )
+
+    file_size = models.PositiveIntegerField(
+        null=True,
+        blank=True
     )
 
     created_at = models.DateTimeField(
@@ -48,6 +68,10 @@ class VariantImage(models.Model):
 
     def save(self, *args, **kwargs):
 
+        # ==========================================
+        # REMOVE OLD PRIMARY
+        # ==========================================
+
         if self.is_primary:
 
             VariantImage.objects.filter(
@@ -61,9 +85,32 @@ class VariantImage(models.Model):
 
         super().save(*args, **kwargs)
 
+        # ==========================================
+        # AUTO SAVE IMAGE DATA
+        # ==========================================
+
+        if self.image:
+
+            img = Image.open(
+                self.image.path
+            )
+
+            self.width = img.width
+
+            self.height = img.height
+
+            self.file_size = (
+                self.image.size
+            )
+
+            super().save(
+                update_fields=[
+                    "width",
+                    "height",
+                    "file_size",
+                ]
+            )
+
     def __str__(self):
 
         return self.variant.sku
-    
-
-    

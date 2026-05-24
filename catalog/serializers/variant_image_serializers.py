@@ -1,4 +1,5 @@
 from rest_framework import serializers
+from PIL import Image
 
 from catalog.models import VariantImage
 
@@ -20,6 +21,9 @@ class VariantImageUploadSerializer(
             "image_url",
             "is_primary",
             "display_order",
+            "width",
+            "height",
+            "file_size",
             "created_at",
         ]
 
@@ -42,9 +46,11 @@ class VariantImageUploadSerializer(
 
         return None
 
-    
-
     def validate_image(self, value):
+
+        # ==========================================
+        # FILE SIZE
+        # ==========================================
 
         if value.size > 5 * 1024 * 1024:
 
@@ -52,21 +58,38 @@ class VariantImageUploadSerializer(
                 "Image size must be below 5MB"
             )
 
-        valid_extensions = [
-            ".jpg",
-            ".jpeg",
-            ".png",
-            ".webp",
+        # ==========================================
+        # MIME TYPE VALIDATION
+        # ==========================================
+
+        valid_mime_types = [
+
+            "image/jpeg",
+            "image/jpg",
+            "image/png",
+            "image/webp",
         ]
 
-        file_name = value.name.lower()
-
-        if not file_name.endswith(
-            tuple(valid_extensions)
-        ):
+        if value.content_type not in valid_mime_types:
 
             raise serializers.ValidationError(
                 "Only JPG, JPEG, PNG, WEBP allowed"
+            )
+
+        # ==========================================
+        # VERIFY REAL IMAGE
+        # ==========================================
+
+        try:
+
+            img = Image.open(value)
+
+            img.verify()
+
+        except Exception:
+
+            raise serializers.ValidationError(
+                "Invalid image file"
             )
 
         return value

@@ -9,14 +9,17 @@ from rest_framework.parsers import (
     FormParser
 )
 
-from catalog.serializers.variant_image_serializers import (
-    VariantImageUploadSerializer
-)
-
 from core.utils.permissions import (
     IsAdminUserCustom
 )
 
+from catalog.models import (
+    ProductVariant
+)
+
+from catalog.serializers.variant_image_serializers import (
+    VariantImageUploadSerializer
+)
 
 class VariantImageUploadView(APIView):
 
@@ -32,26 +35,101 @@ class VariantImageUploadView(APIView):
 
     def post(self, request):
 
-        serializer = VariantImageUploadSerializer(
-            data=request.data
+        variant_id = request.data.get(
+            "variant"
         )
 
-        serializer.is_valid(
-            raise_exception=True
+        files = request.FILES.getlist(
+            "images"
         )
 
-        serializer.save()
+        # ==========================================
+        # VALIDATE VARIANT
+        # ==========================================
 
-        variant = serializer.instance.variant
+        try:
 
-        image_count = variant.images.count()
+            variant = ProductVariant.objects.get(
+                id=variant_id
+            )
 
-        if image_count == 1:
+        except ProductVariant.DoesNotExist:
 
-            serializer.instance.is_primary = True
-            serializer.instance.save()
+            return Response(
+                {
+                    "error":
+                    "Variant not found"
+                },
+                status=404
+            )
+
+        # ==========================================
+        # VALIDATE MINIMUM IMAGES
+        # ==========================================
+
+        existing_count = (
+            variant.images.count()
+        )
+
+        total_count = (
+            existing_count +
+            len(files)
+        )
+
+        if total_count < 3:
+
+            return Response(
+                {
+                    "error":
+                    "Minimum 3 images required"
+                },
+                status=400
+            )
+
+        uploaded_images = []
+
+        # ==========================================
+        # MULTIPLE UPLOAD LOOP
+        # ==========================================
+
+        for index, file in enumerate(files):
+
+            serializer = (
+                VariantImageUploadSerializer(
+                    data={
+                        "variant":
+                        variant.id,
+
+                        "image":
+                        file,
+
+                        "display_order":
+                        existing_count + index,
+                    }
+                )
+            )
+
+            serializer.is_valid(
+                raise_exception=True
+            )
+
+            image = serializer.save()
+
+            # ==========================================
+            # AUTO PRIMARY
+            # ==========================================
+
+            if variant.images.count() == 1:
+
+                image.is_primary = True
+
+                image.save()
+
+            uploaded_images.append(
+                serializer.data
+            )
 
         return Response(
-            serializer.data,
+            uploaded_images,
             status=status.HTTP_201_CREATED
         )
