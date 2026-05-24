@@ -155,7 +155,8 @@ class ProductSerializer(
 ):
 
     variants = ProductVariantSerializer(
-        many=True
+        many=True,
+        required=False
     )
 
     category_name = serializers.CharField(
@@ -297,12 +298,12 @@ class ProductSerializer(
 
         # ONLY REQUIRED DURING CREATE
 
-        if self.instance is None and not variants:
+        # if self.instance is None and not variants:
 
-            raise serializers.ValidationError({
-                "variants":
-                "At least one variant is required"
-            })
+        #     raise serializers.ValidationError({
+        #         "variants":
+        #         "At least one variant is required"
+        #     })
 
         sku_list = []
 
@@ -336,7 +337,8 @@ class ProductSerializer(
     def create(self, validated_data):
 
         variants_data = validated_data.pop(
-            "variants"
+            "variants",
+            []
         )
 
         room_types = validated_data.pop(

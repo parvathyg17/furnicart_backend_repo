@@ -7,6 +7,8 @@ class VariantImageUploadSerializer(
     serializers.ModelSerializer
 ):
 
+    image_url = serializers.SerializerMethodField()
+
     class Meta:
 
         model = VariantImage
@@ -15,7 +17,10 @@ class VariantImageUploadSerializer(
             "id",
             "variant",
             "image",
-            "created_at"
+            "image_url",
+            "is_primary",
+            "display_order",
+            "created_at",
         ]
 
         read_only_fields = [
@@ -23,21 +28,29 @@ class VariantImageUploadSerializer(
             "created_at"
         ]
 
-    def validate_image(self, value):
+    def get_image_url(self, obj):
 
-        # =========================
-        # FILE SIZE VALIDATION
-        # =========================
+        request = self.context.get(
+            "request"
+        )
+
+        if obj.image and request:
+
+            return request.build_absolute_uri(
+                obj.image.url
+            )
+
+        return None
+
+    
+
+    def validate_image(self, value):
 
         if value.size > 5 * 1024 * 1024:
 
             raise serializers.ValidationError(
                 "Image size must be below 5MB"
             )
-
-        # =========================
-        # FILE TYPE VALIDATION
-        # =========================
 
         valid_extensions = [
             ".jpg",

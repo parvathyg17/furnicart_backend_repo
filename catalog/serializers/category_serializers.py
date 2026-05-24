@@ -54,6 +54,7 @@ class CategorySerializer(
             "slug",
             "created_at",
             "updated_at",
+            "is_active",
         ]
 
     # ==========================================

@@ -5,6 +5,15 @@ from rest_framework import status
 from catalog.models import VariantImage
 from catalog.models import ProductVariant
 from catalog.serializers import ProductVariantSerializer
+
+from catalog.models import (
+    Product,
+    ProductVariant,
+)
+
+from catalog.serializers import (
+    ProductVariantSerializer
+)
 from catalog.services.variant_services import (
    
     toggle_variant_status,
@@ -12,6 +21,50 @@ from catalog.services.variant_services import (
 from core.utils.permissions import (
     IsAdminUserCustom
 )
+
+class ProductVariantCreateView(APIView):
+
+    permission_classes = [
+        IsAuthenticated,
+        IsAdminUserCustom
+    ]
+
+    def post(self, request, product_id):
+
+        try:
+
+            product = Product.objects.get(
+                id=product_id
+            )
+
+        except Product.DoesNotExist:
+
+            return Response(
+                {
+                    "error": "Product not found"
+                },
+                status=status.HTTP_404_NOT_FOUND
+            )
+
+        serializer = ProductVariantSerializer(
+            data=request.data,
+            context={
+                "request": request
+            }
+        )
+
+        serializer.is_valid(
+            raise_exception=True
+        )
+
+        serializer.save(
+            product=product
+        )
+
+        return Response(
+            serializer.data,
+            status=status.HTTP_201_CREATED
+        )
 
 
 class ProductVariantDetailView(APIView):

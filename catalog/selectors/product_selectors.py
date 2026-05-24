@@ -195,6 +195,7 @@ def get_admin_filtered_products(params):
     room_type = params.get("room_type")
 
     sort = params.get("sort")
+    is_active = params.get("is_active")
 
     products = Product.objects.select_related(
         "category"
@@ -231,6 +232,21 @@ def get_admin_filtered_products(params):
             Q(category__name__icontains=search)
         )
 
+   
+
+    if is_active == "true":
+
+        products = products.filter(
+            is_active=True
+        )
+
+    elif is_active == "false":
+
+        products = products.filter(
+            is_active=False
+        )
+        
+    
     # =========================
     # CATEGORY FILTER
     # =========================
