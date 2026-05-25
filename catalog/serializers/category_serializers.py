@@ -31,6 +31,10 @@ class CategorySerializer(
 
     children = serializers.SerializerMethodField()
 
+    children_count = serializers.SerializerMethodField()
+
+    image_url = serializers.SerializerMethodField()
+
     class Meta:
 
         model = Category
@@ -42,13 +46,14 @@ class CategorySerializer(
             "parent",
             "parent_name",
             "children",
+            "children_count",
             "description",
             "image",
+            "image_url",
             "is_active",
             "created_at",
             "updated_at",
         ]
-
         read_only_fields = [
             "id",
             "slug",
@@ -115,6 +120,26 @@ class CategorySerializer(
 
         return serializer.data
 
+
+
+    def get_children_count(self, obj):
+
+        return obj.children.count()
+
+
+    def get_image_url(self, obj):
+
+        request = self.context.get(
+            "request"
+        )
+
+        if obj.image and request:
+
+            return request.build_absolute_uri(
+                obj.image.url
+            )
+
+        return None
     # ==========================================
     # VALIDATE PARENT
     # ==========================================

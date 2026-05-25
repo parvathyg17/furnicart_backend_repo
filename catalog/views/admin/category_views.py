@@ -7,6 +7,7 @@ from catalog.selectors.category_selectors import (
 
 from catalog.services.category_services import (
     get_category_by_id,
+    restore_category,
     soft_delete_category,
 )
 
@@ -172,3 +173,32 @@ class CategorySoftDeleteView(APIView):
             "message":
             "Category deleted successfully"
         })
+    
+class CategoryRestoreView(APIView):
+
+        permission_classes = [
+            IsAuthenticated,
+            IsAdminUserCustom
+        ]
+
+        def patch(self, request, category_id):
+
+            category = get_category_by_id(
+                category_id
+            )
+
+            if not category:
+
+                return Response(
+                    {
+                        "error": "Category not found"
+                    },
+                    status=404
+                )
+
+            restore_category(category)
+
+            return Response({
+                "message":
+                "Category restored successfully"
+            })

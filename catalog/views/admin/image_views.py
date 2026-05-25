@@ -71,20 +71,6 @@ class VariantImageUploadView(APIView):
             variant.images.count()
         )
 
-        total_count = (
-            existing_count +
-            len(files)
-        )
-
-        if total_count < 3:
-
-            return Response(
-                {
-                    "error":
-                    "Minimum 3 images required"
-                },
-                status=400
-            )
 
         uploaded_images = []
 

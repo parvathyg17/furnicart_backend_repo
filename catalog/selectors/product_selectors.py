@@ -283,6 +283,7 @@ def get_admin_filtered_products(params):
             
         )
 
+    products = products.distinct()
     # =========================
     # SORTING
     # =========================
@@ -323,4 +324,4 @@ def get_admin_filtered_products(params):
             "-created_at"
         )
 
-    return products.distinct()
+    return products

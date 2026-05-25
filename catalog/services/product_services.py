@@ -95,19 +95,24 @@ def toggle_product_status(product):
 
 def validate_product_images(product):
 
-    active_variants = product.variants.filter(
-        is_active=True
-    )
+        active_variants = product.variants.filter(
+            is_active=True
+        )
 
-    for variant in active_variants:
+        for variant in active_variants:
 
-        image_count = variant.images.count()
-
-        if image_count < 3:
-
-            return False, (
-                f"{variant.variant_name} "
-                f"must contain at least 3 images"
+            image_count = (
+                variant.images.count()
             )
 
-    return True, None
+            if image_count < 3:
+
+                return (
+                    False,
+                    f"{variant.variant_name} must have at least 3 images"
+                )
+
+        return (
+            True,
+            None
+        )

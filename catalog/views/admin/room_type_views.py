@@ -17,6 +17,7 @@ from catalog.selectors.room_type_selectors import (
 
 from catalog.services.room_type_services import (
     get_room_type_by_id,
+    restore_room_type,
     soft_delete_room_type,
 )
 
@@ -184,4 +185,35 @@ class RoomTypeSoftDeleteView(APIView):
         return Response({
             "message":
             "Room type deleted successfully"
+        })
+    
+
+class RoomTypeRestoreView(APIView):
+
+    permission_classes = [
+        IsAuthenticated,
+        IsAdminUserCustom
+    ]
+
+    def patch(self, request, room_type_id):
+
+        room_type = get_room_type_by_id(
+            room_type_id
+        )
+
+        if not room_type:
+
+            return Response(
+                {
+                    "error":
+                    "Room type not found"
+                },
+                status=404
+            )
+
+        restore_room_type(room_type)
+
+        return Response({
+            "message":
+            "Room type restored successfully"
         })

@@ -194,6 +194,24 @@ class VariantImageDeleteView(APIView):
 
         was_primary = image.is_primary
 
+        remaining_images = (
+            variant.images.count() - 1
+        )
+
+        if (
+            variant.is_active
+            and
+            remaining_images < 3
+        ):
+
+            return Response(
+                {
+                    "error":
+                    "Active variants require minimum 3 images"
+                },
+                status=status.HTTP_400_BAD_REQUEST
+            )
+
         image.delete()
 
         # =========================

@@ -27,3 +27,15 @@ def soft_delete_category(category):
         soft_delete_category(child)
 
     return category
+
+def restore_category(category):
+
+    category.is_active = True
+
+    category.save()
+
+    for child in category.children.all():
+
+        restore_category(child)
+
+    return category

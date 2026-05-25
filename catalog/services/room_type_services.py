@@ -21,3 +21,12 @@ def soft_delete_room_type(room_type):
     room_type.save()
 
     return room_type
+
+
+def restore_room_type(room_type):
+
+    room_type.is_active = True
+
+    room_type.save()
+
+    return room_type
