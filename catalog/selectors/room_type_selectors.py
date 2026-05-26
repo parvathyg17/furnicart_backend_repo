@@ -46,13 +46,13 @@ def get_admin_filtered_room_types(
         "is_active"
     )
 
-    room_types = RoomType.objects.all().order_by(
-        "name"
+    sort = params.get(
+        "sort"
     )
 
-    # ==========================================
-    # SEARCH
-    # ==========================================
+    room_types = RoomType.objects.all()
+
+ 
 
     if search:
 
@@ -75,5 +75,34 @@ def get_admin_filtered_room_types(
         room_types = room_types.filter(
             is_active=False
         )
+    # ==========================================
+    # SORTING
+    # ==========================================
+
+    if sort == "a_z":
+
+        room_types = room_types.order_by(
+            "name"
+        )
+
+    elif sort == "z_a":
+
+        room_types = room_types.order_by(
+            "-name"
+        )
+
+    elif sort == "oldest":
+
+        room_types = room_types.order_by(
+            "created_at"
+        )
+
+    else:
+
+        room_types = room_types.order_by(
+            "-created_at"
+        )
+
+        
 
     return room_types

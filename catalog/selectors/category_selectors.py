@@ -48,12 +48,14 @@ def get_admin_filtered_categories(params):
         "is_active"
     )
 
+    sort = params.get(
+        "sort"
+    )
+
     categories = Category.objects.select_related(
         "parent"
     ).prefetch_related(
         "children"
-    ).order_by(
-        "-created_at"
     )
 
     # =========================
@@ -80,6 +82,34 @@ def get_admin_filtered_categories(params):
 
         categories = categories.filter(
             is_active=False
+        )
+
+    # =========================
+    # SORTING
+    # =========================
+
+    if sort == "a_z":
+
+        categories = categories.order_by(
+            "name"
+        )
+
+    elif sort == "z_a":
+
+        categories = categories.order_by(
+            "-name"
+        )
+
+    elif sort == "oldest":
+
+        categories = categories.order_by(
+            "created_at"
+        )
+
+    else:
+
+        categories = categories.order_by(
+            "-created_at"
         )
 
     return categories
