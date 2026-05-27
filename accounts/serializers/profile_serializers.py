@@ -2,38 +2,42 @@ from rest_framework import serializers
 from accounts.models.profile import UserProfile
 from accounts.models.users import User
 
+
 class UserProfileSerializer(serializers.ModelSerializer):
 
-    username = serializers.CharField(source='user.username', read_only=True)
-    email = serializers.EmailField(source='user.email', read_only=True)
+    username = serializers.CharField(
+        source='user.username',
+        read_only=True
+    )
+
+    email = serializers.EmailField(
+        source='user.email',
+        read_only=True
+    )
 
     class Meta:
         model = UserProfile
         fields = [
-            'username',   
-            'email',      
+            'username',
+            'email',
             'phone',
             'date_of_birth',
             'profile_image'
         ]
 
-def validate_phone(
+    def validate_phone(
         self,
         value
     ):
 
-        request =self.context.get(
-                "request"
-            )
+        request = self.context.get(
+            "request"
+        )
 
-        user =request.user
-
-        
+        user = request.user
 
         if not value:
             return value
-
-       
 
         if (
             not value.isdigit()
@@ -45,13 +49,11 @@ def validate_phone(
                 "Phone number must be 10 digits"
             )
 
-       
-
-        existing_profile =UserProfile.objects.filter(
-                phone=value
-            ).exclude(
-                user=user
-            ).first()
+        existing_profile = UserProfile.objects.filter(
+            phone=value
+        ).exclude(
+            user=user
+        ).first()
 
         if existing_profile:
 
@@ -61,33 +63,43 @@ def validate_phone(
 
         return value
 
-        
-
-
-
-
-
-
-
 
 class EmailChangeRequestSerializer(serializers.Serializer):
+
     new_email = serializers.EmailField()
 
-    def validate_new_email(self, value):
-        request = self.context.get("request")
+    def validate_new_email(
+        self,
+        value
+    ):
+
+        request = self.context.get(
+            "request"
+        )
+
         user = request.user
 
-        
         if user.email == value:
-            raise serializers.ValidationError("This is already your current email")
 
-        
-        if User.objects.filter(email=value).exists():
-            raise serializers.ValidationError("This email is already in use")
+            raise serializers.ValidationError(
+                "This is already your current email"
+            )
+
+        if User.objects.filter(
+            email=value
+        ).exists():
+
+            raise serializers.ValidationError(
+                "This email is already in use"
+            )
 
         return value
 
 
 class EmailChangeVerifySerializer(serializers.Serializer):
+
     new_email = serializers.EmailField()
-    otp = serializers.CharField(max_length=6)
+
+    otp = serializers.CharField(
+        max_length=6
+    )

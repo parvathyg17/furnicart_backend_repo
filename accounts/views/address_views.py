@@ -60,23 +60,51 @@ class AddressDetailView(APIView):
         return Response(AddressSerializer(address).data)
 
     def put(self, request, pk):
-        address = self.get_object(request, pk)
+
+        address = self.get_object(
+            request,
+            pk
+        )
 
         serializer = AddressSerializer(
             address,
             data=request.data,
             partial=True
         )
-        serializer.is_valid(raise_exception=True)
 
-        is_default = serializer.validated_data.get("is_default", False)
+        serializer.is_valid(
+            raise_exception=True
+        )
+
+        # ==========================
+        # REMOVE is_default BEFORE SAVE
+        # ==========================
+
+        wants_default = serializer.validated_data.pop(
+            "is_default",
+            False
+        )
+
+        # ==========================
+        # SAVE NORMAL FIELDS ONLY
+        # ==========================
 
         address = serializer.save()
 
-        if is_default:
-            set_default_address(request.user, address)
+        # ==========================
+        # HANDLE DEFAULT SWITCH SAFELY
+        # ==========================
 
-        return Response(AddressSerializer(address).data)
+        if wants_default:
+
+            set_default_address(
+                request.user,
+                address
+            )
+
+        return Response(
+            AddressSerializer(address).data
+        )
 
     def delete(self, request, pk):
         address = self.get_object(request, pk)
@@ -103,12 +131,27 @@ class SetDefaultAddressView(APIView):
 
     def patch(self, request, pk):
 
-        address = Address.objects.get(
-            id=pk,
-            user=request.user,
-            is_deleted=False
+        try:
+
+            address = Address.objects.get(
+                id=pk,
+                user=request.user,
+                is_deleted=False
+            )
+
+        except Address.DoesNotExist:
+
+            raise NotFound(
+                "Address not found"
+            )
+
+        set_default_address(
+            request.user,
+            address
         )
 
-        set_default_address(request.user, address)
-
-        return Response({"message": "Default updated"})
+        return Response(
+            {
+                "message": "Default updated"
+            }
+        )

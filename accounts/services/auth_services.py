@@ -79,6 +79,7 @@ def user_login_service(
     return user, None
 
 
+
 def create_and_send_otp(user, purpose):
     purpose = purpose.strip().lower()
 
@@ -145,8 +146,7 @@ def resend_otp_service(user, purpose="signup"):
 
 
 def forgot_password_service(email):
-    from models.users import User
-    from services.auth_services import create_and_send_otp
+
 
     try:
         user = User.objects.get(email=email)
