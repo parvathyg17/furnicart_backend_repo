@@ -195,10 +195,19 @@ class ResendOTPView(APIView):
                     status=400
                 )
 
-            resend_otp_service(
+            success, error = resend_otp_service(
                 user,
                 purpose=purpose
             )
+
+            if not success:
+
+                return Response(
+                    {
+                        "error": error
+                    },
+                    status=400
+                )
 
             return Response({
                 "message": "OTP resent successfully"

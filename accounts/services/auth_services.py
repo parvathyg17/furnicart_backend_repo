@@ -141,8 +141,64 @@ def verify_otp_service(user, otp_input, purpose):
 
 
 
-def resend_otp_service(user, purpose="signup"):
-    return create_and_send_otp(user, purpose)
+def resend_otp_service(
+    user,
+    purpose="signup"
+):
+
+    purpose = (
+        purpose
+        .strip()
+        .lower()
+    )
+
+    latest_otp = (
+        OTP.objects.filter(
+            user=user,
+            purpose=purpose
+        )
+        .order_by("-created_at")
+        .first()
+    )
+
+    # =========================
+    # COOLDOWN CHECK
+    # =========================
+
+    if latest_otp:
+
+        seconds_passed = (
+            timezone.now() -
+            latest_otp.created_at
+        ).seconds
+
+        cooldown_seconds = 60
+
+        if seconds_passed < cooldown_seconds:
+
+            remaining = (
+                cooldown_seconds -
+                seconds_passed
+            )
+
+            return (
+                False,
+                f"Please wait {remaining}s before requesting another OTP."
+            )
+
+    # =========================
+    # CREATE NEW OTP
+    # =========================
+
+    create_and_send_otp(
+        user,
+        purpose
+    )
+
+    return (
+        True,
+        None
+    )
 
 
 def forgot_password_service(email):
