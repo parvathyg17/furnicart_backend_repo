@@ -27,9 +27,7 @@ def set_default_address(
     selected_address
 ):
 
-    # ==========================
-    # LOCK SELECTED ADDRESS
-    # ==========================
+    
 
     selected = (
         Address.objects
@@ -41,9 +39,7 @@ def set_default_address(
         )
     )
 
-    # ==========================
-    # LOCK CURRENT DEFAULTS
-    # ==========================
+    
 
     other_addresses = (
         Address.objects
@@ -58,9 +54,7 @@ def set_default_address(
         )
     )
 
-    # ==========================
-    # REMOVE OLD DEFAULTS
-    # ==========================
+    
 
     for address in other_addresses:
 
@@ -70,9 +64,7 @@ def set_default_address(
             update_fields=["is_default"]
         )
 
-    # ==========================
-    # SET NEW DEFAULT
-    # ==========================
+   
 
     selected.is_default = True
 

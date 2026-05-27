@@ -24,9 +24,7 @@ def user_login_service(
             "Invalid email or password"
         )
 
-    # ==========================
-    # BLOCK ADMIN LOGIN
-    # ==========================
+    
 
     if (
         user.is_staff or
@@ -38,9 +36,7 @@ def user_login_service(
             "Admins must login through admin panel"
         )
 
-    # ==========================
-    # EMAIL NOT VERIFIED
-    # ==========================
+    
 
     if not user.is_verified:
 
@@ -49,9 +45,7 @@ def user_login_service(
             "Email not verified"
         )
 
-    # ==========================
-    # BLOCKED USER
-    # ==========================
+    
 
     if not user.is_active:
 
@@ -60,9 +54,7 @@ def user_login_service(
             "User is blocked"
         )
 
-    # ==========================
-    # AUTHENTICATE
-    # ==========================
+    
 
     user = authenticate(
         email=email,
@@ -124,9 +116,7 @@ def verify_otp_service(user, otp_input, purpose):
     if otp_obj.otp != otp_input:
         return False, "Invalid OTP"
 
-    # =========================
-    # SIGNUP VERIFY
-    # =========================
+    
 
     if purpose == "signup":
 
@@ -161,9 +151,7 @@ def resend_otp_service(
         .first()
     )
 
-    # =========================
-    # COOLDOWN CHECK
-    # =========================
+    
 
     if latest_otp:
 
@@ -186,9 +174,7 @@ def resend_otp_service(
                 f"Please wait {remaining}s before requesting another OTP."
             )
 
-    # =========================
-    # CREATE NEW OTP
-    # =========================
+   
 
     create_and_send_otp(
         user,

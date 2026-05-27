@@ -22,28 +22,40 @@ class UserProfileView(APIView):
     permission_classes = [IsAuthenticated]
     parser_classes = [MultiPartParser, FormParser]  
 
-    # 🔹 GET profile (own only)
     def get(self, request):
         profile = UserProfile.objects.get(user=request.user)
         serializer = UserProfileSerializer(profile)
 
         return Response(serializer.data)
 
-    # 🔹 UPDATE profile (own only)
+  
     def put(self, request):
-        profile = UserProfile.objects.get(user=request.user)
+
+        profile = UserProfile.objects.get(
+            user=request.user
+        )
 
         serializer = UserProfileSerializer(
             profile,
             data=request.data,
-            partial=True
+            partial=True,
+            context={
+                "request": request
+            }
         )
 
         if serializer.is_valid():
-            serializer.save()
-            return Response(serializer.data)
 
-        return Response(serializer.errors, status=400)
+            serializer.save()
+
+            return Response(
+                serializer.data
+            )
+
+        return Response(
+            serializer.errors,
+            status=400
+        )
     
 
 
@@ -60,7 +72,7 @@ class EmailChangeRequestView(APIView):
         if serializer.is_valid():
             new_email = serializer.validated_data['new_email']
 
-            # store OTP with context
+            
             otp_code = send_email_change_otp(request.user, new_email)
 
             OTP.objects.filter(

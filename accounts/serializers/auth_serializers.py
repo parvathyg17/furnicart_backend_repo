@@ -41,7 +41,7 @@ class SignupSerializer(
 
         username =value.strip()
 
-        # MIN LENGTH
+        
 
         if len(username) < 3:
 

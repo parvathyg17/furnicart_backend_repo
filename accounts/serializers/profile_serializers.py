@@ -34,6 +34,9 @@ class UserProfileSerializer(serializers.ModelSerializer):
             "request"
         )
 
+        if not request:
+            return value
+
         user = request.user
 
         if not value:

@@ -76,24 +76,16 @@ class AddressDetailView(APIView):
             raise_exception=True
         )
 
-        # ==========================
-        # REMOVE is_default BEFORE SAVE
-        # ==========================
+        
 
         wants_default = serializer.validated_data.pop(
             "is_default",
             False
         )
 
-        # ==========================
-        # SAVE NORMAL FIELDS ONLY
-        # ==========================
-
         address = serializer.save()
 
-        # ==========================
-        # HANDLE DEFAULT SWITCH SAFELY
-        # ==========================
+        
 
         if wants_default:
 
