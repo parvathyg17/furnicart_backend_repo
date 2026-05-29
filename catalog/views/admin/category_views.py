@@ -196,7 +196,18 @@ class CategoryRestoreView(APIView):
                     status=404
                 )
 
-            restore_category(category)
+            try:
+
+                restore_category(category)
+
+            except ValueError as e:
+
+                return Response(
+                    {
+                        "error": str(e)
+                    },
+                    status=400
+                )
 
             return Response({
                 "message":

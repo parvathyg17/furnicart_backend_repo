@@ -30,6 +30,20 @@ def soft_delete_category(category):
 
 def restore_category(category):
 
+    # ==========================================
+    # PREVENT RESTORE IF PARENT DELETED
+    # ==========================================
+
+    if (
+        category.parent
+        and
+        not category.parent.is_active
+    ):
+
+        raise ValueError(
+            "Restore parent category first"
+        )
+
     category.is_active = True
 
     category.save()

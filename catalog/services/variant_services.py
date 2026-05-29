@@ -1,5 +1,9 @@
 from catalog.models import ProductVariant
 
+from catalog.services.product_services import (
+    validate_variant_fields_and_images,
+)
+
 
 def get_variant_by_id(variant_id):
     try:
@@ -22,3 +26,12 @@ def toggle_variant_status(variant):
     variant.is_active = not variant.is_active
     variant.save()
     return variant
+
+
+def validate_variant_can_activate(variant):
+
+   
+
+    return validate_variant_fields_and_images(
+        variant
+    )

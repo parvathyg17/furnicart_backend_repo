@@ -15,8 +15,8 @@ from catalog.serializers import (
     ProductVariantSerializer
 )
 from catalog.services.variant_services import (
-   
     toggle_variant_status,
+    validate_variant_can_activate,
 )
 from core.utils.permissions import (
     IsAdminUserCustom
@@ -283,6 +283,21 @@ class ProductVariantToggleStatusView(APIView):
                 },
                 status=status.HTTP_400_BAD_REQUEST
             )
+
+        if not variant.is_active:
+
+            is_valid, error = validate_variant_can_activate(
+                variant
+            )
+
+            if not is_valid:
+
+                return Response(
+                    {
+                        "error": error
+                    },
+                    status=status.HTTP_400_BAD_REQUEST
+                )
 
         variant = toggle_variant_status(
             variant

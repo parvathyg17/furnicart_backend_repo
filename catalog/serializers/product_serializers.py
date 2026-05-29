@@ -17,6 +17,11 @@ from catalog.selectors.recommendation_selectors import (
         get_related_products
     )
 
+from catalog.services.product_services import (
+    validate_product_can_activate,
+    validate_variant_fields_and_images,
+)
+
 # =====================================================
 # VARIANT IMAGE SERIALIZER
 # =====================================================
@@ -125,8 +130,16 @@ class ProductVariantSerializer(
     
     def validate_sku(self, value):
 
+        cleaned = (value or "").strip()
+
+        if not cleaned:
+
+            raise serializers.ValidationError(
+                "SKU is required."
+            )
+
         queryset = ProductVariant.objects.filter(
-            sku=value
+            sku=cleaned
         )
 
         # EXCLUDE CURRENT VARIANT DURING UPDATE
@@ -143,12 +156,214 @@ class ProductVariantSerializer(
                 "SKU already exists"
             )
 
-        return value
+        return cleaned
 
+    def _strip_required(
+        self,
+        value,
+        label,
+    ):
 
-# =====================================================
-# PRODUCT SERIALIZER
-# =====================================================
+        if value is None:
+
+            raise serializers.ValidationError(
+                f"{label} is required."
+            )
+
+        cleaned = str(value).strip()
+
+        if not cleaned:
+
+            raise serializers.ValidationError(
+                f"{label} is required."
+            )
+
+        return cleaned
+
+    def validate_variant_name(
+        self,
+        value,
+    ):
+
+        return self._strip_required(
+            value,
+            "Variant name",
+        )
+
+    def _strip_optional_text(
+        self,
+        value,
+    ):
+
+        """
+        Allow blank / null on write; completeness for active
+        variants is enforced in validate() and on activation.
+        """
+
+        if value is None:
+
+            return None
+
+        cleaned = str(value).strip()
+
+        if not cleaned:
+
+            return None
+
+        return cleaned
+
+    def validate_color(
+        self,
+        value,
+    ):
+
+        return self._strip_optional_text(
+            value,
+        )
+
+    def validate_material(
+        self,
+        value,
+    ):
+
+        return self._strip_optional_text(
+            value,
+        )
+
+    def validate_size(
+        self,
+        value,
+    ):
+
+        return self._strip_optional_text(
+            value,
+        )
+
+    def validate(self, attrs):
+
+        instance = self.instance
+
+        if instance is None:
+
+            create_active = attrs.get(
+                "is_active",
+                False,
+            )
+
+            attrs["is_active"] = create_active
+
+            if create_active:
+
+                for field, label in (
+
+                    (
+                        "color",
+                        "Color / finish",
+                    ),
+
+                    (
+                        "material",
+                        "Material",
+                    ),
+
+                    (
+                        "size",
+                        "Size / dimensions",
+                    ),
+                ):
+
+                    raw = attrs.get(
+                        field,
+                    )
+
+                    if (
+                        raw is None
+                        or not str(raw).strip()
+                    ):
+
+                        raise serializers.ValidationError(
+                            {
+                                field: (
+                                    f"{label} is required "
+                                    "when the variant is active."
+                                ),
+                            }
+                        )
+
+            return attrs
+
+        will_active = attrs.get(
+            "is_active",
+            instance.is_active,
+        )
+
+        if not will_active:
+
+            return attrs
+
+        old_values = {}
+
+        try:
+
+            allowed_keys = {
+
+                "variant_name",
+
+                "sku",
+
+                "price",
+
+                "stock",
+
+                "color",
+
+                "material",
+
+                "size",
+
+                "is_active",
+            }
+
+            for key, val in attrs.items():
+
+                if key not in allowed_keys:
+
+                    continue
+
+                old_values[key] = getattr(
+                    instance,
+                    key,
+                )
+
+                setattr(
+                    instance,
+                    key,
+                    val,
+                )
+
+            ok, err = validate_variant_fields_and_images(
+                instance,
+            )
+
+            if not ok:
+
+                raise serializers.ValidationError(
+                    {
+                        "is_active": err,
+                    }
+                )
+
+        finally:
+
+            for key, val in old_values.items():
+
+                setattr(
+                    instance,
+                    key,
+                    val,
+                )
+
+        return attrs
 
 class ProductSerializer(
     serializers.ModelSerializer
@@ -281,7 +496,35 @@ class ProductSerializer(
             )
 
         return primary_image.image.url
-    
+
+    def validate_name(self, value):
+
+        cleaned = (value or "").strip()
+
+        if not cleaned:
+
+            raise serializers.ValidationError(
+                "Product name is required."
+            )
+
+        queryset = Product.objects.filter(
+            name__iexact=cleaned
+        )
+
+        if self.instance:
+
+            queryset = queryset.exclude(
+                id=self.instance.id
+            )
+
+        if queryset.exists():
+
+            raise serializers.ValidationError(
+                "Product name already exists."
+            )
+
+        return cleaned
+
     def validate_category(self, value):
 
         if not value.is_active:
@@ -294,16 +537,10 @@ class ProductSerializer(
 
     def validate(self, attrs):
 
-        variants = attrs.get("variants", [])
-
-        # ONLY REQUIRED DURING CREATE
-
-        # if self.instance is None and not variants:
-
-        #     raise serializers.ValidationError({
-        #         "variants":
-        #         "At least one variant is required"
-        #     })
+        variants = attrs.get(
+            "variants",
+            [],
+        )
 
         sku_list = []
 
@@ -313,10 +550,12 @@ class ProductSerializer(
 
             if sku in sku_list:
 
-                raise serializers.ValidationError({
-                    "sku":
-                    f"Duplicate SKU found: {sku}"
-                })
+                raise serializers.ValidationError(
+                    {
+                        "sku":
+                            f"Duplicate SKU found: {sku}"
+                    }
+                )
 
             sku_list.append(sku)
 
@@ -326,15 +565,92 @@ class ProductSerializer(
                     sku=sku
                 ).exists():
 
-                    raise serializers.ValidationError({
-                        "sku":
-                        f"SKU already exists: {sku}"
-                    })
+                    raise serializers.ValidationError(
+                        {
+                            "sku":
+                                f"SKU already exists: {sku}"
+                        }
+                    )
+
+        if self.instance is None:
+
+            if not (attrs.get("name") or "").strip():
+
+                raise serializers.ValidationError(
+                    {
+                        "name":
+                            "Product name is required.",
+                    }
+                )
+
+            if not (attrs.get("description") or "").strip():
+
+                raise serializers.ValidationError(
+                    {
+                        "description":
+                            "Description is required.",
+                    }
+                )
+
+            room_types = attrs.get(
+                "room_type_ids",
+            )
+
+            if (
+                not room_types
+                or len(room_types) < 1
+            ):
+
+                raise serializers.ValidationError(
+                    {
+                        "room_type_ids":
+                            "Select at least one room type.",
+                    }
+                )
+
+        else:
+
+            merged_active = attrs.get(
+                "is_active",
+                self.instance.is_active,
+            )
+
+            if merged_active:
+
+                merged_desc = attrs.get(
+                    "description",
+                    self.instance.description,
+                )
+
+                rooms_arg = (
+
+                    attrs["room_type_ids"]
+
+                    if "room_type_ids" in attrs
+
+                    else None
+                )
+
+                ok, err = validate_product_can_activate(
+                    self.instance,
+                    description=merged_desc,
+                    room_type_ids=rooms_arg,
+                )
+
+                if not ok:
+
+                    raise serializers.ValidationError(
+                        {
+                            "is_active": err,
+                        }
+                    )
 
         return attrs
 
     @transaction.atomic
     def create(self, validated_data):
+
+        validated_data["is_active"] = False
 
         variants_data = validated_data.pop(
             "variants",

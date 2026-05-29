@@ -1,8 +1,20 @@
+import logging
+
 from rest_framework.views import APIView
 from rest_framework.response import Response
-from rest_framework.permissions import IsAuthenticated
+from rest_framework.permissions import (
+    IsAuthenticated
+)
 
-from core.pagination import CustomPagination
+from rest_framework.parsers import (
+    MultiPartParser,
+    FormParser
+)
+
+from core.pagination import (
+    CustomPagination
+)
+
 from core.utils.permissions import (
     IsAdminUserCustom
 )
@@ -21,10 +33,12 @@ from catalog.services.room_type_services import (
     soft_delete_room_type,
 )
 
-from rest_framework.parsers import (
-    MultiPartParser,
-    FormParser
-)
+logger = logging.getLogger(__name__)
+
+
+# ==========================================
+# ROOM TYPE LIST CREATE
+# ==========================================
 
 class RoomTypeListCreateView(APIView):
 
@@ -38,10 +52,16 @@ class RoomTypeListCreateView(APIView):
         FormParser
     ]
 
+    # ==========================================
+    # GET ROOM TYPES
+    # ==========================================
+
     def get(self, request):
 
-        room_types = get_admin_filtered_room_types(
-            request.GET
+        room_types = (
+            get_admin_filtered_room_types(
+                request.GET
+            )
         )
 
         paginator = CustomPagination()
@@ -61,14 +81,25 @@ class RoomTypeListCreateView(APIView):
             }
         )
 
+        logger.info(
+            "Admin fetched room types list"
+        )
+
         return paginator.get_paginated_response(
             serializer.data
         )
 
+    # ==========================================
+    # CREATE ROOM TYPE
+    # ==========================================
+
     def post(self, request):
 
         serializer = RoomTypeSerializer(
-            data=request.data
+            data=request.data,
+            context={
+                "request": request
+            }
         )
 
         serializer.is_valid(
@@ -77,11 +108,26 @@ class RoomTypeListCreateView(APIView):
 
         serializer.save()
 
+        logger.info(
+            f"Room type created: "
+            f"{serializer.instance.id}"
+        )
+
         return Response(
-            serializer.data,
+            {
+                "success": True,
+                "message":
+                "Room type created successfully",
+                "data":
+                serializer.data,
+            },
             status=201
         )
 
+
+# ==========================================
+# ROOM TYPE DETAIL
+# ==========================================
 
 class RoomTypeDetailView(APIView):
 
@@ -95,16 +141,32 @@ class RoomTypeDetailView(APIView):
         FormParser
     ]
 
-    def get(self, request, room_type_id):
+    # ==========================================
+    # GET SINGLE ROOM TYPE
+    # ==========================================
 
-        room_type = get_room_type_by_id(
-            room_type_id
+    def get(
+        self,
+        request,
+        room_type_id
+    ):
+
+        room_type = (
+            get_room_type_by_id(
+                room_type_id
+            )
         )
 
         if not room_type:
 
+            logger.warning(
+                f"Room type not found: "
+                f"{room_type_id}"
+            )
+
             return Response(
                 {
+                    "success": False,
                     "error":
                     "Room type not found"
                 },
@@ -118,20 +180,46 @@ class RoomTypeDetailView(APIView):
             }
         )
 
-        return Response(
-            serializer.data
+        logger.info(
+            f"Room type fetched: "
+            f"{room_type.id}"
         )
 
-    def put(self, request, room_type_id):
+        return Response(
+            {
+                "success": True,
+                "data":
+                serializer.data,
+            }
+        )
 
-        room_type = get_room_type_by_id(
-            room_type_id
+    # ==========================================
+    # UPDATE ROOM TYPE
+    # ==========================================
+
+    def put(
+        self,
+        request,
+        room_type_id
+    ):
+
+        room_type = (
+            get_room_type_by_id(
+                room_type_id
+            )
         )
 
         if not room_type:
 
+            logger.warning(
+                f"Room type not found "
+                f"for update: "
+                f"{room_type_id}"
+            )
+
             return Response(
                 {
+                    "success": False,
                     "error":
                     "Room type not found"
                 },
@@ -141,7 +229,10 @@ class RoomTypeDetailView(APIView):
         serializer = RoomTypeSerializer(
             room_type,
             data=request.data,
-            partial=True
+            partial=True,
+            context={
+                "request": request
+            }
         )
 
         serializer.is_valid(
@@ -150,10 +241,25 @@ class RoomTypeDetailView(APIView):
 
         serializer.save()
 
-        return Response(
-            serializer.data
+        logger.info(
+            f"Room type updated: "
+            f"{room_type.id}"
         )
 
+        return Response(
+            {
+                "success": True,
+                "message":
+                "Room type updated successfully",
+                "data":
+                serializer.data,
+            }
+        )
+
+
+# ==========================================
+# SOFT DELETE ROOM TYPE
+# ==========================================
 
 class RoomTypeSoftDeleteView(APIView):
 
@@ -162,16 +268,29 @@ class RoomTypeSoftDeleteView(APIView):
         IsAdminUserCustom
     ]
 
-    def patch(self, request, room_type_id):
+    def patch(
+        self,
+        request,
+        room_type_id
+    ):
 
-        room_type = get_room_type_by_id(
-            room_type_id
+        room_type = (
+            get_room_type_by_id(
+                room_type_id
+            )
         )
 
         if not room_type:
 
+            logger.warning(
+                f"Room type not found "
+                f"for delete: "
+                f"{room_type_id}"
+            )
+
             return Response(
                 {
+                    "success": False,
                     "error":
                     "Room type not found"
                 },
@@ -182,11 +301,25 @@ class RoomTypeSoftDeleteView(APIView):
             room_type
         )
 
-        return Response({
-            "message":
-            "Room type deleted successfully"
-        })
-    
+        logger.info(
+            f"Room type deleted: "
+            f"{room_type.id}"
+        )
+
+        return Response(
+            {
+                "success": True,
+                "message":
+                "Room type deleted successfully",
+                "room_type_id":
+                room_type.id,
+            }
+        )
+
+
+# ==========================================
+# RESTORE ROOM TYPE
+# ==========================================
 
 class RoomTypeRestoreView(APIView):
 
@@ -195,25 +328,51 @@ class RoomTypeRestoreView(APIView):
         IsAdminUserCustom
     ]
 
-    def patch(self, request, room_type_id):
+    def patch(
+        self,
+        request,
+        room_type_id
+    ):
 
-        room_type = get_room_type_by_id(
-            room_type_id
+        room_type = (
+            get_room_type_by_id(
+                room_type_id
+            )
         )
 
         if not room_type:
 
+            logger.warning(
+                f"Room type not found "
+                f"for restore: "
+                f"{room_type_id}"
+            )
+
             return Response(
                 {
+                    "success": False,
                     "error":
                     "Room type not found"
                 },
                 status=404
             )
 
-        restore_room_type(room_type)
+        restore_room_type(
+            room_type
+        )
 
-        return Response({
-            "message":
-            "Room type restored successfully"
-        })
+        logger.info(
+            f"Room type restored: "
+            f"{room_type.id}"
+        )
+
+        return Response(
+            {
+                "success": True,
+                "message":
+                "Room type restored successfully",
+                "room_type_id":
+                room_type.id,
+            }
+        )
+

@@ -1,3 +1,4 @@
+
 from django.db.models import Q
 
 from catalog.models import Category
@@ -52,15 +53,19 @@ def get_admin_filtered_categories(params):
         "sort"
     )
 
+    # =========================================
+    # BASE QUERYSET
+    # =========================================
+
     categories = Category.objects.select_related(
         "parent"
     ).prefetch_related(
         "children"
     )
 
-    # =========================
+    # =========================================
     # SEARCH
-    # =========================
+    # =========================================
 
     if search:
 
@@ -68,14 +73,16 @@ def get_admin_filtered_categories(params):
             Q(name__icontains=search)
         )
 
-    # =========================
+    # =========================================
     # STATUS FILTER
-    # =========================
+    # =========================================
 
     if is_active == "true":
 
         categories = categories.filter(
             is_active=True
+        ).exclude(
+            parent__is_active=False
         )
 
     elif is_active == "false":
@@ -84,9 +91,9 @@ def get_admin_filtered_categories(params):
             is_active=False
         )
 
-    # =========================
+    # =========================================
     # SORTING
-    # =========================
+    # =========================================
 
     if sort == "a_z":
 
@@ -130,3 +137,4 @@ def get_all_child_categories(category):
         )
 
     return categories
+

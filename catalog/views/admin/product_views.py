@@ -7,7 +7,7 @@ from catalog.services.product_services import (
     get_admin_product_by_id,
     soft_delete_product,
     toggle_product_status,
-    validate_product_images,
+    validate_product_can_activate,
 )
 
 from catalog.serializers.product_serializers import (
@@ -197,7 +197,7 @@ class ProductToggleStatusView(APIView):
         
         if not product.is_active:
 
-            is_valid, error = validate_product_images(
+            is_valid, error = validate_product_can_activate(
                 product
             )
 
