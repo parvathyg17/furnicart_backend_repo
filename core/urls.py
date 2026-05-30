@@ -68,6 +68,20 @@ urlpatterns = [
             "catalog.urls.room_type_urls"
         )
     ),
+
+    path(
+        "api/cart/",
+        include(
+            "cart.urls"
+        )
+    ),
+
+    path(
+        "api/wishlist/",
+        include(
+            "wishlist.urls"
+        )
+    ),
   
     
 

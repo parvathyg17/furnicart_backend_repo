@@ -4,27 +4,23 @@ from django.db import models
 from catalog.models import ProductVariant
 
 
-class Cart(models.Model):
+class Wishlist(models.Model):
 
     user = models.OneToOneField(
         settings.AUTH_USER_MODEL,
         on_delete=models.CASCADE,
-        related_name="cart",
+        related_name="wishlist",
     )
 
     created_at = models.DateTimeField(
         auto_now_add=True,
     )
 
-    updated_at = models.DateTimeField(
-        auto_now=True,
-    )
 
+class WishlistItem(models.Model):
 
-class CartItem(models.Model):
-
-    cart = models.ForeignKey(
-        Cart,
+    wishlist = models.ForeignKey(
+        Wishlist,
         on_delete=models.CASCADE,
         related_name="items",
     )
@@ -32,10 +28,6 @@ class CartItem(models.Model):
     variant = models.ForeignKey(
         ProductVariant,
         on_delete=models.CASCADE,
-    )
-
-    quantity = models.PositiveIntegerField(
-        default=1,
     )
 
     created_at = models.DateTimeField(
@@ -46,7 +38,7 @@ class CartItem(models.Model):
 
         constraints = [
             models.UniqueConstraint(
-                fields=["cart", "variant"],
-                name="cart_unique_variant",
+                fields=["wishlist", "variant"],
+                name="wishlist_unique_variant",
             ),
         ]

@@ -40,26 +40,36 @@ def get_admin_product_by_id(product_id):
 
 def get_user_product_by_id(product_id):
 
+    base = Product.objects.filter(
+        id=product_id,
+        is_active=True,
+        category__is_active=True,
+    ).filter(
+        variants__is_active=True,
+    ).distinct()
+
+    if not base.exists():
+
+        return None
+
     try:
 
-        return Product.objects.select_related(
-            "category"
+        return base.select_related(
+            "category",
         ).prefetch_related(
+
+            "room_types",
 
             Prefetch(
                 "variants",
                 queryset=ProductVariant.objects.filter(
-                    is_active=True
+                    is_active=True,
                 ).prefetch_related(
-                    "images"
-                )
-            )
-
+                    "images",
+                ),
+            ),
         ).get(
-            id=product_id,
-            is_active=True,
-            category__is_active=True,
-            variants__is_active=True,
+            pk=product_id,
         )
 
     except Product.DoesNotExist:

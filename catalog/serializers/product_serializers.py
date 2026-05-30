@@ -421,6 +421,7 @@ class ProductSerializer(
             "stock_status",
             "related_products",
             "is_active",
+            "is_featured",
             "variants",
             "created_at",
             "updated_at",
@@ -615,21 +616,25 @@ class ProductSerializer(
                 self.instance.is_active,
             )
 
-            if merged_active:
+            if not merged_active:
 
-                merged_desc = attrs.get(
-                    "description",
-                    self.instance.description,
-                )
+                return attrs
 
-                rooms_arg = (
+            merged_desc = attrs.get(
+                "description",
+                self.instance.description,
+            )
 
-                    attrs["room_type_ids"]
+            rooms_arg = (
 
-                    if "room_type_ids" in attrs
+                attrs["room_type_ids"]
 
-                    else None
-                )
+                if "room_type_ids" in attrs
+
+                else None
+            )
+
+            if not self.instance.is_active:
 
                 ok, err = validate_product_can_activate(
                     self.instance,
@@ -642,6 +647,29 @@ class ProductSerializer(
                     raise serializers.ValidationError(
                         {
                             "is_active": err,
+                        }
+                    )
+
+            else:
+
+                if not (merged_desc or "").strip():
+
+                    raise serializers.ValidationError(
+                        {
+                            "description":
+                                "Description is required.",
+                        }
+                    )
+
+                if (
+                    rooms_arg is not None
+                    and len(rooms_arg) < 1
+                ):
+
+                    raise serializers.ValidationError(
+                        {
+                            "room_type_ids":
+                                "Select at least one room type.",
                         }
                     )
 

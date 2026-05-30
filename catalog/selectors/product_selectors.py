@@ -51,6 +51,18 @@ def get_user_filtered_products(params):
     min_price=Min("variants__price")
 )
 
+    featured_raw = (params.get("featured") or "").strip().lower()
+
+    if featured_raw in (
+        "1",
+        "true",
+        "yes",
+    ):
+
+        products = products.filter(
+            is_featured=True,
+        )
+
     # =========================
     # SEARCH
     # =========================
@@ -106,6 +118,19 @@ def get_user_filtered_products(params):
         products = products.filter(
             room_types__slug=room_type,
             room_types__is_active=True
+        )
+
+    # =========================
+    # BRAND FILTER
+    # =========================
+
+    brand_param = (params.get("brand") or "").strip()
+
+    if brand_param:
+
+        products = products.filter(
+            brand__icontains=brand_param,
+            variants__is_active=True,
         )
 
     # =========================

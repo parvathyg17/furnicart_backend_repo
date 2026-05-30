@@ -1,7 +1,10 @@
 from django.db import models
+from django.db.models import Q
 
 from catalog.models.product import Product
-from django.db.models import Q
+from catalog.product_activation import (
+    sync_product_active_if_no_sellable_variants,
+)
 
 class ProductVariant(models.Model):
 
@@ -84,3 +87,22 @@ class ProductVariant(models.Model):
     def __str__(self):
 
         return f"{self.product.name} - {self.variant_name}"
+
+    def save(
+        self,
+        *args,
+        **kwargs,
+    ):
+
+        if self.stock < 1:
+
+            self.is_active = False
+
+        super().save(
+            *args,
+            **kwargs,
+        )
+
+        sync_product_active_if_no_sellable_variants(
+            self.product_id,
+        )
