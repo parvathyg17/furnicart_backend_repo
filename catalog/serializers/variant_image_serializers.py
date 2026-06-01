@@ -48,9 +48,7 @@ class VariantImageUploadSerializer(
 
     def validate_image(self, value):
 
-        # ==========================================
-        # FILE SIZE
-        # ==========================================
+        
 
         if value.size > 5 * 1024 * 1024:
 
@@ -58,9 +56,7 @@ class VariantImageUploadSerializer(
                 "Image size must be below 5MB"
             )
 
-        # ==========================================
-        # MIME TYPE VALIDATION
-        # ==========================================
+      
 
         valid_mime_types = [
 
@@ -76,9 +72,7 @@ class VariantImageUploadSerializer(
                 "Only JPG, JPEG, PNG, WEBP allowed"
             )
 
-        # ==========================================
-        # VERIFY REAL IMAGE
-        # ==========================================
+        
 
         try:
 

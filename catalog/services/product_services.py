@@ -6,9 +6,7 @@ from catalog.models import (
 )
 
 
-# =====================================================
-# ADMIN PRODUCT
-# =====================================================
+
 
 def get_admin_product_by_id(product_id):
 
@@ -34,9 +32,7 @@ def get_admin_product_by_id(product_id):
         return None
 
 
-# =====================================================
-# USER PRODUCT
-# =====================================================
+
 
 def get_user_product_by_id(product_id):
 
@@ -77,9 +73,7 @@ def get_user_product_by_id(product_id):
         return None
 
 
-# =====================================================
-# SOFT DELETE
-# =====================================================
+
 
 def soft_delete_product(product):
 
@@ -90,9 +84,7 @@ def soft_delete_product(product):
     return product
 
 
-# =====================================================
-# TOGGLE STATUS
-# =====================================================
+
 
 def toggle_product_status(product):
 
@@ -105,10 +97,7 @@ def toggle_product_status(product):
 
 def validate_product_images(product):
 
-    """
-    Legacy helper: minimum 3 images per active variant.
-    Prefer validate_product_can_activate for full checks.
-    """
+   
 
     active_variants = product.variants.filter(
         is_active=True
@@ -135,13 +124,7 @@ def validate_product_can_activate(
     room_type_ids=None,
 ):
 
-    """
-    Full catalog readiness for an active product.
-
-    description / room_type_ids: when validating a ProductSerializer
-    update before save, pass merged values so room types and
-    description are evaluated against the incoming payload.
-    """
+    
 
     name = (product.name or "").strip()
 
@@ -201,9 +184,7 @@ def validate_product_can_activate(
 
 def validate_variant_fields_and_images(variant):
 
-    """
-    Each active variant must have all fields set and at least 3 images.
-    """
+    
 
     if variant.images.count() < 3:
 

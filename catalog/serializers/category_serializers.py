@@ -65,14 +65,11 @@ class CategorySerializer(
             "is_active",
         ]
 
-    # ==========================================
-    # GLOBAL VALIDATION
-    # ==========================================
+    
 
     def validate(self, attrs):
 
-        # IMAGE REQUIRED ONLY ON CREATE
-
+       
         if (
             not self.instance
             and
@@ -86,9 +83,7 @@ class CategorySerializer(
 
         return attrs
 
-    # ==========================================
-    # VALIDATE NAME
-    # ==========================================
+
 
     def validate_name(self, value):
 
@@ -108,9 +103,7 @@ class CategorySerializer(
 
         return value
 
-    # ==========================================
-    # VALIDATE DESCRIPTION
-    # ==========================================
+   
 
     def validate_description(self, value):
 
@@ -130,17 +123,13 @@ class CategorySerializer(
 
         return value
 
-    # ==========================================
-    # VALIDATE IMAGE
-    # ==========================================
+
 
     def validate_image(self, value):
 
         if value:
 
-            # ==========================================
-            # FILE SIZE
-            # ==========================================
+            
 
             if (
                 value.size >
@@ -151,9 +140,7 @@ class CategorySerializer(
                     "Image size must be below 5MB"
                 )
 
-            # ==========================================
-            # FILE TYPE
-            # ==========================================
+           
 
             valid_types = [
                 "image/jpeg",
@@ -171,9 +158,7 @@ class CategorySerializer(
                     "Only JPEG, PNG and WEBP images are allowed"
                 )
 
-            # ==========================================
-            # VERIFY REAL IMAGE
-            # ==========================================
+           
 
             try:
 
@@ -187,20 +172,16 @@ class CategorySerializer(
                     "Invalid or corrupted image file"
                 )
 
-            # RESET FILE POINTER
+       
 
             value.seek(0)
 
-            # ==========================================
-            # IMAGE DIMENSIONS
-            # ==========================================
 
             image = Image.open(value)
 
             width, height = image.size
 
-            # MIN SIZE
-
+            
             if (
                 width < 300
                 or
@@ -211,8 +192,7 @@ class CategorySerializer(
                     "Image must be at least 300x300 pixels"
                 )
 
-            # MAX SIZE
-
+           
             if (
                 width > 5000
                 or
@@ -223,26 +203,22 @@ class CategorySerializer(
                     "Image dimensions too large"
                 )
 
-            # RESET AGAIN
-
+           
             value.seek(0)
 
         return value
 
-    # ==========================================
-    # VALIDATE PARENT
-    # ==========================================
+    
 
     def validate_parent(self, value):
 
-        # OPTIONAL PARENT
+        
 
         if not value:
 
             return value
 
-        # SELF PARENT CHECK
-
+        
         if (
             self.instance
             and
@@ -253,7 +229,7 @@ class CategorySerializer(
                 "Category cannot be parent of itself"
             )
 
-        # CIRCULAR LOOP CHECK
+        
 
         parent = value
 
@@ -273,9 +249,7 @@ class CategorySerializer(
 
         return value
 
-    # ==========================================
-    # CHILDREN
-    # ==========================================
+  
 
     def get_children(self, obj):
 
@@ -283,8 +257,7 @@ class CategorySerializer(
             "request"
         )
 
-        # ADMIN
-
+       
         if (
             request
             and
@@ -295,7 +268,7 @@ class CategorySerializer(
 
             children = obj.children.all()
 
-        # USER
+        
 
         else:
 
@@ -311,17 +284,13 @@ class CategorySerializer(
 
         return serializer.data
 
-    # ==========================================
-    # CHILDREN COUNT
-    # ==========================================
+    
 
     def get_children_count(self, obj):
 
         return obj.children.count()
 
-    # ==========================================
-    # IMAGE URL
-    # ==========================================
+    
 
     def get_image_url(self, obj):
 

@@ -26,9 +26,7 @@ class VariantImage(models.Model):
         default=0
     )
 
-    # ==========================================
-    # IMAGE METADATA
-    # ==========================================
+  
 
     width = models.PositiveIntegerField(
         null=True,
@@ -68,9 +66,7 @@ class VariantImage(models.Model):
 
     def save(self, *args, **kwargs):
 
-        # ==========================================
-        # REMOVE OLD PRIMARY
-        # ==========================================
+       
 
         if self.is_primary:
 
@@ -85,9 +81,7 @@ class VariantImage(models.Model):
 
         super().save(*args, **kwargs)
 
-        # ==========================================
-        # AUTO SAVE IMAGE DATA
-        # ==========================================
+        
 
         if self.image:
 

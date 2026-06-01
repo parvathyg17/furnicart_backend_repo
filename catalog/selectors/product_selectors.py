@@ -63,9 +63,7 @@ def get_user_filtered_products(params):
             is_featured=True,
         )
 
-    # =========================
-    # SEARCH
-    # =========================
+    
 
     if search:
 
@@ -82,9 +80,7 @@ def get_user_filtered_products(params):
             Q(category__name__icontains=search)
         )
 
-    # =========================
-    # CATEGORY FILTER
-    # =========================
+    
 
     if category:
 
@@ -120,9 +116,7 @@ def get_user_filtered_products(params):
             room_types__is_active=True
         )
 
-    # =========================
-    # BRAND FILTER
-    # =========================
+    
 
     brand_param = (params.get("brand") or "").strip()
 
@@ -133,9 +127,7 @@ def get_user_filtered_products(params):
             variants__is_active=True,
         )
 
-    # =========================
-    # COLOR FILTER
-    # =========================
+    
 
     if color:
 
@@ -144,9 +136,7 @@ def get_user_filtered_products(params):
             variants__is_active=True
         )
 
-    # =========================
-    # MIN PRICE FILTER
-    # =========================
+    
 
     if min_price:
 
@@ -168,9 +158,6 @@ def get_user_filtered_products(params):
 
     products = products.distinct()
 
-    # =========================
-    # SORTING
-    # =========================
 
     if sort == "price_low":
 
@@ -238,9 +225,7 @@ def get_admin_filtered_products(params):
         min_price=Min("variants__price")
     )
 
-    # =========================
-    # SEARCH
-    # =========================
+    
 
     if search:
 
@@ -272,9 +257,7 @@ def get_admin_filtered_products(params):
         )
         
     
-    # =========================
-    # CATEGORY FILTER
-    # =========================
+    
 
     if category:
 
@@ -297,9 +280,7 @@ def get_admin_filtered_products(params):
             products = products.none()
 
 
-    # =========================
-    # ROOM TYPE FILTER
-    # =========================
+    
 
     if room_type:
 
@@ -309,9 +290,7 @@ def get_admin_filtered_products(params):
         )
 
     products = products.distinct()
-    # =========================
-    # SORTING
-    # =========================
+ 
 
     if sort == "price_low":
 

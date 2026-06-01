@@ -29,9 +29,7 @@ class RoomTypeSerializer(
             "updated_at",
         ]
 
-    # ==========================================
-    # NAME VALIDATION
-    # ==========================================
+    
 
     def validate_name(
         self,
@@ -68,9 +66,7 @@ class RoomTypeSerializer(
 
         return value
 
-    # ==========================================
-    # IMAGE VALIDATION
-    # ==========================================
+
 
     def validate_image(
         self,

@@ -223,7 +223,10 @@ def add_to_cart(
     if new_qty > MAX_CART_QTY:
 
         raise ValidationError(
-            f"Maximum {MAX_CART_QTY} units allowed per item.",
+            (
+                f"Cart limit reached: at most {MAX_CART_QTY} units of "
+                "this item per line."
+            ),
         )
 
     item.quantity = new_qty
@@ -300,7 +303,10 @@ def update_cart_item_quantity(
     if quantity > MAX_CART_QTY:
 
         raise ValidationError(
-            f"Maximum {MAX_CART_QTY} units allowed per item.",
+            (
+                f"Cart limit reached: at most {MAX_CART_QTY} units of "
+                "this item per line."
+            ),
         )
 
     item.quantity = quantity

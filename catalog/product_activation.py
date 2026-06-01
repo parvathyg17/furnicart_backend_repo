@@ -1,8 +1,4 @@
-"""
-Keep Product.is_active aligned with whether any variant is sellable.
 
-Used from ProductVariant.save and post_delete so deletes also cascade.
-"""
 
 
 def sync_product_active_if_no_sellable_variants(product_id):

@@ -22,9 +22,6 @@ from catalog.services.product_services import (
     validate_variant_fields_and_images,
 )
 
-# =====================================================
-# VARIANT IMAGE SERIALIZER
-# =====================================================
 
 class VariantImageSerializer(
     serializers.ModelSerializer
@@ -59,9 +56,7 @@ class VariantImageSerializer(
     
 
 
-# =====================================================
-# PRODUCT VARIANT SERIALIZER
-# =====================================================
+
 
 class ProductVariantSerializer(
     serializers.ModelSerializer
@@ -142,7 +137,7 @@ class ProductVariantSerializer(
             sku=cleaned
         )
 
-        # EXCLUDE CURRENT VARIANT DURING UPDATE
+        
 
         if self.instance:
 
@@ -195,10 +190,7 @@ class ProductVariantSerializer(
         value,
     ):
 
-        """
-        Allow blank / null on write; completeness for active
-        variants is enforced in validate() and on activation.
-        """
+       
 
         if value is None:
 
@@ -384,13 +376,12 @@ class ProductSerializer(
         read_only=True
     )
 
+    
     room_type_ids = serializers.PrimaryKeyRelatedField(
-        queryset=RoomType.objects.filter(
-            is_active=True
-        ),
+        queryset=RoomType.objects.all(),
         many=True,
         write_only=True,
-        required=False
+        required=False,
     )
 
     thumbnail = serializers.SerializerMethodField()
@@ -451,9 +442,7 @@ class ProductSerializer(
 
         primary_image = None
 
-        # =========================
-        # USE PREFETCHED DATA
-        # =========================
+       
 
         for variant in obj.variants.all():
 
@@ -468,7 +457,7 @@ class ProductSerializer(
                 )
             )
 
-            # FIND PRIMARY IMAGE
+           
 
             for image in images:
 
@@ -477,7 +466,7 @@ class ProductSerializer(
                     primary_image = image
                     break
 
-            # FALLBACK FIRST IMAGE
+            
 
             if not primary_image and images:
 

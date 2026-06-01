@@ -30,9 +30,7 @@ def soft_delete_category(category):
 
 def restore_category(category):
 
-    # ==========================================
-    # PREVENT RESTORE IF PARENT DELETED
-    # ==========================================
+    
 
     if (
         category.parent
