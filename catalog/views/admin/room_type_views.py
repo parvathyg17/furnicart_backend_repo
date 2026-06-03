@@ -36,9 +36,7 @@ from catalog.services.room_type_services import (
 logger = logging.getLogger(__name__)
 
 
-# ==========================================
-# ROOM TYPE LIST CREATE
-# ==========================================
+
 
 class RoomTypeListCreateView(APIView):
 
@@ -52,9 +50,7 @@ class RoomTypeListCreateView(APIView):
         FormParser
     ]
 
-    # ==========================================
-    # GET ROOM TYPES
-    # ==========================================
+  
 
     def get(self, request):
 
@@ -89,9 +85,7 @@ class RoomTypeListCreateView(APIView):
             serializer.data
         )
 
-    # ==========================================
-    # CREATE ROOM TYPE
-    # ==========================================
+ 
 
     def post(self, request):
 
@@ -125,9 +119,6 @@ class RoomTypeListCreateView(APIView):
         )
 
 
-# ==========================================
-# ROOM TYPE DETAIL
-# ==========================================
 
 class RoomTypeDetailView(APIView):
 
@@ -141,9 +132,7 @@ class RoomTypeDetailView(APIView):
         FormParser
     ]
 
-    # ==========================================
-    # GET SINGLE ROOM TYPE
-    # ==========================================
+
 
     def get(
         self,
@@ -193,9 +182,7 @@ class RoomTypeDetailView(APIView):
             }
         )
 
-    # ==========================================
-    # UPDATE ROOM TYPE
-    # ==========================================
+ 
 
     def put(
         self,
@@ -257,9 +244,7 @@ class RoomTypeDetailView(APIView):
         )
 
 
-# ==========================================
-# SOFT DELETE ROOM TYPE
-# ==========================================
+
 
 class RoomTypeSoftDeleteView(APIView):
 
@@ -317,9 +302,7 @@ class RoomTypeSoftDeleteView(APIView):
         )
 
 
-# ==========================================
-# RESTORE ROOM TYPE
-# ==========================================
+
 
 class RoomTypeRestoreView(APIView):
 

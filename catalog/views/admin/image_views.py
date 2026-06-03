@@ -43,9 +43,7 @@ class VariantImageUploadView(APIView):
             "images"
         )
 
-        # ==========================================
-        # VALIDATE VARIANT
-        # ==========================================
+    
 
         try:
 
@@ -63,9 +61,7 @@ class VariantImageUploadView(APIView):
                 status=404
             )
 
-        # ==========================================
-        # VALIDATE MINIMUM IMAGES
-        # ==========================================
+     
 
         existing_count = (
             variant.images.count()
@@ -74,9 +70,7 @@ class VariantImageUploadView(APIView):
 
         uploaded_images = []
 
-        # ==========================================
-        # MULTIPLE UPLOAD LOOP
-        # ==========================================
+      
 
         for index, file in enumerate(files):
 
@@ -101,9 +95,7 @@ class VariantImageUploadView(APIView):
 
             image = serializer.save()
 
-            # ==========================================
-            # AUTO PRIMARY
-            # ==========================================
+          
 
             if variant.images.count() == 1:
 

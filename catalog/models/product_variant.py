@@ -94,10 +94,6 @@ class ProductVariant(models.Model):
         **kwargs,
     ):
 
-        if self.stock < 1:
-
-            self.is_active = False
-
         super().save(
             *args,
             **kwargs,

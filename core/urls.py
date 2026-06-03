@@ -82,6 +82,13 @@ urlpatterns = [
             "wishlist.urls"
         )
     ),
+
+    path(
+        "api/orders/",
+        include(
+            "orders.urls"
+        )
+    ),
   
     
 
