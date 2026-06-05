@@ -1,5 +1,3 @@
-from decimal import Decimal
-
 from rest_framework import serializers
 
 from orders.models import Order, OrderLine
@@ -25,6 +23,28 @@ class OrderLineSerializer(
             "line_total",
             "image_url",
             "status",
+            "cancellation_reason",
+        ]
+
+
+class OrderLineCardSerializer(
+    serializers.ModelSerializer,
+):
+
+    class Meta:
+
+        model = OrderLine
+
+        fields = [
+            "id",
+            "product_name",
+            "variant_name",
+            "image_url",
+            "quantity",
+            "unit_price",
+            "line_total",
+            "status",
+            "cancellation_reason",
         ]
 
 
@@ -36,26 +56,52 @@ class OrderCreateSerializer(
         min_value=1,
     )
 
-    tax_total = serializers.DecimalField(
-        max_digits=12,
-        decimal_places=2,
-        required=False,
-        default=Decimal("0.00"),
+    payment_method = serializers.ChoiceField(
+        choices=[
+            "cod",
+        ],
+        default="cod",
     )
 
-    discount_total = serializers.DecimalField(
-        max_digits=12,
-        decimal_places=2,
+
+class OrderCancelRequestSerializer(
+    serializers.Serializer,
+):
+
+    reason = serializers.CharField(
         required=False,
-        default=Decimal("0.00"),
+        allow_blank=True,
+        max_length=500,
+        default="",
     )
 
-    shipping_total = serializers.DecimalField(
-        max_digits=12,
-        decimal_places=2,
-        required=False,
-        default=Decimal("0.00"),
+
+class OrderListSerializer(
+    serializers.ModelSerializer,
+):
+
+    line_count = serializers.IntegerField(
+        read_only=True,
     )
+
+    lines = OrderLineCardSerializer(
+        many=True,
+        read_only=True,
+    )
+
+    class Meta:
+
+        model = Order
+
+        fields = [
+            "id",
+            "order_number",
+            "status",
+            "placed_at",
+            "grand_total",
+            "line_count",
+            "lines",
+        ]
 
 
 class OrderDetailSerializer(
@@ -94,5 +140,7 @@ class OrderDetailSerializer(
             "shipping_state",
             "shipping_pincode",
             "placed_at",
+            "cancelled_at",
+            "cancellation_reason",
             "lines",
         ]

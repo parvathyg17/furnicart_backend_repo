@@ -181,6 +181,16 @@ class Order(models.Model):
         db_index=True,
     )
 
+    cancelled_at = models.DateTimeField(
+        null=True,
+        blank=True,
+    )
+
+    cancellation_reason = models.TextField(
+        blank=True,
+        default="",
+    )
+
     updated_at = models.DateTimeField(
         auto_now=True,
     )
@@ -258,6 +268,11 @@ class OrderLine(models.Model):
         max_length=16,
         choices=LineStatus.choices,
         default=LineStatus.ACTIVE,
+    )
+
+    cancellation_reason = models.TextField(
+        blank=True,
+        default="",
     )
 
     class Meta:

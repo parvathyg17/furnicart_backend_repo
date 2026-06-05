@@ -14,6 +14,11 @@ from cart.serializers import (
     CartItemQuantitySerializer,
 )
 
+from orders.services.checkout_pricing import (
+    compute_checkout_totals,
+    totals_as_response_dict,
+)
+
 from .services import (
     add_to_cart,
     get_cart_payload,
@@ -253,4 +258,34 @@ class CartCheckoutValidateView(APIView):
         return Response(
             result,
             status=status.HTTP_400_BAD_REQUEST,
+        )
+
+
+class CartCheckoutPreviewView(APIView):
+
+    permission_classes = [IsAuthenticated]
+
+    def get(
+        self,
+        request,
+    ):
+
+        _, _, subtotal, item_count, can_checkout = get_cart_payload(
+            request.user,
+        )
+
+        totals = compute_checkout_totals(
+            subtotal,
+        )
+
+        body = totals_as_response_dict(
+            totals,
+        )
+
+        body["can_checkout"] = can_checkout
+
+        body["item_count"] = item_count
+
+        return Response(
+            body,
         )

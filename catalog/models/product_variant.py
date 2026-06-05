@@ -2,9 +2,6 @@ from django.db import models
 from django.db.models import Q
 
 from catalog.models.product import Product
-from catalog.product_activation import (
-    sync_product_active_if_no_sellable_variants,
-)
 
 class ProductVariant(models.Model):
 
@@ -97,8 +94,4 @@ class ProductVariant(models.Model):
         super().save(
             *args,
             **kwargs,
-        )
-
-        sync_product_active_if_no_sellable_variants(
-            self.product_id,
         )

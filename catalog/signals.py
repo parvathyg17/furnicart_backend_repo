@@ -4,7 +4,7 @@ from django.dispatch import receiver
 from catalog.models import VariantImage
 from catalog.models.product_variant import ProductVariant
 from catalog.product_activation import (
-    sync_product_active_if_no_sellable_variants,
+    sync_product_active_if_no_variants_remain,
 )
 
 
@@ -23,12 +23,12 @@ def delete_variant_image_file(
 
 
 @receiver(post_delete, sender=ProductVariant)
-def deactivate_product_when_last_sellable_variant_removed(
+def deactivate_product_when_last_variant_removed(
     sender,
     instance,
     **kwargs,
 ):
 
-    sync_product_active_if_no_sellable_variants(
+    sync_product_active_if_no_variants_remain(
         instance.product_id,
     )

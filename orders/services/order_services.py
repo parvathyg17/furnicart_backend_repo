@@ -1,7 +1,7 @@
 from decimal import Decimal
 
 from django.db import IntegrityError, transaction
-from django.db.models import Prefetch
+from django.db.models import Prefetch, Sum
 from django.utils import timezone
 
 from rest_framework.exceptions import ValidationError
@@ -17,6 +17,7 @@ from cart.services import (
 )
 
 from orders.models import DailyOrderCounter, Order, OrderLine
+from orders.services.checkout_pricing import compute_checkout_totals
 
 
 def _allocate_order_number():
@@ -74,39 +75,25 @@ def create_order_from_cart(
     user,
     address_id,
     *,
-    tax_total=None,
-    discount_total=None,
-    shipping_total=None,
+    payment_method=None,
 ):
 
     """
     Validate cart and address, reserve stock, persist order + lines,
     and clear the cart. All-or-nothing inside one database transaction.
+
+    Tax, shipping, and discount are computed on the server only.
     """
 
-    if tax_total is None:
+    if payment_method is None:
 
-        tax_total = Decimal("0.00")
+        payment_method = Order.PaymentMethod.COD
 
-    if discount_total is None:
+    if payment_method != Order.PaymentMethod.COD:
 
-        discount_total = Decimal("0.00")
-
-    if shipping_total is None:
-
-        shipping_total = Decimal("0.00")
-
-    for label, value in (
-        ("tax_total", tax_total),
-        ("discount_total", discount_total),
-        ("shipping_total", shipping_total),
-    ):
-
-        if value < 0:
-
-            raise ValidationError(
-                f"{label} cannot be negative.",
-            )
+        raise ValidationError(
+            "Only cash on delivery is available at this time.",
+        )
 
     validation = validate_cart_for_checkout(
         user,
@@ -238,24 +225,17 @@ def create_order_from_cart(
             },
         )
 
-    if subtotal + tax_total + shipping_total < discount_total:
-
-        raise ValidationError(
-            "Discount cannot exceed subtotal plus tax and shipping.",
-        )
-
-    grand_total = (
-        subtotal
-        + tax_total
-        + shipping_total
-        - discount_total
-    ).quantize(
-        Decimal("0.01"),
+    pricing = compute_checkout_totals(
+        subtotal,
     )
 
-    if grand_total < Decimal("0.00"):
+    tax_total = pricing["tax_total"]
 
-        grand_total = Decimal("0.00")
+    discount_total = pricing["discount_total"]
+
+    shipping_total = pricing["shipping_total"]
+
+    grand_total = pricing["grand_total"]
 
     order_number = _allocate_order_number()
 
@@ -263,7 +243,7 @@ def create_order_from_cart(
         user=user,
         order_number=order_number,
         status=Order.Status.PENDING,
-        payment_method=Order.PaymentMethod.COD,
+        payment_method=payment_method,
         payment_status=Order.PaymentStatus.PENDING,
         subtotal=subtotal.quantize(
             Decimal("0.01"),
@@ -342,3 +322,317 @@ def get_order_for_user(
             order_number=order_number,
         )
     )
+
+
+def _normalize_cancel_reason(
+    reason,
+):
+
+    if reason is None:
+
+        return ""
+
+    return str(
+        reason,
+    ).strip()[
+        :500
+    ]
+
+
+def _set_order_financials_zero(
+    order,
+):
+
+    z = Decimal(
+        "0.00",
+    )
+
+    order.subtotal = z
+
+    order.tax_total = z
+
+    order.discount_total = z
+
+    order.shipping_total = z
+
+    order.grand_total = z
+
+
+def _recalculate_order_financials_from_active_lines(
+    order,
+):
+
+    agg = order.lines.filter(
+        status=OrderLine.LineStatus.ACTIVE,
+    ).aggregate(
+        s=Sum(
+            "line_total",
+        ),
+    )
+
+    raw = agg.get(
+        "s",
+    )
+
+    subtotal = (
+        Decimal(
+            str(
+                raw or "0.00",
+            ),
+        ).quantize(
+            Decimal(
+                "0.01",
+            ),
+        )
+    )
+
+    pricing = compute_checkout_totals(
+        subtotal,
+    )
+
+    order.subtotal = subtotal
+
+    order.tax_total = pricing[
+        "tax_total"
+    ].quantize(
+        Decimal(
+            "0.01",
+        ),
+    )
+
+    order.discount_total = pricing[
+        "discount_total"
+    ].quantize(
+        Decimal(
+            "0.01",
+        ),
+    )
+
+    order.shipping_total = pricing[
+        "shipping_total"
+    ].quantize(
+        Decimal(
+            "0.01",
+        ),
+    )
+
+    order.grand_total = pricing[
+        "grand_total"
+    ]
+
+
+@transaction.atomic
+def cancel_entire_order_for_user(
+    user,
+    order_number,
+    *,
+    reason=None,
+):
+
+    reason_clean = _normalize_cancel_reason(
+        reason,
+    )
+
+    order = (
+        Order.objects.select_for_update().prefetch_related(
+            "lines",
+        ).get(
+            user=user,
+            order_number=order_number,
+        )
+    )
+
+    if order.status == Order.Status.CANCELLED:
+
+        raise ValidationError(
+            "This order is already cancelled.",
+        )
+
+    if order.status != Order.Status.PENDING:
+
+        raise ValidationError(
+            "Only pending orders can be cancelled.",
+        )
+
+    for line in order.lines.select_related(
+        "variant",
+    ).all():
+
+        if line.status != OrderLine.LineStatus.ACTIVE:
+
+            continue
+
+        variant = (
+            ProductVariant.objects.select_for_update().get(
+                pk=line.variant_id,
+            )
+        )
+
+        variant.stock += line.quantity
+
+        variant.save(
+            update_fields=[
+                "stock",
+                "updated_at",
+            ],
+        )
+
+        line.status = OrderLine.LineStatus.CANCELLED
+
+        line.save(
+            update_fields=[
+                "status",
+            ],
+        )
+
+    order.status = Order.Status.CANCELLED
+
+    order.cancelled_at = timezone.now()
+
+    order.cancellation_reason = reason_clean
+
+    _set_order_financials_zero(
+        order,
+    )
+
+    order.save(
+        update_fields=[
+            "status",
+            "cancelled_at",
+            "cancellation_reason",
+            "subtotal",
+            "tax_total",
+            "discount_total",
+            "shipping_total",
+            "grand_total",
+            "updated_at",
+        ],
+    )
+
+    return order
+
+
+@transaction.atomic
+def cancel_order_line_for_user(
+    user,
+    order_number,
+    line_id,
+    *,
+    reason=None,
+):
+
+    reason_clean = _normalize_cancel_reason(
+        reason,
+    )
+
+    order = Order.objects.select_for_update().get(
+        user=user,
+        order_number=order_number,
+    )
+
+    if order.status == Order.Status.CANCELLED:
+
+        raise ValidationError(
+            "This order is already cancelled.",
+        )
+
+    if order.status != Order.Status.PENDING:
+
+        raise ValidationError(
+            "Only pending orders can be changed.",
+        )
+
+    line = (
+        OrderLine.objects.select_related(
+            "variant",
+        ).select_for_update().get(
+            pk=line_id,
+            order=order,
+        )
+    )
+
+    if line.status != OrderLine.LineStatus.ACTIVE:
+
+        raise ValidationError(
+            "This line is already cancelled.",
+        )
+
+    variant = ProductVariant.objects.select_for_update().get(
+        pk=line.variant_id,
+    )
+
+    variant.stock += line.quantity
+
+    variant.save(
+        update_fields=[
+            "stock",
+            "updated_at",
+        ],
+    )
+
+    line.status = OrderLine.LineStatus.CANCELLED
+
+    update_line = [
+        "status",
+    ]
+
+    if reason_clean:
+
+        line.cancellation_reason = reason_clean
+
+        update_line.append(
+            "cancellation_reason",
+        )
+
+    line.save(
+        update_fields=update_line,
+    )
+
+    remaining_active = order.lines.filter(
+        status=OrderLine.LineStatus.ACTIVE,
+    ).count()
+
+    if remaining_active == 0:
+
+        order.status = Order.Status.CANCELLED
+
+        order.cancelled_at = timezone.now()
+
+        order.cancellation_reason = reason_clean
+
+        _set_order_financials_zero(
+            order,
+        )
+
+        order.save(
+            update_fields=[
+                "status",
+                "cancelled_at",
+                "cancellation_reason",
+                "subtotal",
+                "tax_total",
+                "discount_total",
+                "shipping_total",
+                "grand_total",
+                "updated_at",
+            ],
+        )
+
+    else:
+
+        _recalculate_order_financials_from_active_lines(
+            order,
+        )
+
+        order.save(
+            update_fields=[
+                "subtotal",
+                "tax_total",
+                "discount_total",
+                "shipping_total",
+                "grand_total",
+                "updated_at",
+            ],
+        )
+
+    return order

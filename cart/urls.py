@@ -4,6 +4,7 @@ from cart.views import (
     CartView,
     CartItemDetailView,
     CartCheckoutValidateView,
+    CartCheckoutPreviewView,
 )
 
 urlpatterns = [
@@ -16,6 +17,11 @@ urlpatterns = [
     path(
         "validate-checkout/",
         CartCheckoutValidateView.as_view(),
+    ),
+
+    path(
+        "checkout-preview/",
+        CartCheckoutPreviewView.as_view(),
     ),
 
     path(
