@@ -97,7 +97,7 @@ WSGI_APPLICATION = "core.wsgi.application"
 DATABASES = {
     'default': {
         'ENGINE': 'django.db.backends.postgresql',
-        'NAME': 'furnicarts_new_db',
+        'NAME': 'furnicart_db',
         'USER': 'postgres',
         'PASSWORD': os.getenv("DB_PASSWORD"),
         'HOST': 'localhost',
