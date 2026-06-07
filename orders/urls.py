@@ -6,12 +6,22 @@ from orders.views import (
     OrderDetailView,
     OrderInvoicePdfView,
     OrderLineCancelView,
+    OrderLineReturnCreateView,
+    UserPurchasesListView,
 )
 
 urlpatterns = [
     path(
+        "purchases/",
+        UserPurchasesListView.as_view(),
+    ),
+    path(
         "",
         OrderCreateView.as_view(),
+    ),
+    path(
+        "<str:order_number>/lines/<int:line_id>/return/",
+        OrderLineReturnCreateView.as_view(),
     ),
     path(
         "<str:order_number>/lines/<int:line_id>/cancel/",

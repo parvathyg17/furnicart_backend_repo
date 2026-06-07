@@ -28,6 +28,9 @@ class Order(models.Model):
         OUT_FOR_DELIVERY = "out_for_delivery", "Out for delivery"
         DELIVERED = "delivered", "Delivered"
         CANCELLED = "cancelled", "Cancelled"
+        PARTIALLY_CANCELLED = "partially_cancelled", "Partially cancelled"
+        PARTIALLY_SHIPPED = "partially_shipped", "Partially shipped"
+        PARTIALLY_DELIVERED = "partially_delivered", "Partially delivered"
 
     class PaymentMethod(models.TextChoices):
        
@@ -210,6 +213,13 @@ class OrderLine(models.Model):
         ACTIVE = "active", "Active"
         CANCELLED = "cancelled", "Cancelled"
 
+    class FulfillmentStatus(models.TextChoices):
+        PENDING = "pending", "Pending"
+        SHIPPED = "shipped", "Shipped"
+        OUT_FOR_DELIVERY = "out_for_delivery", "Out for delivery"
+        DELIVERED = "delivered", "Delivered"
+        RETURNED = "returned", "Returned"
+
     order = models.ForeignKey(
         Order,
         on_delete=models.CASCADE,
@@ -270,6 +280,13 @@ class OrderLine(models.Model):
         default=LineStatus.ACTIVE,
     )
 
+    fulfillment_status = models.CharField(
+        max_length=32,
+        choices=FulfillmentStatus.choices,
+        default=FulfillmentStatus.PENDING,
+        db_index=True,
+    )
+
     cancellation_reason = models.TextField(
         blank=True,
         default="",
@@ -282,3 +299,56 @@ class OrderLine(models.Model):
     def __str__(self):
 
         return f"{self.order.order_number} — {self.sku} x{self.quantity}"
+
+
+class ReturnRequest(models.Model):
+
+    class Status(models.TextChoices):
+        PENDING = "pending", "Pending"
+        APPROVED = "approved", "Approved"
+        REJECTED = "rejected", "Rejected"
+        COMPLETED = "completed", "Completed"
+
+    order_line = models.ForeignKey(
+        OrderLine,
+        on_delete=models.CASCADE,
+        related_name="return_requests",
+    )
+
+    user = models.ForeignKey(
+        settings.AUTH_USER_MODEL,
+        on_delete=models.CASCADE,
+        related_name="return_requests",
+    )
+
+    reason = models.TextField()
+
+    admin_note = models.TextField(
+        blank=True,
+        default="",
+    )
+
+    status = models.CharField(
+        max_length=20,
+        choices=Status.choices,
+        default=Status.PENDING,
+        db_index=True,
+    )
+
+    created_at = models.DateTimeField(
+        auto_now_add=True,
+        db_index=True,
+    )
+
+    resolved_at = models.DateTimeField(
+        null=True,
+        blank=True,
+    )
+
+    class Meta:
+
+        ordering = ["-created_at"]
+
+    def __str__(self):
+
+        return f"Return {self.pk} — {self.order_line_id} ({self.status})"

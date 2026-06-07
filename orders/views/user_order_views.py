@@ -16,6 +16,8 @@ from orders.serializers import (
     OrderCreateSerializer,
     OrderDetailSerializer,
     OrderListSerializer,
+    PurchaseLineSerializer,
+    ReturnCreateSerializer,
 )
 from orders.services.invoice_pdf import build_order_invoice_pdf
 from orders.services.order_services import (
@@ -24,6 +26,7 @@ from orders.services.order_services import (
     create_order_from_cart,
     get_order_for_user,
 )
+from orders.services.return_services import create_return_request_for_user
 
 
 def _validation_error_response(exc):
@@ -352,3 +355,172 @@ class OrderInvoicePdfView(APIView):
         )
 
         return response
+
+
+class UserPurchasesListView(APIView):
+
+    permission_classes = [IsAuthenticated]
+
+    def get(self, request):
+
+        qs = (
+            OrderLine.objects.filter(
+                order__user=request.user,
+            )
+            .select_related(
+                "order",
+                "variant",
+            )
+            .order_by(
+                "-order__placed_at",
+                "-id",
+            )
+        )
+
+        search = (
+            request.query_params.get(
+                "search",
+                "",
+            )
+            or ""
+        ).strip()
+
+        if search:
+
+            qs = qs.filter(
+                Q(
+                    order__order_number__icontains=search,
+                )
+                | Q(
+                    product_name__icontains=search,
+                )
+                | Q(
+                    variant_name__icontains=search,
+                ),
+            )
+
+        fs = (
+            request.query_params.get(
+                "fulfillment_status",
+                "",
+            )
+            or ""
+        ).strip()
+
+        if fs:
+
+            valid_fs = {
+                c
+                for c, _ in OrderLine.FulfillmentStatus.choices
+            }
+
+            if fs in valid_fs:
+
+                qs = qs.filter(
+                    fulfillment_status=fs,
+                )
+
+        line_st = (
+            request.query_params.get(
+                "line_status",
+                "",
+            )
+            or ""
+        ).strip()
+
+        if line_st:
+
+            valid_ls = {
+                c
+                for c, _ in OrderLine.LineStatus.choices
+            }
+
+            if line_st in valid_ls:
+
+                qs = qs.filter(
+                    status=line_st,
+                )
+
+        paginator = CustomPagination()
+
+        page = paginator.paginate_queryset(
+            qs,
+            request,
+            view=self,
+        )
+
+        serializer = PurchaseLineSerializer(
+            page,
+            many=True,
+        )
+
+        if page is not None:
+
+            return paginator.get_paginated_response(
+                serializer.data,
+            )
+
+        return Response(
+            serializer.data,
+        )
+
+
+class OrderLineReturnCreateView(APIView):
+
+    permission_classes = [IsAuthenticated]
+
+    def post(
+        self,
+        request,
+        order_number,
+        line_id,
+    ):
+
+        serializer = ReturnCreateSerializer(
+            data=request.data,
+        )
+
+        serializer.is_valid(
+            raise_exception=True,
+        )
+
+        try:
+
+            create_return_request_for_user(
+                request.user,
+                order_number,
+                line_id,
+                reason=serializer.validated_data[
+                    "reason"
+                ],
+            )
+
+        except Order.DoesNotExist:
+
+            raise NotFound(
+                detail="Order not found.",
+            )
+
+        except OrderLine.DoesNotExist:
+
+            raise NotFound(
+                detail="Order line not found.",
+            )
+
+        except ValidationError as exc:
+
+            return _validation_error_response(
+                exc,
+            )
+
+        order = get_order_for_user(
+            request.user,
+            order_number,
+        )
+
+        return Response(
+            OrderDetailSerializer(
+                order,
+            ).data,
+            status=status.HTTP_201_CREATED,
+        )

@@ -18,6 +18,7 @@ from cart.services import (
 
 from orders.models import DailyOrderCounter, Order, OrderLine
 from orders.services.checkout_pricing import compute_checkout_totals
+from orders.services.order_status import persist_derived_order_status
 
 
 def _allocate_order_number():
@@ -300,6 +301,7 @@ def create_order_from_cart(
             image_url=_primary_variant_image_url(
                 variant,
             )[:512],
+            fulfillment_status=OrderLine.FulfillmentStatus.PENDING,
         )
 
     CartItem.objects.filter(
@@ -316,7 +318,14 @@ def get_order_for_user(
 
     return (
         Order.objects.prefetch_related(
-            "lines",
+            Prefetch(
+                "lines",
+                queryset=OrderLine.objects.select_related(
+                    "variant",
+                ).order_by(
+                    "id",
+                ),
+            ),
         ).get(
             user=user,
             order_number=order_number,
@@ -448,19 +457,34 @@ def cancel_entire_order_for_user(
             "This order is already cancelled.",
         )
 
-    if order.status != Order.Status.PENDING:
+    lines = list(
+        order.lines.select_related(
+            "variant",
+        ).all(),
+    )
+
+    active = [
+        ln
+        for ln in lines
+        if ln.status == OrderLine.LineStatus.ACTIVE
+    ]
+
+    if not active:
 
         raise ValidationError(
-            "Only pending orders can be cancelled.",
+            "This order has no active items to cancel.",
         )
 
-    for line in order.lines.select_related(
-        "variant",
-    ).all():
+    for ln in active:
 
-        if line.status != OrderLine.LineStatus.ACTIVE:
+        if ln.fulfillment_status != OrderLine.FulfillmentStatus.PENDING:
 
-            continue
+            raise ValidationError(
+                "The order can no longer be cancelled because one or more "
+                "items have already shipped.",
+            )
+
+    for line in active:
 
         variant = (
             ProductVariant.objects.select_for_update().get(
@@ -485,8 +509,6 @@ def cancel_entire_order_for_user(
             ],
         )
 
-    order.status = Order.Status.CANCELLED
-
     order.cancelled_at = timezone.now()
 
     order.cancellation_reason = reason_clean
@@ -497,7 +519,6 @@ def cancel_entire_order_for_user(
 
     order.save(
         update_fields=[
-            "status",
             "cancelled_at",
             "cancellation_reason",
             "subtotal",
@@ -508,6 +529,12 @@ def cancel_entire_order_for_user(
             "updated_at",
         ],
     )
+
+    persist_derived_order_status(
+        order.id,
+    )
+
+    order.refresh_from_db()
 
     return order
 
@@ -536,12 +563,6 @@ def cancel_order_line_for_user(
             "This order is already cancelled.",
         )
 
-    if order.status != Order.Status.PENDING:
-
-        raise ValidationError(
-            "Only pending orders can be changed.",
-        )
-
     line = (
         OrderLine.objects.select_related(
             "variant",
@@ -555,6 +576,13 @@ def cancel_order_line_for_user(
 
         raise ValidationError(
             "This line is already cancelled.",
+        )
+
+    if line.fulfillment_status != OrderLine.FulfillmentStatus.PENDING:
+
+        raise ValidationError(
+            "This line can no longer be cancelled because it has already "
+            "entered fulfillment.",
         )
 
     variant = ProductVariant.objects.select_for_update().get(
@@ -594,8 +622,6 @@ def cancel_order_line_for_user(
 
     if remaining_active == 0:
 
-        order.status = Order.Status.CANCELLED
-
         order.cancelled_at = timezone.now()
 
         order.cancellation_reason = reason_clean
@@ -606,7 +632,6 @@ def cancel_order_line_for_user(
 
         order.save(
             update_fields=[
-                "status",
                 "cancelled_at",
                 "cancellation_reason",
                 "subtotal",
@@ -634,5 +659,11 @@ def cancel_order_line_for_user(
                 "updated_at",
             ],
         )
+
+    persist_derived_order_status(
+        order.id,
+    )
+
+    order.refresh_from_db()
 
     return order
