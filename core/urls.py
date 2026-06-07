@@ -76,6 +76,13 @@ urlpatterns = [
     ),
 
     path(
+        "api/admin/inventory/",
+        include(
+            "catalog.urls.inventory_urls",
+        ),
+    ),
+
+    path(
         "api/cart/",
         include(
             "cart.urls"

@@ -28,6 +28,11 @@ class CartItemSerializer(
         read_only=True,
     )
 
+    product_id = serializers.IntegerField(
+        source="variant.product_id",
+        read_only=True,
+    )
+
     line_subtotal = serializers.SerializerMethodField()
 
     max_quantity = serializers.SerializerMethodField()
@@ -40,6 +45,7 @@ class CartItemSerializer(
 
         fields = [
             "id",
+            "product_id",
             "product_name",
             "variant",
             "quantity",
@@ -51,6 +57,7 @@ class CartItemSerializer(
 
         read_only_fields = [
             "id",
+            "product_id",
             "product_name",
             "variant",
             "line_subtotal",

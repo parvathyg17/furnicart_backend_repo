@@ -667,3 +667,115 @@ def cancel_order_line_for_user(
     order.refresh_from_db()
 
     return order
+
+
+@transaction.atomic
+def cancel_entire_order_for_admin(
+    order_number,
+    *,
+    reason=None,
+):
+
+    """
+    Cancel every active line on an order and restore stock.
+    Same rules as customer cancel: only lines still in ``pending`` fulfillment.
+    """
+
+    reason_clean = _normalize_cancel_reason(
+        reason,
+    )
+
+    order = (
+        Order.objects.select_for_update().prefetch_related(
+            "lines",
+        ).get(
+            order_number=order_number,
+        )
+    )
+
+    if order.status == Order.Status.CANCELLED:
+
+        raise ValidationError(
+            "This order is already cancelled.",
+        )
+
+    lines = list(
+        order.lines.select_related(
+            "variant",
+        ).all(),
+    )
+
+    active = [
+        ln
+        for ln in lines
+        if ln.status == OrderLine.LineStatus.ACTIVE
+    ]
+
+    if not active:
+
+        raise ValidationError(
+            "This order has no active items to cancel.",
+        )
+
+    for ln in active:
+
+        if ln.fulfillment_status != OrderLine.FulfillmentStatus.PENDING:
+
+            raise ValidationError(
+                "The order can no longer be cancelled because one or more "
+                "items have already shipped.",
+            )
+
+    for line in active:
+
+        variant = (
+            ProductVariant.objects.select_for_update().get(
+                pk=line.variant_id,
+            )
+        )
+
+        variant.stock += line.quantity
+
+        variant.save(
+            update_fields=[
+                "stock",
+                "updated_at",
+            ],
+        )
+
+        line.status = OrderLine.LineStatus.CANCELLED
+
+        line.save(
+            update_fields=[
+                "status",
+            ],
+        )
+
+    order.cancelled_at = timezone.now()
+
+    order.cancellation_reason = reason_clean
+
+    _set_order_financials_zero(
+        order,
+    )
+
+    order.save(
+        update_fields=[
+            "cancelled_at",
+            "cancellation_reason",
+            "subtotal",
+            "tax_total",
+            "discount_total",
+            "shipping_total",
+            "grand_total",
+            "updated_at",
+        ],
+    )
+
+    persist_derived_order_status(
+        order.id,
+    )
+
+    order.refresh_from_db()
+
+    return order

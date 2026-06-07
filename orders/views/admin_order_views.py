@@ -16,8 +16,10 @@ from orders.serializers import (
     AdminOrderListSerializer,
     AdminReturnListSerializer,
     AdminReturnStatusSerializer,
+    OrderCancelRequestSerializer,
 )
 from orders.services.admin_order_services import admin_set_order_line_fulfillment
+from orders.services.order_services import cancel_entire_order_for_admin
 from orders.services.return_services import admin_set_return_request_status
 
 
@@ -92,6 +94,25 @@ class AdminOrderListView(APIView):
                     status=status_param,
                 )
 
+        ordering_param = (
+            request.query_params.get(
+                "ordering",
+                "",
+            )
+            or ""
+        ).strip()
+
+        allowed_ordering = {
+            "-placed_at",
+            "placed_at",
+            "-grand_total",
+            "grand_total",
+        }
+
+        if ordering_param not in allowed_ordering:
+
+            ordering_param = "-placed_at"
+
         queryset = (
             queryset.annotate(
                 line_count=Count(
@@ -117,7 +138,7 @@ class AdminOrderListView(APIView):
                 ),
             )
             .order_by(
-                "-placed_at",
+                ordering_param,
             )
         )
 
@@ -142,6 +163,68 @@ class AdminOrderListView(APIView):
 
         return Response(
             serializer.data,
+        )
+
+
+class AdminOrderCancelView(APIView):
+
+    permission_classes = [
+        IsAuthenticated,
+        IsAdminUserCustom,
+    ]
+
+    def post(
+        self,
+        request,
+        order_number,
+    ):
+
+        ser = OrderCancelRequestSerializer(
+            data=request.data,
+        )
+
+        ser.is_valid(
+            raise_exception=True,
+        )
+
+        try:
+
+            cancel_entire_order_for_admin(
+                order_number,
+                reason=ser.validated_data.get(
+                    "reason",
+                ),
+            )
+
+        except Order.DoesNotExist:
+
+            raise NotFound(
+                detail="Order not found.",
+            )
+
+        except ValidationError as exc:
+
+            return _validation_error_response(
+                exc,
+            )
+
+        order = Order.objects.prefetch_related(
+            Prefetch(
+                "lines",
+                queryset=OrderLine.objects.select_related(
+                    "variant",
+                ).order_by(
+                    "id",
+                ),
+            ),
+        ).get(
+            order_number=order_number,
+        )
+
+        return Response(
+            AdminOrderDetailSerializer(
+                order,
+            ).data,
         )
 
 

@@ -1,6 +1,7 @@
 from django.urls import path
 
 from orders.views.admin_order_views import (
+    AdminOrderCancelView,
     AdminOrderDetailView,
     AdminOrderLineFulfillmentView,
     AdminOrderListView,
@@ -20,6 +21,10 @@ urlpatterns = [
     path(
         "returns/<int:pk>/",
         AdminReturnDetailView.as_view(),
+    ),
+    path(
+        "<str:order_number>/cancel/",
+        AdminOrderCancelView.as_view(),
     ),
     path(
         "<str:order_number>/lines/<int:line_id>/fulfillment/",
