@@ -1,5 +1,7 @@
 from django.urls import include, path
 
+
+
 from .views import AdminDashboardStatsView, AdminLoginView, AdminLogoutView, AdminMeView, BlockUserView, UserListView
 
 urlpatterns = [
@@ -9,6 +11,7 @@ urlpatterns = [
     path('logout/', AdminLogoutView.as_view()),
     path("me/", AdminMeView.as_view()),
     path("dashboard-stats/",AdminDashboardStatsView.as_view()),
+   
    
     
 ]
