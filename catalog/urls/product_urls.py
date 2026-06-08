@@ -1,7 +1,10 @@
 from django.urls import path
 
-from catalog.views.admin.product_views import (
+from catalog.views.admin.product_list_views import (
     ProductListCreateView,
+)
+
+from catalog.views.admin.product_views import (
     ProductDetailView,
     ProductSoftDeleteView,
     ProductToggleStatusView,

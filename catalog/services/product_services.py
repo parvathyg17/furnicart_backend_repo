@@ -34,12 +34,14 @@ def get_admin_product_by_id(product_id):
 
 
 
-def get_user_product_by_id(product_id):
+def _user_product_detail_queryset(
+    **filters,
+):
 
     base = Product.objects.filter(
-        id=product_id,
         is_active=True,
         category__is_active=True,
+        **filters,
     ).filter(
         variants__is_active=True,
     ).distinct()
@@ -65,12 +67,59 @@ def get_user_product_by_id(product_id):
                 ),
             ),
         ).get(
-            pk=product_id,
+            **filters,
         )
 
     except Product.DoesNotExist:
 
         return None
+
+
+def get_user_product_by_id(
+    product_id,
+):
+
+    return _user_product_detail_queryset(
+        pk=product_id,
+    )
+
+
+def get_user_product_by_slug(
+    slug,
+):
+
+    cleaned = (slug or "").strip()
+
+    if not cleaned:
+
+        return None
+
+    return _user_product_detail_queryset(
+        slug=cleaned,
+    )
+
+
+def get_user_product_by_id_or_slug(
+    product_ref,
+):
+
+    ref = str(
+        product_ref,
+    ).strip()
+
+    if not ref:
+
+        return None
+
+    if ref.isdigit():
+
+        return get_user_product_by_id(
+            int(ref),
+        )
+
+    return get_user_product_by_slug(
+        ref,
+    )
 
 
 

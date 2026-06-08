@@ -322,6 +322,7 @@ def get_order_for_user(
                 "lines",
                 queryset=OrderLine.objects.select_related(
                     "variant",
+                    "variant__product",
                 ).order_by(
                     "id",
                 ),

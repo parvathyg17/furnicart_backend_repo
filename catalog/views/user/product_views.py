@@ -9,7 +9,7 @@ from catalog.selectors.product_selectors import (
 )
 
 from catalog.services.product_services import (
-    get_user_product_by_id
+    get_user_product_by_id_or_slug,
 )
 
 from catalog.serializers.product_serializers import (
@@ -52,10 +52,37 @@ class UserProductDetailView(APIView):
 
     permission_classes = []
 
-    def get(self, request, product_id):
+    def get(
+        self,
+        request,
+        product_ref=None,
+        product_id=None,
+    ):
 
-        product = get_user_product_by_id(
-            product_id
+        ref = (
+            product_ref
+            if product_ref is not None
+            else (
+                str(product_id)
+                if product_id is not None
+                else None
+            )
+        )
+
+        if (
+            ref is None
+            or ref == ""
+        ):
+
+            return Response(
+                {
+                    "error": "Product reference required.",
+                },
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+
+        product = get_user_product_by_id_or_slug(
+            ref,
         )
 
         if not product:

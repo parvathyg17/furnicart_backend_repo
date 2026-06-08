@@ -120,7 +120,9 @@ class OrderCreateView(APIView):
             .prefetch_related(
                 Prefetch(
                     "lines",
-                    queryset=OrderLine.objects.order_by(
+                    queryset=OrderLine.objects.select_related(
+                        "variant__product",
+                    ).order_by(
                         "id",
                     ),
                 ),
@@ -370,6 +372,7 @@ class UserPurchasesListView(APIView):
             .select_related(
                 "order",
                 "variant",
+                "variant__product",
             )
             .order_by(
                 "-order__placed_at",

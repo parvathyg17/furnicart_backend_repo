@@ -100,6 +100,11 @@ class OrderLineSerializer(
         read_only=True,
     )
 
+    product_slug = serializers.CharField(
+        source="variant.product.slug",
+        read_only=True,
+    )
+
     open_return = serializers.SerializerMethodField()
 
     has_return_request = serializers.SerializerMethodField()
@@ -114,6 +119,7 @@ class OrderLineSerializer(
             "id",
             "variant_id",
             "product_id",
+            "product_slug",
             "product_name",
             "variant_name",
             "sku",
@@ -146,6 +152,11 @@ class OrderLineCardSerializer(
         read_only=True,
     )
 
+    product_slug = serializers.CharField(
+        source="variant.product.slug",
+        read_only=True,
+    )
+
     open_return = serializers.SerializerMethodField()
 
     has_return_request = serializers.SerializerMethodField()
@@ -160,6 +171,7 @@ class OrderLineCardSerializer(
             "id",
             "variant_id",
             "product_id",
+            "product_slug",
             "product_name",
             "variant_name",
             "image_url",
@@ -317,6 +329,11 @@ class PurchaseLineSerializer(
         read_only=True,
     )
 
+    product_slug = serializers.CharField(
+        source="variant.product.slug",
+        read_only=True,
+    )
+
     open_return = serializers.SerializerMethodField()
 
     has_return_request = serializers.SerializerMethodField()
@@ -335,6 +352,7 @@ class PurchaseLineSerializer(
             "placed_at",
             "variant_id",
             "product_id",
+            "product_slug",
             "product_name",
             "variant_name",
             "sku",
