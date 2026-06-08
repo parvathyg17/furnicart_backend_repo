@@ -5,6 +5,7 @@ from accounts.serializers.auth_serializers import SignupSerializer, LoginSeriali
 from accounts.services.auth_services import user_login_service,create_and_send_otp,verify_otp_service, resend_otp_service,forgot_password_service, reset_password_service
 from core.utils.jwt import get_tokens_for_user
 from accounts.models.users import User
+from accounts.models.profile import UserProfile
 from google.oauth2 import id_token
 from google.auth.transport import requests
 
@@ -413,13 +414,44 @@ class MeView(APIView):
     def get(self, request):
         user = request.user
 
-        return Response({
+        payload = {
             "id": user.id,
             "email": user.email,
             "username": user.username,
             "is_verified": user.is_verified,
             "is_admin": user.is_superuser,
-        })
+            "profile_image": None,
+            "phone": None,
+            "date_of_birth": None,
+        }
+
+        try:
+
+            prof = UserProfile.objects.get(
+                user=user,
+            )
+
+        except UserProfile.DoesNotExist:
+
+            pass
+
+        else:
+
+            if prof.profile_image:
+
+                payload["profile_image"] = prof.profile_image.url
+
+            if prof.phone:
+
+                payload["phone"] = prof.phone
+
+            if prof.date_of_birth:
+
+                payload["date_of_birth"] = (
+                    prof.date_of_birth.isoformat()
+                )
+
+        return Response(payload)
     
 
 class ChangePasswordView(APIView):

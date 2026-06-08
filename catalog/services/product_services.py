@@ -200,11 +200,11 @@ def validate_product_can_activate(
 
         return False, "Select at least one room type."
 
-    if product.variants.count() < 3:
+    if product.variants.count() < 1:
 
         return (
             False,
-            "Add at least 3 variants before activating the product.",
+            "Add at least one variants before activating the product.",
         )
 
     active_variants = product.variants.filter(

@@ -79,12 +79,7 @@ def create_order_from_cart(
     payment_method=None,
 ):
 
-    """
-    Validate cart and address, reserve stock, persist order + lines,
-    and clear the cart. All-or-nothing inside one database transaction.
-
-    Tax, shipping, and discount are computed on the server only.
-    """
+    
 
     if payment_method is None:
 
