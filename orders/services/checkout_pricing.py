@@ -31,13 +31,7 @@ def _d(
 def compute_checkout_totals(
     subtotal,
 ):
-    """
-    Server-side pricing: Subtotal + Tax + Shipping − Discount = Grand total.
-
-    Tax: GST on merchandise subtotal only (not on shipping).
-    Shipping: free when subtotal >= threshold, else flat fee.
-    Discount: always zero until coupon system exists.
-    """
+    
 
     subtotal = (
         Decimal(

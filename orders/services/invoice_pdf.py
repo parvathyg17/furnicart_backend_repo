@@ -38,9 +38,7 @@ def build_order_invoice_pdf(
     order,
 ):
 
-    """
-    Build a PDF invoice (bytes) for a persisted ``Order`` instance.
-    """
+    
 
     buffer = BytesIO()
 

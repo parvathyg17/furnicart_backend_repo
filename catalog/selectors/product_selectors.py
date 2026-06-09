@@ -145,9 +145,6 @@ def get_user_filtered_products(params):
             variants__is_active=True
         )
 
-    # =========================
-    # MAX PRICE FILTER
-    # =========================
 
     if max_price:
 

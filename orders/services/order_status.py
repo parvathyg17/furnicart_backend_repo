@@ -1,6 +1,4 @@
-"""
-Derive aggregate ``Order.status`` from ``OrderLine`` rows (fulfillment + cancel).
-"""
+
 
 from django.db import transaction
 from django.utils import timezone
@@ -11,7 +9,7 @@ from orders.models import Order, OrderLine
 def _rollup_bucket(
     line,
 ):
-    """Bucket each line for aggregation (active lines only)."""
+   
 
     if line.status == OrderLine.LineStatus.CANCELLED:
 
@@ -126,10 +124,7 @@ def compute_derived_order_status(
 def persist_derived_order_status(
     order_id,
 ):
-    """
-    Lock order row, recompute status from lines, persist ``status`` and
-    container-level cancel timestamps when appropriate.
-    """
+    
 
     order = (
         Order.objects.select_for_update()

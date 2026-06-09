@@ -86,9 +86,7 @@ class ProductVariantDetailView(APIView):
 
             return None
 
-    # =========================
-    # UPDATE VARIANT
-    # =========================
+   
 
     def put(self, request, variant_id):
 
@@ -124,9 +122,7 @@ class ProductVariantDetailView(APIView):
             serializer.data
         )
 
-    # =========================
-    # DELETE VARIANT
-    # =========================
+   
 
 
     
@@ -214,9 +210,7 @@ class VariantImageDeleteView(APIView):
 
         image.delete()
 
-        # =========================
-        # ASSIGN NEW PRIMARY IMAGE
-        # =========================
+       
 
         if was_primary:
 
@@ -260,9 +254,7 @@ class ProductVariantToggleStatusView(APIView):
                 status=status.HTTP_404_NOT_FOUND
             )
 
-        # =========================
-        # PREVENT ALL VARIANTS DISABLED
-        # =========================
+     
 
         active_variants_count = (
             variant.product.variants.filter(
