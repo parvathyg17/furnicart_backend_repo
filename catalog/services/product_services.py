@@ -4,6 +4,9 @@ from catalog.models import (
     Product,
     ProductVariant,
 )
+from catalog.selectors.review_selectors import (
+    annotate_product_ratings,
+)
 
 
 
@@ -52,18 +55,20 @@ def _user_product_detail_queryset(
 
     try:
 
-        return base.select_related(
-            "category",
-        ).prefetch_related(
+        return annotate_product_ratings(
+            base.select_related(
+                "category",
+            ).prefetch_related(
 
-            "room_types",
+                "room_types",
 
-            Prefetch(
-                "variants",
-                queryset=ProductVariant.objects.filter(
-                    is_active=True,
-                ).prefetch_related(
-                    "images",
+                Prefetch(
+                    "variants",
+                    queryset=ProductVariant.objects.filter(
+                        is_active=True,
+                    ).prefetch_related(
+                        "images",
+                    ),
                 ),
             ),
         ).get(

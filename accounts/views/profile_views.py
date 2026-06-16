@@ -24,7 +24,10 @@ class UserProfileView(APIView):
 
     def get(self, request):
         profile = UserProfile.objects.get(user=request.user)
-        serializer = UserProfileSerializer(profile)
+        serializer = UserProfileSerializer(
+            profile,
+            context={"request": request},
+        )
 
         return Response(serializer.data)
 

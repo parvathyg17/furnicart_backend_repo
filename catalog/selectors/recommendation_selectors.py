@@ -3,6 +3,9 @@ from django.db.models import (
 )
 
 from catalog.models import Product
+from catalog.selectors.review_selectors import (
+    annotate_product_ratings,
+)
 
 
 def get_related_products(product):
@@ -36,6 +39,8 @@ def get_related_products(product):
             room_types__id__in=room_ids,
         )
 
-    return base.filter(q).distinct().order_by(
-        "-created_at",
+    return annotate_product_ratings(
+        base.filter(q).distinct().order_by(
+            "-created_at",
+        ),
     )[:8]

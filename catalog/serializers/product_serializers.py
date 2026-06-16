@@ -16,11 +16,16 @@ from catalog.serializers.room_type_serializers import (
 from catalog.selectors.recommendation_selectors import (
         get_related_products
     )
+from catalog.selectors.review_selectors import (
+    get_user_review_for_product,
+    user_can_review_product,
+)
 
 from catalog.services.product_services import (
     validate_product_can_activate,
     validate_variant_fields_and_images,
 )
+from core.utils.media import resolve_media_url
 
 
 class VariantImageSerializer(
@@ -45,13 +50,10 @@ class VariantImageSerializer(
 
         request = self.context.get("request")
 
-        if obj.image and request:
-
-            return request.build_absolute_uri(
-                obj.image.url
-            )
-
-        return None
+        return resolve_media_url(
+            obj.image,
+            request,
+        )
     
     
 
@@ -393,6 +395,14 @@ class ProductSerializer(
 
     stock_status = serializers.SerializerMethodField()
 
+    average_rating = serializers.SerializerMethodField()
+
+    review_count = serializers.SerializerMethodField()
+
+    can_review = serializers.SerializerMethodField()
+
+    user_review = serializers.SerializerMethodField()
+
     class Meta:
 
         model = Product
@@ -410,6 +420,10 @@ class ProductSerializer(
             "breadcrumbs",
             "thumbnail",
             "stock_status",
+            "average_rating",
+            "review_count",
+            "can_review",
+            "user_review",
             "related_products",
             "is_active",
             "is_featured",
@@ -479,13 +493,10 @@ class ProductSerializer(
 
             return None
 
-        if request:
-
-            return request.build_absolute_uri(
-                primary_image.image.url
-            )
-
-        return primary_image.image.url
+        return resolve_media_url(
+            primary_image.image,
+            request,
+        )
 
     def validate_name(self, value):
 
@@ -804,3 +815,90 @@ class ProductSerializer(
             return "low_stock"
 
         return "in_stock"
+
+    def get_average_rating(
+        self,
+        obj,
+    ):
+
+        value = getattr(
+            obj,
+            "average_rating",
+            None,
+        )
+
+        if value is None:
+
+            return None
+
+        return round(
+            float(value),
+            1,
+        )
+
+    def get_review_count(
+        self,
+        obj,
+    ):
+
+        return int(
+            getattr(
+                obj,
+                "review_count",
+                0,
+            )
+            or 0,
+        )
+
+    def get_can_review(
+        self,
+        obj,
+    ):
+
+        request = self.context.get(
+            "request",
+        )
+
+        user = getattr(
+            request,
+            "user",
+            None,
+        )
+
+        return user_can_review_product(
+            user,
+            obj,
+        )
+
+    def get_user_review(
+        self,
+        obj,
+    ):
+
+        request = self.context.get(
+            "request",
+        )
+
+        user = getattr(
+            request,
+            "user",
+            None,
+        )
+
+        review = get_user_review_for_product(
+            user,
+            obj,
+        )
+
+        if not review:
+
+            return None
+
+        from catalog.serializers.review_serializers import (
+            ProductReviewSerializer,
+        )
+
+        return ProductReviewSerializer(
+            review,
+            context=self.context,
+        ).data

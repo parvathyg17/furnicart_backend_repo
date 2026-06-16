@@ -1,25 +1,8 @@
-from django.urls import path
+from rest_framework.routers import SimpleRouter
 
-from accounts.views.address_views import (
-    AddressView,
-    AddressDetailView,
-    SetDefaultAddressView
-)
+from accounts.views.address_views import AddressViewSet
 
-urlpatterns = [
+router = SimpleRouter(trailing_slash=True)
+router.register("", AddressViewSet, basename="address")
 
-    path(
-        '',
-        AddressView.as_view()
-    ),
-
-    path(
-        '<int:pk>/',
-        AddressDetailView.as_view()
-    ),
-
-    path(
-        '<int:pk>/set-default/',
-        SetDefaultAddressView.as_view()
-    ),
-]
+urlpatterns = router.urls

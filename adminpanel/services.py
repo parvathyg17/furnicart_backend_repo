@@ -12,3 +12,11 @@
 #         return None, "Not authorized as admin"
 
 #     return user, None
+
+# from orders.models import OrderLine
+
+
+# def get_order_status():
+#     return{
+#         "order_pending_count":OrderLine.objects.filter(fulfillment_status=OrderLine.FulfillmentStatus.PENDING).count()
+#         }

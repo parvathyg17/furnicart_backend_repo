@@ -54,6 +54,8 @@ INSTALLED_APPS = [
     "cart",
     "wishlist",
     "orders",
+    "cloudinary",
+    "cloudinary_storage",
     
 
     
@@ -208,4 +210,48 @@ EMAIL_USE_TLS = True
 GOOGLE_CLIENT_ID = os.getenv("GOOGLE_CLIENT_ID")
 
 
+USE_CLOUDINARY = os.getenv(
+    "USE_CLOUDINARY",
+    "false",
+).lower() in ("true", "1", "yes")
 
+CLOUDINARY_STORAGE = {
+    "CLOUD_NAME": os.getenv("CLOUDINARY_CLOUD_NAME"),
+    "API_KEY": os.getenv("CLOUDINARY_API_KEY"),
+    "API_SECRET": os.getenv("CLOUDINARY_API_SECRET"),
+}
+
+if USE_CLOUDINARY:
+    STORAGES = {
+        "default": {
+            "BACKEND": (
+                "cloudinary_storage.storage."
+                "MediaCloudinaryStorage"
+            ),
+        },
+        "staticfiles": {
+            "BACKEND": (
+                "django.contrib.staticfiles.storage."
+                "StaticFilesStorage"
+            ),
+        },
+    }
+else:
+    STORAGES = {
+        "default": {
+            "BACKEND": (
+                "django.core.files.storage."
+                "FileSystemStorage"
+            ),
+            "OPTIONS": {
+                "location": MEDIA_ROOT,
+                "base_url": MEDIA_URL,
+            },
+        },
+        "staticfiles": {
+            "BACKEND": (
+                "django.contrib.staticfiles.storage."
+                "StaticFilesStorage"
+            ),
+        },
+    }

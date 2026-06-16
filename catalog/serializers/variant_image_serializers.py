@@ -2,6 +2,7 @@ from rest_framework import serializers
 from PIL import Image
 
 from catalog.models import VariantImage
+from core.utils.media import resolve_media_url
 
 
 class VariantImageUploadSerializer(
@@ -38,13 +39,10 @@ class VariantImageUploadSerializer(
             "request"
         )
 
-        if obj.image and request:
-
-            return request.build_absolute_uri(
-                obj.image.url
-            )
-
-        return None
+        return resolve_media_url(
+            obj.image,
+            request,
+        )
 
     def validate_image(self, value):
 
@@ -78,12 +76,27 @@ class VariantImageUploadSerializer(
 
             img = Image.open(value)
 
-            img.verify()
+            try:
+
+                img.verify()
+
+            finally:
+
+                img.close()
 
         except Exception:
 
             raise serializers.ValidationError(
                 "Invalid image file"
             )
+
+       
+        try:
+
+            value.seek(0)
+
+        except (AttributeError, OSError, ValueError):
+
+            pass
 
         return value

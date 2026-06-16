@@ -1,9 +1,12 @@
 from django.db import models
 from django.db.models import Q
-from PIL import Image
 
 from catalog.models.product_variant import (
     ProductVariant
+)
+from core.utils.media import (
+    get_file_size,
+    get_image_dimensions,
 )
 
 class VariantImage(models.Model):
@@ -84,26 +87,24 @@ class VariantImage(models.Model):
         
 
         if self.image:
+            width, height = get_image_dimensions(self.image)
+            file_size = get_file_size(self.image)
 
-            img = Image.open(
-                self.image.path
-            )
+            if any(
+                value is not None
+                for value in (width, height, file_size)
+            ):
+                self.width = width
+                self.height = height
+                self.file_size = file_size
 
-            self.width = img.width
-
-            self.height = img.height
-
-            self.file_size = (
-                self.image.size
-            )
-
-            super().save(
-                update_fields=[
-                    "width",
-                    "height",
-                    "file_size",
-                ]
-            )
+                super().save(
+                    update_fields=[
+                        "width",
+                        "height",
+                        "file_size",
+                    ]
+                )
 
     def __str__(self):
 

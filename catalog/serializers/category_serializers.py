@@ -3,6 +3,7 @@ from rest_framework import serializers
 from PIL import Image
 
 from catalog.models import Category
+from core.utils.media import resolve_media_url
 
 
 class CategoryChildSerializer(
@@ -298,10 +299,7 @@ class CategorySerializer(
             "request"
         )
 
-        if obj.image and request:
-
-            return request.build_absolute_uri(
-                obj.image.url
-            )
-
-        return None
+        return resolve_media_url(
+            obj.image,
+            request,
+        )

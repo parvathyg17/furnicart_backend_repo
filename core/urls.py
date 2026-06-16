@@ -83,6 +83,13 @@ urlpatterns = [
     ),
 
     path(
+        "api/admin/reviews/",
+        include(
+            "catalog.urls.review_urls",
+        ),
+    ),
+
+    path(
         "api/cart/",
         include(
             "cart.urls"

@@ -1,30 +1,8 @@
-from django.urls import path
+from rest_framework.routers import SimpleRouter
 
-from catalog.views.admin.category_views import (
-    CategoryListCreateView,
-    CategoryDetailView,
-    CategoryRestoreView,
-    CategorySoftDeleteView,
-)
+from catalog.views.admin.category_views import AdminCategoryViewSet
 
-urlpatterns = [
+router = SimpleRouter(trailing_slash=True)
+router.register("", AdminCategoryViewSet, basename="admin-category")
 
-    path(
-        "",
-        CategoryListCreateView.as_view()
-    ),
-
-    path(
-        "<int:category_id>/",
-        CategoryDetailView.as_view()
-    ),
-
-    path(
-        "<int:category_id>/delete/",
-        CategorySoftDeleteView.as_view()
-    ),
-    path(
-            "<int:category_id>/restore/",
-            CategoryRestoreView.as_view()
-        ),
-]
+urlpatterns = router.urls

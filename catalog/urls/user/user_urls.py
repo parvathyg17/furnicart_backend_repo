@@ -12,6 +12,14 @@ from catalog.views.user.category_views import (
     UserCategoryListView
 )
 
+from catalog.views.user.review_views import (
+    EligibleReviewProductsView,
+    ProductReviewEligibilityView,
+    ProductReviewListCreateView,
+    UserReviewDetailView,
+    UserReviewListView,
+)
+
 urlpatterns = [
 
     path(
@@ -33,4 +41,29 @@ urlpatterns = [
     "room-types/",
     UserRoomTypeListView.as_view()
 ),
+
+    path(
+        "products/<str:product_ref>/reviews/",
+        ProductReviewListCreateView.as_view(),
+    ),
+
+    path(
+        "products/<str:product_ref>/review-eligibility/",
+        ProductReviewEligibilityView.as_view(),
+    ),
+
+    path(
+        "reviews/mine/",
+        UserReviewListView.as_view(),
+    ),
+
+    path(
+        "reviews/eligible/",
+        EligibleReviewProductsView.as_view(),
+    ),
+
+    path(
+        "reviews/<int:review_id>/",
+        UserReviewDetailView.as_view(),
+    ),
 ]

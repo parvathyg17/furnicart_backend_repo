@@ -12,6 +12,9 @@ from catalog.models import Category
 from catalog.selectors.category_selectors import (
     get_all_child_categories
 )
+from catalog.selectors.review_selectors import (
+    annotate_product_ratings,
+)
 
 def get_user_filtered_products(params):
 
@@ -192,7 +195,9 @@ def get_user_filtered_products(params):
             "-created_at"
         )
 
-    return products
+    return annotate_product_ratings(
+        products,
+    )
 
 
 def get_admin_filtered_products(params):

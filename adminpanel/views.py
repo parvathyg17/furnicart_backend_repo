@@ -1,4 +1,4 @@
-# adminpanel/views.py
+
 from django.conf import settings
 from django.contrib.auth import authenticate
 from django.db.models import Q
@@ -11,6 +11,7 @@ from rest_framework.permissions import IsAuthenticated
 from rest_framework_simplejwt.tokens import RefreshToken
 
 from accounts.models.users import User
+
 
 from core.utils.permissions import IsAdminUserCustom
 
@@ -326,6 +327,9 @@ class AdminDashboardStatsView(APIView):
             is_active=False
         ).count()
 
+        # order_status=get_order_status();
+
+
         return Response({
 
             "total_users": total_users,
@@ -333,6 +337,9 @@ class AdminDashboardStatsView(APIView):
             "active_users": active_users,
 
             "blocked_users": blocked_users,
+
+            # "order_status":order_status,
+
 
         })
 

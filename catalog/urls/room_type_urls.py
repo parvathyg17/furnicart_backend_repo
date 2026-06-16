@@ -1,31 +1,8 @@
-from django.urls import path
+from rest_framework.routers import SimpleRouter
 
-from catalog.views.admin.room_type_views import (
-    RoomTypeListCreateView,
-    RoomTypeDetailView,
-    RoomTypeRestoreView,
-    RoomTypeSoftDeleteView,
-)
+from catalog.views.admin.room_type_views import AdminRoomTypeViewSet
 
-urlpatterns = [
+router = SimpleRouter(trailing_slash=True)
+router.register("", AdminRoomTypeViewSet, basename="admin-room-type")
 
-    path(
-        "",
-        RoomTypeListCreateView.as_view()
-    ),
-
-    path(
-        "<int:room_type_id>/",
-        RoomTypeDetailView.as_view()
-    ),
-
-    path(
-        "<int:room_type_id>/delete/",
-        RoomTypeSoftDeleteView.as_view()
-    ),
-
-    path(
-        "<int:room_type_id>/restore/",
-        RoomTypeRestoreView.as_view()
-    ),
-]
+urlpatterns = router.urls

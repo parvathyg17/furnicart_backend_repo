@@ -1,149 +1,64 @@
-from rest_framework.views import APIView
-from rest_framework.response import Response
+from rest_framework import viewsets
+from rest_framework.decorators import action
 from rest_framework.permissions import IsAuthenticated
-from rest_framework.exceptions import NotFound
+from rest_framework.response import Response
 
 from accounts.models.address import Address
 from accounts.serializers.address_serializers import AddressSerializer
 from accounts.services.address_services import set_default_address
 
-class AddressView(APIView):
 
+class AddressViewSet(viewsets.ModelViewSet):
+    serializer_class = AddressSerializer
     permission_classes = [IsAuthenticated]
+    http_method_names = ["get", "post", "put", "patch", "delete", "head", "options"]
 
-    def get(self, request):
-        addresses = Address.objects.filter(
-            user=request.user,
-            is_deleted=False
+    def get_queryset(self):
+        return Address.objects.filter(
+            user=self.request.user,
+            is_deleted=False,
         )
-        return Response(AddressSerializer(addresses, many=True).data)
 
-    def post(self, request):
-        serializer = AddressSerializer(data=request.data)
-        serializer.is_valid(raise_exception=True)
-
+    def perform_create(self, serializer):
         is_default = serializer.validated_data.get("is_default", False)
-
-        address = serializer.save(
-            user=request.user,
-            is_default=False
+        address = serializer.save(user=self.request.user, is_default=False)
+        has_other = (
+            Address.objects.filter(user=self.request.user, is_deleted=False)
+            .exclude(id=address.id)
+            .exists()
         )
-
-        has_other = Address.objects.filter(
-            user=request.user,
-            is_deleted=False
-        ).exclude(id=address.id).exists()
-
         if not has_other or is_default:
-            set_default_address(request.user, address)
+            set_default_address(self.request.user, address)
 
-        return Response(AddressSerializer(address).data, status=201)
-    
-
-
-class AddressDetailView(APIView):
-
-    permission_classes = [IsAuthenticated]
-
-    def get_object(self, request, pk):
-        try:
-            return Address.objects.get(
-                id=pk,
-                user=request.user,
-                is_deleted=False
-            )
-        except Address.DoesNotExist:
-            raise NotFound("Address not found")
-
-    def get(self, request, pk):
-        address = self.get_object(request, pk)
-        return Response(AddressSerializer(address).data)
-
-    def put(self, request, pk):
-
-        address = self.get_object(
-            request,
-            pk
-        )
-
-        serializer = AddressSerializer(
-            address,
-            data=request.data,
-            partial=True
-        )
-
-        serializer.is_valid(
-            raise_exception=True
-        )
-
-        
-
-        wants_default = serializer.validated_data.pop(
-            "is_default",
-            False
-        )
-
+    def perform_update(self, serializer):
+        wants_default = serializer.validated_data.pop("is_default", False)
         address = serializer.save()
-
-        
-
         if wants_default:
+            set_default_address(self.request.user, address)
 
-            set_default_address(
-                request.user,
-                address
+    def perform_destroy(self, instance):
+        if instance.is_default:
+            next_address = (
+                Address.objects.filter(
+                    user=self.request.user,
+                    is_deleted=False,
+                )
+                .exclude(id=instance.id)
+                .first()
             )
-
-        return Response(
-            AddressSerializer(address).data
-        )
-
-    def delete(self, request, pk):
-        address = self.get_object(request, pk)
-
-        if address.is_default:
-            next_address = Address.objects.filter(
-                user=request.user,
-                is_deleted=False
-            ).exclude(id=address.id).first()
-
             if next_address:
-                set_default_address(request.user, next_address)
+                set_default_address(self.request.user, next_address)
+        instance.is_deleted = True
+        instance.is_default = False
+        instance.save()
 
-        address.is_deleted = True
-        address.is_default = False
-        address.save()
-
+    def destroy(self, request, *args, **kwargs):
+        instance = self.get_object()
+        self.perform_destroy(instance)
         return Response({"message": "Deleted"})
 
-
-class SetDefaultAddressView(APIView):
-
-    permission_classes = [IsAuthenticated]
-
-    def patch(self, request, pk):
-
-        try:
-
-            address = Address.objects.get(
-                id=pk,
-                user=request.user,
-                is_deleted=False
-            )
-
-        except Address.DoesNotExist:
-
-            raise NotFound(
-                "Address not found"
-            )
-
-        set_default_address(
-            request.user,
-            address
-        )
-
-        return Response(
-            {
-                "message": "Default updated"
-            }
-        )
+    @action(detail=True, methods=["patch"], url_path="set-default")
+    def set_default(self, request, pk=None):
+        address = self.get_object()
+        set_default_address(request.user, address)
+        return Response({"message": "Default updated"})

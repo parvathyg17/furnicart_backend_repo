@@ -1,215 +1,63 @@
-from core.pagination import CustomPagination
+from rest_framework import status, viewsets
+from rest_framework.decorators import action
+from rest_framework.parsers import FormParser, MultiPartParser
+from rest_framework.permissions import IsAuthenticated
+from rest_framework.response import Response
 
-
-from catalog.selectors.category_selectors import (
-    get_admin_filtered_categories
-)
-
+from catalog.models import Category
+from catalog.selectors.category_selectors import get_admin_filtered_categories
+from catalog.serializers import CategorySerializer
 from catalog.services.category_services import (
-    get_category_by_id,
     restore_category,
     soft_delete_category,
 )
-
-from rest_framework.views import APIView
-from rest_framework.response import Response
-from rest_framework.permissions import IsAuthenticated
-
-from catalog.serializers import CategorySerializer
-from rest_framework.parsers import MultiPartParser, FormParser
+from core.pagination import CustomPagination
 from core.utils.permissions import IsAdminUserCustom
 
 
-class CategoryListCreateView(APIView):
+class AdminCategoryViewSet(viewsets.ModelViewSet):
+    """Admin CRUD for categories; soft-delete and restore are custom actions."""
 
-    permission_classes = [
-        IsAuthenticated,
-        IsAdminUserCustom
-    ]
+    serializer_class = CategorySerializer
+    permission_classes = [IsAuthenticated, IsAdminUserCustom]
+    parser_classes = [MultiPartParser, FormParser]
+    pagination_class = CustomPagination
+    lookup_field = "pk"
+    lookup_url_kwarg = "category_id"
+    http_method_names = ["get", "post", "put", "patch", "head", "options"]
 
-    parser_classes = [
-    MultiPartParser,
-    FormParser
-    ]
-
-    def get(self, request):
-
-        categories = get_admin_filtered_categories(
-            request.GET
+    def get_queryset(self):
+        if getattr(self, "action", None) == "list":
+            return get_admin_filtered_categories(self.request.GET)
+        return Category.objects.select_related("parent").prefetch_related(
+            "children"
         )
 
-        paginator = CustomPagination()
+    def get_serializer_context(self):
+        ctx = super().get_serializer_context()
+        ctx["request"] = self.request
+        return ctx
 
-        paginated_categories = paginator.paginate_queryset(
-            categories,
-            request
-        )
-
-        serializer = CategorySerializer(
-            paginated_categories,
-            many=True,
-            context={
-                "request": request
-            }
-        )
-
-        return paginator.get_paginated_response(
-            serializer.data
-        )
-
-    def post(self, request):
-
-        serializer = CategorySerializer(
-            data=request.data
-        )
-
-        serializer.is_valid(
-            raise_exception=True
-        )
-
-        serializer.save()
-
-        return Response(
-            serializer.data,
-            status=201
-        )
-    
-
-class CategoryDetailView(APIView):
-
-    permission_classes = [
-        IsAuthenticated,
-        IsAdminUserCustom
-    ]
-
-    parser_classes = [
-        MultiPartParser,
-        FormParser
-    ]
-
-    def get(self, request, category_id):
-
-        category = get_category_by_id(
-            category_id
-        )
-
-        if not category:
-
-            return Response(
-                {
-                    "error": "Category not found"
-                },
-                status=404
-            )
-
-        serializer = CategorySerializer(
-            category,
-            context={
-                "request": request
-            }
-        )
-
-        return Response(
-            serializer.data
-        )
-
-    def put(self, request, category_id):
-
-        category = get_category_by_id(
-            category_id
-        )
-
-        if not category:
-
-            return Response(
-                {
-                    "error": "Category not found"
-                },
-                status=404
-            )
-
-        serializer = CategorySerializer(
-            category,
-            data=request.data,
-            partial=True
-        )
-
-        serializer.is_valid(
-            raise_exception=True
-        )
-
-        serializer.save()
-
-        return Response(
-            serializer.data
-        )
-    
-
-class CategorySoftDeleteView(APIView):
-
-    permission_classes = [
-        IsAuthenticated,
-        IsAdminUserCustom
-    ]
-
-    def patch(self, request, category_id):
-
-        category = get_category_by_id(
-            category_id
-        )
-
-        if not category:
-
-            return Response(
-                {
-                    "error": "Category not found"
-                },
-                status=404
-            )
-
+    @action(detail=True, methods=["patch"], url_path="delete")
+    def soft_delete(self, request, category_id=None):
+        category = self.get_object()
         soft_delete_category(category)
+        return Response(
+            {"message": "Category deleted successfully"},
+            status=status.HTTP_200_OK,
+        )
 
-        return Response({
-            "message":
-            "Category deleted successfully"
-        })
-    
-class CategoryRestoreView(APIView):
-
-        permission_classes = [
-            IsAuthenticated,
-            IsAdminUserCustom
-        ]
-
-        def patch(self, request, category_id):
-
-            category = get_category_by_id(
-                category_id
+    @action(detail=True, methods=["patch"], url_path="restore")
+    def restore(self, request, category_id=None):
+        category = self.get_object()
+        try:
+            restore_category(category)
+        except ValueError as exc:
+            return Response(
+                {"error": str(exc)},
+                status=status.HTTP_400_BAD_REQUEST,
             )
-
-            if not category:
-
-                return Response(
-                    {
-                        "error": "Category not found"
-                    },
-                    status=404
-                )
-
-            try:
-
-                restore_category(category)
-
-            except ValueError as e:
-
-                return Response(
-                    {
-                        "error": str(e)
-                    },
-                    status=400
-                )
-
-            return Response({
-                "message":
-                "Category restored successfully"
-            })
+        return Response(
+            {"message": "Category restored successfully"},
+            status=status.HTTP_200_OK,
+        )
