@@ -9,7 +9,7 @@ from rest_framework.exceptions import ValidationError
 from accounts.models.address import Address
 from catalog.models import ProductVariant, VariantImage
 
-from cart.models import CartItem
+from cart.models import Cart, CartItem
 from cart.services import (
     cart_line_subtotal,
     validate_cart_for_checkout,
@@ -118,8 +118,13 @@ def create_order_from_cart(
             "Shipping address not found.",
         )
 
-    cart = get_or_create_cart(
-        user,
+    cart = (
+        Cart.objects.select_for_update()
+        .get(
+            pk=get_or_create_cart(
+                user,
+            ).pk,
+        )
     )
 
     items = list(
@@ -221,8 +226,27 @@ def create_order_from_cart(
             },
         )
 
+    from promotions.services.coupon_cart_services import (
+        record_coupon_redemption,
+        resolve_applied_coupon_for_cart,
+    )
+
+    coupon = resolve_applied_coupon_for_cart(
+        cart,
+        user,
+        subtotal,
+    )
+
+    if cart.applied_coupon_id and coupon is None:
+
+        raise ValidationError(
+            "The applied coupon is no longer valid. "
+            "Remove it or update your cart and try again.",
+        )
+
     pricing = compute_checkout_totals(
         subtotal,
+        coupon=coupon,
     )
 
     tax_total = pricing["tax_total"]
@@ -241,6 +265,12 @@ def create_order_from_cart(
         status=Order.Status.PENDING,
         payment_method=payment_method,
         payment_status=Order.PaymentStatus.PENDING,
+        applied_coupon=coupon,
+        coupon_code=(
+            coupon.code
+            if coupon
+            else ""
+        ),
         subtotal=subtotal.quantize(
             Decimal("0.01"),
         ),
@@ -302,6 +332,21 @@ def create_order_from_cart(
     CartItem.objects.filter(
         cart=cart,
     ).delete()
+
+    cart.applied_coupon = None
+
+    cart.save(
+        update_fields=[
+            "applied_coupon",
+            "updated_at",
+        ],
+    )
+
+    if coupon is not None:
+
+        record_coupon_redemption(
+            coupon,
+        )
 
     return order
 

@@ -137,6 +137,21 @@ class Order(models.Model):
         default=Decimal("0.00"),
     )
 
+    applied_coupon = models.ForeignKey(
+        "promotions.Coupon",
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name="orders",
+    )
+
+    coupon_code = models.CharField(
+        max_length=64,
+        blank=True,
+        default="",
+        help_text="Snapshot of coupon code at checkout time.",
+    )
+
     shipping_total = models.DecimalField(
         max_digits=12,
         decimal_places=2,

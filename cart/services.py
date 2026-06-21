@@ -436,3 +436,115 @@ def validate_cart_for_checkout(user):
         "message": None,
         "line_issues": [],
     }
+
+
+def build_checkout_preview(
+    user,
+):
+
+    cart = (
+        Cart.objects.select_related(
+            "applied_coupon",
+        ).get(
+            pk=get_or_create_cart(
+                user,
+            ).pk,
+        )
+    )
+
+    _, _, subtotal, item_count, can_checkout = get_cart_payload(
+        user,
+    )
+
+    from promotions.services.coupon_cart_services import (
+        resolve_applied_coupon_for_cart,
+    )
+
+    from promotions.services.coupon_checkout_services import (
+        list_active_coupons_for_checkout,
+    )
+
+    from orders.services.checkout_pricing import (
+        compute_checkout_totals,
+        totals_as_response_dict,
+    )
+
+    coupon = resolve_applied_coupon_for_cart(
+        cart,
+        user,
+        subtotal,
+    )
+
+    totals = compute_checkout_totals(
+        subtotal,
+        coupon=coupon,
+    )
+
+    body = totals_as_response_dict(
+        totals,
+    )
+
+    body["can_checkout"] = can_checkout
+
+    body["item_count"] = item_count
+
+    body["active_coupons"] = list_active_coupons_for_checkout(
+        user,
+        subtotal,
+        exclude_code=(
+            coupon.code
+            if coupon
+            else None
+        ),
+    )
+
+    return body
+
+
+def get_available_coupons_payload(
+    user,
+):
+
+    from promotions.services.coupon_checkout_services import (
+        list_active_coupons_for_checkout,
+    )
+
+    from promotions.models import Coupon
+
+    cart = get_or_create_cart(
+        user,
+    )
+
+    applied_code = None
+
+    applied_coupon_id = getattr(
+        cart,
+        "applied_coupon_id",
+        None,
+    )
+
+    if applied_coupon_id:
+
+        applied_code = (
+            Coupon.objects.filter(
+                pk=applied_coupon_id,
+            )
+            .values_list(
+                "code",
+                flat=True,
+            )
+            .first()
+        )
+
+    _, _, subtotal, _, _ = get_cart_payload(
+        user,
+    )
+
+    return {
+        "coupons": list_active_coupons_for_checkout(
+            user,
+            subtotal,
+            exclude_code=applied_code,
+        ),
+    }
+

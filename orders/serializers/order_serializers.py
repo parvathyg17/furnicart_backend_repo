@@ -281,6 +281,7 @@ class OrderDetailSerializer(
             "subtotal",
             "tax_total",
             "discount_total",
+            "coupon_code",
             "shipping_total",
             "grand_total",
             "shipping_name",

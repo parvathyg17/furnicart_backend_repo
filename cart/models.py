@@ -12,6 +12,14 @@ class Cart(models.Model):
         related_name="cart",
     )
 
+    applied_coupon = models.ForeignKey(
+        "promotions.Coupon",
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name="carts",
+    )
+
     created_at = models.DateTimeField(
         auto_now_add=True,
     )

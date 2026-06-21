@@ -109,6 +109,13 @@ urlpatterns = [
             "orders.urls"
         )
     ),
+
+    path(
+        "api/admin/coupons/",
+        include(
+            "promotions.admin_coupon_urls",
+        ),
+    ),
   
     
 

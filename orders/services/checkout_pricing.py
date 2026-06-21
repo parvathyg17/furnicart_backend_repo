@@ -30,6 +30,8 @@ def _d(
 
 def compute_checkout_totals(
     subtotal,
+    *,
+    coupon=None,
 ):
     
 
@@ -70,6 +72,7 @@ def compute_checkout_totals(
                 "100.00",
             ),
             "shipping_tier": "none",
+            "coupon": None,
         }
 
     gst_rate = _d(
@@ -90,6 +93,24 @@ def compute_checkout_totals(
     discount_total = Decimal(
         "0.00",
     )
+
+    coupon_payload = None
+
+    if coupon is not None:
+
+        from promotions.services.coupon_validation import (
+            compute_coupon_discount_amount,
+            coupon_summary_dict,
+        )
+
+        discount_total = compute_coupon_discount_amount(
+            coupon,
+            subtotal,
+        )
+
+        coupon_payload = coupon_summary_dict(
+            coupon,
+        )
 
     tax_total = (
         subtotal * gst_rate
@@ -147,6 +168,7 @@ def compute_checkout_totals(
         "free_shipping_min_subtotal": threshold,
         "shipping_flat_amount": flat_ship,
         "shipping_tier": shipping_tier,
+        "coupon": coupon_payload,
     }
 
 
@@ -201,4 +223,7 @@ def totals_as_response_dict(
             ),
         ),
         "shipping_tier": totals["shipping_tier"],
+        "coupon": totals.get(
+            "coupon",
+        ),
     }
