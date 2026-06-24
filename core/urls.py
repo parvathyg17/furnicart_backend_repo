@@ -116,6 +116,13 @@ urlpatterns = [
             "promotions.admin_coupon_urls",
         ),
     ),
+
+    path(
+        "api/admin/offers/",
+        include(
+            "promotions.admin_offer_urls",
+        ),
+    ),
   
     
 

@@ -16,6 +16,10 @@ from catalog.serializers.product_serializers import (
     ProductSerializer
 )
 
+from promotions.services.offer_display import (
+    build_offer_badges_for_products,
+)
+
 
 class UserProductListView(APIView):
 
@@ -34,12 +38,21 @@ class UserProductListView(APIView):
             request
         )
 
+        from promotions.services.offer_display import (
+            build_offer_badges_for_products,
+        )
+
+        offer_badges = build_offer_badges_for_products(
+            paginated_products or [],
+        )
+
         serializer = ProductSerializer(
             paginated_products,
             many=True,
             context={
                 "request": request,
                 "exclude_related": True,
+                "product_offer_badges": offer_badges,
             }
         )
 
@@ -98,7 +111,12 @@ class UserProductDetailView(APIView):
         serializer = ProductSerializer(
             product,
             context={
-                "request": request
+                "request": request,
+                "product_offer_badges": build_offer_badges_for_products(
+                    [
+                        product,
+                    ],
+                ),
             }
         )
 

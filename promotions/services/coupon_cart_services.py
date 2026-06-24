@@ -69,9 +69,11 @@ def apply_coupon_to_cart(
             },
         )
 
-    _, _, subtotal, _, _ = get_cart_payload(
+    payload = get_cart_payload(
         user,
     )
+
+    subtotal = payload["subtotal"]
 
     if subtotal <= 0:
 

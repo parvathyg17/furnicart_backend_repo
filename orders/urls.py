@@ -7,10 +7,25 @@ from orders.views import (
     OrderInvoicePdfView,
     OrderLineCancelView,
     OrderLineReturnCreateView,
+    RazorpayInitiateView,
+    RazorpayVerifyView,
+    RazorpayWebhookView,
     UserPurchasesListView,
 )
 
 urlpatterns = [
+    path(
+        "razorpay/initiate/",
+        RazorpayInitiateView.as_view(),
+    ),
+    path(
+        "razorpay/verify/",
+        RazorpayVerifyView.as_view(),
+    ),
+    path(
+        "razorpay/webhook/",
+        RazorpayWebhookView.as_view(),
+    ),
     path(
         "purchases/",
         UserPurchasesListView.as_view(),

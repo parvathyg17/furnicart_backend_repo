@@ -174,6 +174,9 @@ def compute_checkout_totals(
 
 def totals_as_response_dict(
     totals,
+    *,
+    gross_subtotal=None,
+    offer_discount_total=None,
 ):
     """Serialize Decimals for JSON responses."""
 
@@ -189,7 +192,7 @@ def totals_as_response_dict(
             ),
         )
 
-    return {
+    payload = {
         "subtotal": s(
             "subtotal",
         ),
@@ -227,3 +230,29 @@ def totals_as_response_dict(
             "coupon",
         ),
     }
+
+    if gross_subtotal is not None:
+
+        payload["subtotal_gross"] = str(
+            Decimal(
+                gross_subtotal,
+            ).quantize(
+                Decimal(
+                    "0.01",
+                ),
+            ),
+        )
+
+    if offer_discount_total is not None:
+
+        payload["offer_discount_total"] = str(
+            Decimal(
+                offer_discount_total,
+            ).quantize(
+                Decimal(
+                    "0.01",
+                ),
+            ),
+        )
+
+    return payload

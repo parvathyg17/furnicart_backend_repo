@@ -36,15 +36,30 @@ class CartView(APIView):
 
     def get(self, request):
 
-        _, items, subtotal, item_count, can_checkout = get_cart_payload(
+        payload = get_cart_payload(
             request.user,
         )
+
+        items = payload["items"]
+
+        subtotal = payload["subtotal"]
+
+        item_count = payload["item_count"]
+
+        can_checkout = payload["can_checkout"]
+
+        gross_subtotal = payload["gross_subtotal"]
+
+        offer_discount_total = payload["offer_discount_total"]
+
+        resolver = payload["offer_resolver"]
 
         serializer = CartItemSerializer(
             items,
             many=True,
             context={
                 "request": request,
+                "offer_resolver": resolver,
             },
         )
 
@@ -56,6 +71,18 @@ class CartView(APIView):
 
                 "subtotal": str(
                     subtotal.quantize(
+                        Decimal("0.01"),
+                    )
+                ),
+
+                "subtotal_gross": str(
+                    gross_subtotal.quantize(
+                        Decimal("0.01"),
+                    )
+                ),
+
+                "offer_discount_total": str(
+                    offer_discount_total.quantize(
                         Decimal("0.01"),
                     )
                 ),
@@ -121,9 +148,23 @@ class CartView(APIView):
             },
         )
 
-        _, items, subtotal, item_count, can_checkout = get_cart_payload(
+        payload = get_cart_payload(
             request.user,
         )
+
+        items = payload["items"]
+
+        subtotal = payload["subtotal"]
+
+        item_count = payload["item_count"]
+
+        can_checkout = payload["can_checkout"]
+
+        gross_subtotal = payload["gross_subtotal"]
+
+        offer_discount_total = payload["offer_discount_total"]
+
+        resolver = payload["offer_resolver"]
 
         return Response(
             {
@@ -134,6 +175,7 @@ class CartView(APIView):
                     many=True,
                     context={
                         "request": request,
+                        "offer_resolver": resolver,
                     },
                 ).data,
 
@@ -141,6 +183,18 @@ class CartView(APIView):
 
                 "subtotal": str(
                     subtotal.quantize(
+                        Decimal("0.01"),
+                    )
+                ),
+
+                "subtotal_gross": str(
+                    gross_subtotal.quantize(
+                        Decimal("0.01"),
+                    )
+                ),
+
+                "offer_discount_total": str(
+                    offer_discount_total.quantize(
                         Decimal("0.01"),
                     )
                 ),
@@ -213,9 +267,23 @@ class CartItemDetailView(APIView):
                 status=status.HTTP_400_BAD_REQUEST,
             )
 
-        _, items, subtotal, item_count, can_checkout = get_cart_payload(
+        payload = get_cart_payload(
             request.user,
         )
+
+        items = payload["items"]
+
+        subtotal = payload["subtotal"]
+
+        item_count = payload["item_count"]
+
+        can_checkout = payload["can_checkout"]
+
+        gross_subtotal = payload["gross_subtotal"]
+
+        offer_discount_total = payload["offer_discount_total"]
+
+        resolver = payload["offer_resolver"]
 
         return Response(
             {
@@ -224,6 +292,7 @@ class CartItemDetailView(APIView):
                     many=True,
                     context={
                         "request": request,
+                        "offer_resolver": resolver,
                     },
                 ).data,
 
@@ -231,6 +300,18 @@ class CartItemDetailView(APIView):
 
                 "subtotal": str(
                     subtotal.quantize(
+                        Decimal("0.01"),
+                    )
+                ),
+
+                "subtotal_gross": str(
+                    gross_subtotal.quantize(
+                        Decimal("0.01"),
+                    )
+                ),
+
+                "offer_discount_total": str(
+                    offer_discount_total.quantize(
                         Decimal("0.01"),
                     )
                 ),

@@ -403,6 +403,8 @@ class ProductSerializer(
 
     user_review = serializers.SerializerMethodField()
 
+    offer_badge = serializers.SerializerMethodField()
+
     class Meta:
 
         model = Product
@@ -424,6 +426,7 @@ class ProductSerializer(
             "review_count",
             "can_review",
             "user_review",
+            "offer_badge",
             "related_products",
             "is_active",
             "is_featured",
@@ -748,13 +751,24 @@ class ProductSerializer(
 
         related_products = get_related_products(obj)
 
-        serializer = ProductSerializer(
+        related_list = list(
             related_products,
+        )
+
+        from promotions.services.offer_display import (
+            build_offer_badges_for_products,
+        )
+
+        serializer = ProductSerializer(
+            related_list,
             many=True,
             context={
                 "request": request,
-                "exclude_related": True
-            }
+                "exclude_related": True,
+                "product_offer_badges": build_offer_badges_for_products(
+                    related_list,
+                ),
+            },
         )
 
         return serializer.data
@@ -902,3 +916,30 @@ class ProductSerializer(
             review,
             context=self.context,
         ).data
+
+    def get_offer_badge(
+        self,
+        obj,
+    ):
+
+        badges = self.context.get(
+            "product_offer_badges",
+        )
+
+        if badges is not None:
+
+            return badges.get(
+                obj.id,
+            )
+
+        from promotions.services.offer_display import (
+            build_offer_badges_for_products,
+        )
+
+        return build_offer_badges_for_products(
+            [
+                obj,
+            ],
+        ).get(
+            obj.id,
+        )

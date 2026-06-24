@@ -367,3 +367,82 @@ class ReturnRequest(models.Model):
     def __str__(self):
 
         return f"Return {self.pk} — {self.order_line_id} ({self.status})"
+
+
+class PaymentIntent(models.Model):
+
+    class Status(models.TextChoices):
+
+        PENDING = "pending", "Pending"
+        COMPLETED = "completed", "Completed"
+        FAILED = "failed", "Failed"
+        EXPIRED = "expired", "Expired"
+
+    user = models.ForeignKey(
+        settings.AUTH_USER_MODEL,
+        on_delete=models.CASCADE,
+        related_name="payment_intents",
+    )
+
+    shipping_address = models.ForeignKey(
+        Address,
+        on_delete=models.PROTECT,
+        related_name="payment_intents",
+    )
+
+    razorpay_order_id = models.CharField(
+        max_length=255,
+        unique=True,
+        db_index=True,
+    )
+
+    amount_paise = models.PositiveIntegerField()
+
+    grand_total = models.DecimalField(
+        max_digits=12,
+        decimal_places=2,
+        default=Decimal("0.00"),
+    )
+
+    applied_coupon_id = models.PositiveIntegerField(
+        null=True,
+        blank=True,
+    )
+
+    status = models.CharField(
+        max_length=16,
+        choices=Status.choices,
+        default=Status.PENDING,
+        db_index=True,
+    )
+
+    order = models.ForeignKey(
+        Order,
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name="payment_intents",
+    )
+
+    gateway_payment_id = models.CharField(
+        max_length=255,
+        blank=True,
+        default="",
+    )
+
+    created_at = models.DateTimeField(
+        auto_now_add=True,
+        db_index=True,
+    )
+
+    expires_at = models.DateTimeField(
+        db_index=True,
+    )
+
+    class Meta:
+
+        ordering = ["-created_at"]
+
+    def __str__(self):
+
+        return f"PaymentIntent {self.pk} ({self.status})"

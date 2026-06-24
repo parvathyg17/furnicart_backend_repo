@@ -10,6 +10,8 @@ from cart.models import CartItem
 
 from .services import (
     MAX_CART_QTY,
+    cart_line_gross_subtotal,
+    cart_line_offer_discount,
     cart_line_subtotal,
     get_cart_line_availability,
 )
@@ -40,6 +42,10 @@ class CartItemSerializer(
 
     line_subtotal = serializers.SerializerMethodField()
 
+    line_gross_subtotal = serializers.SerializerMethodField()
+
+    line_offer_discount = serializers.SerializerMethodField()
+
     max_quantity = serializers.SerializerMethodField()
 
     line_availability = serializers.SerializerMethodField()
@@ -56,6 +62,8 @@ class CartItemSerializer(
             "variant",
             "quantity",
             "line_subtotal",
+            "line_gross_subtotal",
+            "line_offer_discount",
             "max_quantity",
             "line_availability",
             "created_at",
@@ -68,6 +76,8 @@ class CartItemSerializer(
             "product_name",
             "variant",
             "line_subtotal",
+            "line_gross_subtotal",
+            "line_offer_discount",
             "max_quantity",
             "line_availability",
             "created_at",
@@ -78,8 +88,46 @@ class CartItemSerializer(
         obj,
     ):
 
+        resolver = self.context.get(
+            "offer_resolver",
+        )
+
         return str(
-            cart_line_subtotal(obj).quantize(
+            cart_line_subtotal(
+                obj,
+                resolver=resolver,
+            ).quantize(
+                Decimal("0.01"),
+            )
+        )
+
+    def get_line_gross_subtotal(
+        self,
+        obj,
+    ):
+
+        return str(
+            cart_line_gross_subtotal(
+                obj,
+            ).quantize(
+                Decimal("0.01"),
+            )
+        )
+
+    def get_line_offer_discount(
+        self,
+        obj,
+    ):
+
+        resolver = self.context.get(
+            "offer_resolver",
+        )
+
+        return str(
+            cart_line_offer_discount(
+                obj,
+                resolver=resolver,
+            ).quantize(
                 Decimal("0.01"),
             )
         )

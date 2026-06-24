@@ -11,7 +11,6 @@ from catalog.models import ProductVariant, VariantImage
 
 from cart.models import Cart, CartItem
 from cart.services import (
-    cart_line_subtotal,
     validate_cart_for_checkout,
     get_or_create_cart,
 )
@@ -77,6 +76,8 @@ def create_order_from_cart(
     address_id,
     *,
     payment_method=None,
+    razorpay_order_id=None,
+    razorpay_payment_id=None,
 ):
 
     
@@ -85,10 +86,52 @@ def create_order_from_cart(
 
         payment_method = Order.PaymentMethod.COD
 
-    if payment_method != Order.PaymentMethod.COD:
+    if payment_method == Order.PaymentMethod.COD:
+
+        payment_status = Order.PaymentStatus.PENDING
+
+        payment_provider = ""
+
+        paid_at = None
+
+        gateway_order_id = ""
+
+        gateway_payment_id = ""
+
+    elif payment_method == Order.PaymentMethod.RAZORPAY:
+
+        if not razorpay_order_id or not razorpay_payment_id:
+
+            raise ValidationError(
+                "Razorpay payment details are required.",
+            )
+
+        payment_status = Order.PaymentStatus.PAID
+
+        payment_provider = "razorpay"
+
+        paid_at = timezone.now()
+
+        gateway_order_id = razorpay_order_id
+
+        gateway_payment_id = razorpay_payment_id
+
+    elif payment_method == Order.PaymentMethod.WALLET:
+
+        payment_status = Order.PaymentStatus.PAID
+
+        payment_provider = "wallet"
+
+        paid_at = timezone.now()
+
+        gateway_order_id = ""
+
+        gateway_payment_id = ""
+
+    else:
 
         raise ValidationError(
-            "Only cash on delivery is available at this time.",
+            "Unsupported payment method.",
         )
 
     validation = validate_cart_for_checkout(
@@ -173,6 +216,17 @@ def create_order_from_cart(
 
     line_specs = []
 
+    from promotions.services.offer_pricing import (
+        OfferResolver,
+        line_gross_subtotal,
+    )
+
+    resolver = OfferResolver()
+
+    resolver.preload(
+        items,
+    )
+
     for item in items:
 
         variant = locked_variants.get(
@@ -212,8 +266,20 @@ def create_order_from_cart(
                 ),
             )
 
-        line_sub = cart_line_subtotal(
-            item,
+        line_gross = line_gross_subtotal(
+            variant,
+            item.quantity,
+        )
+
+        line_offer_disc = resolver.line_offer_discount(
+            variant,
+            item.quantity,
+        )
+
+        line_sub = (
+            line_gross - line_offer_disc
+        ).quantize(
+            Decimal("0.01"),
         )
 
         subtotal += line_sub
@@ -223,6 +289,9 @@ def create_order_from_cart(
                 "item": item,
                 "variant": variant,
                 "line_subtotal": line_sub,
+                "line_offer_discount": line_offer_disc.quantize(
+                    Decimal("0.01"),
+                ),
             },
         )
 
@@ -264,7 +333,11 @@ def create_order_from_cart(
         order_number=order_number,
         status=Order.Status.PENDING,
         payment_method=payment_method,
-        payment_status=Order.PaymentStatus.PENDING,
+        payment_status=payment_status,
+        payment_provider=payment_provider,
+        gateway_order_id=gateway_order_id,
+        gateway_payment_id=gateway_payment_id,
+        paid_at=paid_at,
         applied_coupon=coupon,
         coupon_code=(
             coupon.code
@@ -321,7 +394,10 @@ def create_order_from_cart(
             unit_price=variant.price,
             quantity=qty,
             tax_amount=Decimal("0.00"),
-            discount_amount=Decimal("0.00"),
+            discount_amount=spec.get(
+                "line_offer_discount",
+                Decimal("0.00"),
+            ),
             line_total=line_sub,
             image_url=_primary_variant_image_url(
                 variant,
@@ -346,6 +422,21 @@ def create_order_from_cart(
 
         record_coupon_redemption(
             coupon,
+        )
+
+    if payment_method == Order.PaymentMethod.WALLET:
+
+        from accounts.models.wallet import WalletTransaction
+        from accounts.services.wallet_services import debit_wallet
+
+        debit_wallet(
+            user,
+            grand_total,
+            reason=WalletTransaction.Reason.ORDER_PAYMENT,
+            order=order,
+            reference_note=(
+                f"Payment for order {order_number}"
+            ),
         )
 
     return order
@@ -406,6 +497,23 @@ def _set_order_financials_zero(
     order.shipping_total = z
 
     order.grand_total = z
+
+
+def _finalize_full_order_cancellation(
+    order,
+):
+
+    from orders.services.order_wallet_services import (
+        wallet_refund_on_full_cancel,
+    )
+
+    wallet_refund_on_full_cancel(
+        order,
+    )
+
+    _set_order_financials_zero(
+        order,
+    )
 
 
 def _recalculate_order_financials_from_active_lines(
@@ -554,7 +662,7 @@ def cancel_entire_order_for_user(
 
     order.cancellation_reason = reason_clean
 
-    _set_order_financials_zero(
+    _finalize_full_order_cancellation(
         order,
     )
 
@@ -562,6 +670,7 @@ def cancel_entire_order_for_user(
         update_fields=[
             "cancelled_at",
             "cancellation_reason",
+            "payment_status",
             "subtotal",
             "tax_total",
             "discount_total",
@@ -667,7 +776,7 @@ def cancel_order_line_for_user(
 
         order.cancellation_reason = reason_clean
 
-        _set_order_financials_zero(
+        _finalize_full_order_cancellation(
             order,
         )
 
@@ -675,6 +784,7 @@ def cancel_order_line_for_user(
             update_fields=[
                 "cancelled_at",
                 "cancellation_reason",
+                "payment_status",
                 "subtotal",
                 "tax_total",
                 "discount_total",
@@ -686,8 +796,24 @@ def cancel_order_line_for_user(
 
     else:
 
+        old_grand_total = order.grand_total.quantize(
+            Decimal(
+                "0.01",
+            ),
+        )
+
         _recalculate_order_financials_from_active_lines(
             order,
+        )
+
+        from orders.services.order_wallet_services import (
+            wallet_refund_delta_on_partial_cancel,
+        )
+
+        wallet_refund_delta_on_partial_cancel(
+            order,
+            old_grand_total,
+            line_id=line.pk,
         )
 
         order.save(
@@ -697,6 +823,7 @@ def cancel_order_line_for_user(
                 "discount_total",
                 "shipping_total",
                 "grand_total",
+                "payment_status",
                 "updated_at",
             ],
         )
@@ -796,7 +923,7 @@ def cancel_entire_order_for_admin(
 
     order.cancellation_reason = reason_clean
 
-    _set_order_financials_zero(
+    _finalize_full_order_cancellation(
         order,
     )
 
@@ -804,6 +931,7 @@ def cancel_entire_order_for_admin(
         update_fields=[
             "cancelled_at",
             "cancellation_reason",
+            "payment_status",
             "subtotal",
             "tax_total",
             "discount_total",

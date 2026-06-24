@@ -1,6 +1,33 @@
 from rest_framework import serializers
 
 from orders.models import Order, OrderLine, ReturnRequest
+from orders.services.order_pricing import (
+    order_subtotal_gross,
+    sum_order_line_offer_discount,
+)
+
+
+class OrderOfferPricingMixin(
+    object,
+):
+
+    def get_offer_discount_total(
+        self,
+        obj,
+    ):
+
+        return sum_order_line_offer_discount(
+            obj,
+        )
+
+    def get_subtotal_gross(
+        self,
+        obj,
+    ):
+
+        return order_subtotal_gross(
+            obj,
+        )
 
 
 class ReturnRequestSerializer(
@@ -198,6 +225,7 @@ class OrderCreateSerializer(
     payment_method = serializers.ChoiceField(
         choices=[
             "cod",
+            "wallet",
         ],
         default="cod",
     )
@@ -255,6 +283,7 @@ class OrderListSerializer(
 
 
 class OrderDetailSerializer(
+    OrderOfferPricingMixin,
     serializers.ModelSerializer,
 ):
 
@@ -262,6 +291,10 @@ class OrderDetailSerializer(
         many=True,
         read_only=True,
     )
+
+    offer_discount_total = serializers.SerializerMethodField()
+
+    subtotal_gross = serializers.SerializerMethodField()
 
     class Meta:
 
@@ -278,6 +311,8 @@ class OrderDetailSerializer(
             "gateway_payment_id",
             "payment_metadata",
             "paid_at",
+            "subtotal_gross",
+            "offer_discount_total",
             "subtotal",
             "tax_total",
             "discount_total",
@@ -465,6 +500,7 @@ class AdminOrderListSerializer(
 
 
 class AdminOrderDetailSerializer(
+    OrderOfferPricingMixin,
     serializers.ModelSerializer,
 ):
 
@@ -482,6 +518,10 @@ class AdminOrderDetailSerializer(
         read_only=True,
     )
 
+    offer_discount_total = serializers.SerializerMethodField()
+
+    subtotal_gross = serializers.SerializerMethodField()
+
     class Meta:
 
         model = Order
@@ -494,6 +534,8 @@ class AdminOrderDetailSerializer(
             "status",
             "payment_method",
             "payment_status",
+            "subtotal_gross",
+            "offer_discount_total",
             "subtotal",
             "tax_total",
             "discount_total",
@@ -603,3 +645,29 @@ class AdminReturnListSerializer(
             "image_url",
             "user_email",
         ]
+
+
+class RazorpayInitiateSerializer(
+    serializers.Serializer,
+):
+
+    address_id = serializers.IntegerField(
+        min_value=1,
+    )
+
+
+class RazorpayVerifySerializer(
+    serializers.Serializer,
+):
+
+    razorpay_order_id = serializers.CharField(
+        max_length=255,
+    )
+
+    razorpay_payment_id = serializers.CharField(
+        max_length=255,
+    )
+
+    razorpay_signature = serializers.CharField(
+        max_length=512,
+    )

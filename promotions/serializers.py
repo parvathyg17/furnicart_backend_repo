@@ -2,11 +2,16 @@ from decimal import Decimal
 
 from rest_framework import serializers
 
-from promotions.models import Coupon
+from promotions.models import Coupon, Offer
 
 from promotions.services.admin_coupon_services import (
     create_coupon,
     update_coupon,
+)
+
+from promotions.services.admin_offer_services import (
+    create_offer,
+    update_offer,
 )
 
 
@@ -178,6 +183,206 @@ class AdminCouponSerializer(
     ):
 
         return update_coupon(
+            instance,
+            validated_data,
+        )
+
+
+class AdminOfferSerializer(
+    serializers.ModelSerializer,
+):
+
+    product_name = serializers.CharField(
+        source="product.name",
+        read_only=True,
+        allow_null=True,
+    )
+
+    category_name = serializers.CharField(
+        source="category.name",
+        read_only=True,
+        allow_null=True,
+    )
+
+    class Meta:
+
+        model = Offer
+
+        fields = [
+            "id",
+            "title",
+            "description",
+            "offer_type",
+            "product",
+            "product_name",
+            "category",
+            "category_name",
+            "discount_type",
+            "discount_value",
+            "max_discount_amount",
+            "valid_from",
+            "valid_until",
+            "is_active",
+            "created_at",
+            "updated_at",
+        ]
+
+        read_only_fields = [
+            "id",
+            "product_name",
+            "category_name",
+            "created_at",
+            "updated_at",
+        ]
+
+    def validate(
+        self,
+        attrs,
+    ):
+
+        offer_type = attrs.get(
+            "offer_type",
+        )
+
+        if self.instance and offer_type is None:
+
+            offer_type = self.instance.offer_type
+
+        product = attrs.get(
+            "product",
+        )
+
+        category = attrs.get(
+            "category",
+        )
+
+        if self.instance:
+
+            if "product" not in attrs:
+
+                product = self.instance.product
+
+            if "category" not in attrs:
+
+                category = self.instance.category
+
+        if offer_type == Offer.OfferType.PRODUCT:
+
+            if product is None:
+
+                raise serializers.ValidationError(
+                    {
+                        "product": "Product is required for product offers.",
+                    },
+                )
+
+            attrs["category"] = None
+
+        elif offer_type == Offer.OfferType.CATEGORY:
+
+            if category is None:
+
+                raise serializers.ValidationError(
+                    {
+                        "category": "Category is required for category offers.",
+                    },
+                )
+
+            attrs["product"] = None
+
+        valid_from = attrs.get(
+            "valid_from",
+        )
+
+        valid_until = attrs.get(
+            "valid_until",
+        )
+
+        if self.instance:
+
+            if valid_from is None:
+
+                valid_from = self.instance.valid_from
+
+            if valid_until is None:
+
+                valid_until = self.instance.valid_until
+
+        if valid_from and valid_until and valid_until <= valid_from:
+
+            raise serializers.ValidationError(
+                {
+                    "valid_until": "Must be after valid_from.",
+                },
+            )
+
+        discount_type = attrs.get(
+            "discount_type",
+        )
+
+        if self.instance and discount_type is None:
+
+            discount_type = self.instance.discount_type
+
+        discount_value = attrs.get(
+            "discount_value",
+        )
+
+        if self.instance and discount_value is None:
+
+            discount_value = self.instance.discount_value
+
+        if discount_type == Offer.DiscountType.PERCENT:
+
+            if (
+                discount_value is not None
+                and (
+                    discount_value <= Decimal("0")
+                    or discount_value > Decimal("100")
+                )
+            ):
+
+                raise serializers.ValidationError(
+                    {
+                        "discount_value": (
+                            "Percentage must be greater than 0 and at most 100."
+                        ),
+                    },
+                )
+
+        elif discount_type == Offer.DiscountType.FIXED:
+
+            if (
+                discount_value is not None
+                and discount_value <= Decimal("0")
+            ):
+
+                raise serializers.ValidationError(
+                    {
+                        "discount_value": (
+                            "Fixed amount must be greater than 0."
+                        ),
+                    },
+                )
+
+        return attrs
+
+    def create(
+        self,
+        validated_data,
+    ):
+
+        return create_offer(
+            validated_data,
+        )
+
+    def update(
+        self,
+        instance,
+        validated_data,
+    ):
+
+        return update_offer(
             instance,
             validated_data,
         )

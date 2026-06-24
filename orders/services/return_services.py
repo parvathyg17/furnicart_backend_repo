@@ -231,6 +231,15 @@ def admin_set_return_request_status(
             line.order_id,
         )
 
+        from orders.services.order_wallet_services import (
+            credit_wallet_for_return_completion,
+        )
+
+        credit_wallet_for_return_completion(
+            req,
+            line.line_total,
+        )
+
         return req
 
     raise ValidationError(

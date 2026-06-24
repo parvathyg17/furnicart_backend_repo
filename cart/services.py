@@ -334,11 +334,69 @@ def remove_cart_item(
         )
 
 
-def cart_line_subtotal(item):
+def cart_line_gross_subtotal(
+    item,
+):
 
-    return (
-        item.variant.price
-        * Decimal(item.quantity)
+    from promotions.services.offer_pricing import (
+        line_gross_subtotal,
+    )
+
+    return line_gross_subtotal(
+        item.variant,
+        item.quantity,
+    )
+
+
+def cart_line_offer_discount(
+    item,
+    *,
+    resolver=None,
+):
+
+    from promotions.services.offer_pricing import (
+        OfferResolver,
+    )
+
+    if resolver is None:
+
+        resolver = OfferResolver()
+
+        resolver.preload(
+            [
+                item,
+            ],
+        )
+
+    return resolver.line_offer_discount(
+        item.variant,
+        item.quantity,
+    )
+
+
+def cart_line_subtotal(
+    item,
+    *,
+    resolver=None,
+):
+
+    from promotions.services.offer_pricing import (
+        OfferResolver,
+    )
+
+    if resolver is None:
+
+        resolver = OfferResolver()
+
+        resolver.preload(
+            [
+                item,
+            ],
+        )
+
+    return resolver.line_net_subtotal(
+        item.variant,
+        item.quantity,
     )
 
 
@@ -363,15 +421,31 @@ def get_cart_payload(user):
         )
     )
 
-    subtotal = Decimal("0")
+    items = list(
+        items,
+    )
+
+    from promotions.services.offer_pricing import (
+        cart_offer_totals,
+    )
+
+    totals = cart_offer_totals(
+        items,
+    )
+
+    subtotal = totals["subtotal"]
+
+    gross_subtotal = totals["gross_subtotal"]
+
+    offer_discount_total = totals["offer_discount_total"]
+
+    resolver = totals["resolver"]
 
     count = 0
 
     can_checkout = True
 
     for item in items:
-
-        subtotal += cart_line_subtotal(item)
 
         count += item.quantity
 
@@ -381,14 +455,27 @@ def get_cart_payload(user):
 
             can_checkout = False
 
-    return cart, items, subtotal, count, can_checkout
+    return {
+        "cart": cart,
+        "items": items,
+        "subtotal": subtotal,
+        "gross_subtotal": gross_subtotal,
+        "offer_discount_total": offer_discount_total,
+        "item_count": count,
+        "can_checkout": can_checkout,
+        "offer_resolver": resolver,
+    }
 
 
 def validate_cart_for_checkout(user):
 
-    _, items, _, count, _ = get_cart_payload(
+    payload = get_cart_payload(
         user,
     )
+
+    items = payload["items"]
+
+    count = payload["item_count"]
 
     if count < 1:
 
@@ -452,9 +539,19 @@ def build_checkout_preview(
         )
     )
 
-    _, _, subtotal, item_count, can_checkout = get_cart_payload(
+    payload = get_cart_payload(
         user,
     )
+
+    subtotal = payload["subtotal"]
+
+    item_count = payload["item_count"]
+
+    can_checkout = payload["can_checkout"]
+
+    gross_subtotal = payload["gross_subtotal"]
+
+    offer_discount_total = payload["offer_discount_total"]
 
     from promotions.services.coupon_cart_services import (
         resolve_applied_coupon_for_cart,
@@ -482,6 +579,8 @@ def build_checkout_preview(
 
     body = totals_as_response_dict(
         totals,
+        gross_subtotal=gross_subtotal,
+        offer_discount_total=offer_discount_total,
     )
 
     body["can_checkout"] = can_checkout
@@ -536,9 +635,11 @@ def get_available_coupons_payload(
             .first()
         )
 
-    _, _, subtotal, _, _ = get_cart_payload(
+    payload = get_cart_payload(
         user,
     )
+
+    subtotal = payload["subtotal"]
 
     return {
         "coupons": list_active_coupons_for_checkout(
