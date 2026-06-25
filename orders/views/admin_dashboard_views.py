@@ -12,17 +12,16 @@ from orders.services.sales_report_export import (
     build_ledger_excel,
     build_ledger_pdf,
 )
+from orders.services.sales_report_services import (
+    load_report_for_export,
+)
 
 
 def _build_ledger_export_response(
     request,
 ):
 
-    from orders.views.admin_sales_report_views import (
-        _load_report_for_export,
-    )
-
-    report_data = _load_report_for_export(
+    report_data = load_report_for_export(
         request,
     )
 
@@ -150,3 +149,4 @@ class AdminLedgerExportView(
         return _build_ledger_export_response(
             request,
         )
+

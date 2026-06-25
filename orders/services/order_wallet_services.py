@@ -2,16 +2,13 @@ from decimal import Decimal
 
 from accounts.models.wallet import WalletTransaction
 from accounts.services.wallet_services import credit_wallet
-from orders.models import Order
+from orders.models import Order, OrderLine
 
 
 def order_eligible_for_wallet_refund(
     order,
 ):
-    """
-    Only prepaid online methods are refunded to the wallet.
-    COD orders are excluded — no payment was collected through the app.
-    """
+    
 
     return order.payment_method in (
         Order.PaymentMethod.RAZORPAY,
@@ -113,6 +110,41 @@ def credit_wallet_for_return_completion(
             f"(order {order.order_number})"
         ),
     )
+
+
+def update_payment_status_after_return_completion(
+    order,
+):
+   
+
+    if order.payment_status not in (
+        Order.PaymentStatus.PAID,
+        Order.PaymentStatus.PARTIALLY_REFUNDED,
+    ):
+
+        return False
+
+    active_lines = order.lines.filter(
+        status=OrderLine.LineStatus.ACTIVE,
+    )
+
+    if not active_lines.exists():
+
+        return False
+
+    all_returned = all(
+        line.fulfillment_status
+        == OrderLine.FulfillmentStatus.RETURNED
+        for line in active_lines
+    )
+
+    order.payment_status = (
+        Order.PaymentStatus.REFUNDED
+        if all_returned
+        else Order.PaymentStatus.PARTIALLY_REFUNDED
+    )
+
+    return True
 
 
 def wallet_refund_delta_on_partial_cancel(

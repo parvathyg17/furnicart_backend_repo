@@ -38,9 +38,7 @@ def _parse_date_param(
     *,
     field_name,
 ):
-    """
-    Accept YYYY-MM-DD or ISO datetime strings.
-    """
+    
 
     if not raw:
 
@@ -94,9 +92,7 @@ def resolve_sales_report_date_range(
     date_from_raw=None,
     date_to_raw=None,
 ):
-    """
-    Map preset periods to inclusive local-date bounds.
-    """
+    
 
     period = (
         str(
@@ -239,10 +235,7 @@ def _sum_active_line_offer_discount(
     queryset,
 ):
 
-    """
-    Sum offer discounts from line rows without double-aggregating
-    annotated order fields.
-    """
+    
 
     result = (
         OrderLine.objects.filter(
@@ -768,3 +761,45 @@ def build_sales_report_for_export(
     ]
 
     return payload
+
+
+def load_report_for_export(
+    request,
+):
+    
+
+    from rest_framework.exceptions import ValidationError
+
+    period = (
+        request.query_params.get(
+            "period",
+            "weekly",
+        )
+        or "weekly"
+    )
+
+    date_from = request.query_params.get(
+        "date_from",
+    )
+
+    date_to = request.query_params.get(
+        "date_to",
+    )
+
+    try:
+
+        return build_sales_report_for_export(
+            period=period,
+            date_from_raw=date_from,
+            date_to_raw=date_to,
+        )
+
+    except ValueError as exc:
+
+        raise ValidationError(
+            {
+                "detail": str(
+                    exc,
+                ),
+            },
+        ) from exc

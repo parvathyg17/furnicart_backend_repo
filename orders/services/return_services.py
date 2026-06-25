@@ -233,12 +233,42 @@ def admin_set_return_request_status(
 
         from orders.services.order_wallet_services import (
             credit_wallet_for_return_completion,
+            update_payment_status_after_return_completion,
         )
 
         credit_wallet_for_return_completion(
             req,
             line.line_total,
         )
+
+        order = (
+            Order.objects.select_for_update()
+            .prefetch_related(
+                "lines",
+            )
+            .get(
+                pk=line.order_id,
+            )
+        )
+
+        payment_status_fields = []
+
+        if update_payment_status_after_return_completion(
+            order,
+        ):
+
+            payment_status_fields.append(
+                "payment_status",
+            )
+
+        if payment_status_fields:
+
+            order.save(
+                update_fields=payment_status_fields
+                + [
+                    "updated_at",
+                ],
+            )
 
         return req
 

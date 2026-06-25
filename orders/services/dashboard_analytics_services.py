@@ -25,9 +25,7 @@ from orders.services.sales_report_services import (
 def resolve_chart_date_range(
     chart_period,
 ):
-    """
-    Dashboard chart window presets.
-    """
+    
 
     chart_period = (
         str(
@@ -60,7 +58,7 @@ def resolve_chart_date_range(
             chart_period,
         )
 
-    # monthly default: last 30 days
+    
     return (
         today - timedelta(
             days=29,

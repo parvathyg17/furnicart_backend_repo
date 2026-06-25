@@ -12,56 +12,17 @@ from orders.services.sales_report_export import (
     build_sales_report_pdf,
 )
 from orders.services.sales_report_services import (
-    build_sales_report_for_export,
     build_sales_report_payload,
+    load_report_for_export,
     serialize_sales_report_order,
 )
-
-
-def _load_report_for_export(
-    request,
-):
-
-    period = (
-        request.query_params.get(
-            "period",
-            "weekly",
-        )
-        or "weekly"
-    )
-
-    date_from = request.query_params.get(
-        "date_from",
-    )
-
-    date_to = request.query_params.get(
-        "date_to",
-    )
-
-    try:
-
-        return build_sales_report_for_export(
-            period=period,
-            date_from_raw=date_from,
-            date_to_raw=date_to,
-        )
-
-    except ValueError as exc:
-
-        raise ValidationError(
-            {
-                "detail": str(
-                    exc,
-                ),
-            },
-        ) from exc
 
 
 def _build_sales_export_response(
     request,
 ):
 
-    report_data = _load_report_for_export(
+    report_data = load_report_for_export(
         request,
     )
 
@@ -156,15 +117,8 @@ class AdminSalesReportView(
     APIView,
 ):
 
-    """
-    GET /api/admin/reports/sales/
-
-    Query params:
-      - period: daily | weekly | yearly | custom (default weekly)
-      - date_from, date_to: YYYY-MM-DD (required when period=custom)
-      - page, page_size: paginate orders in the report window
-      - export_format: pdf | excel (returns file download instead of JSON)
-    """
+    
+    
 
     permission_classes = [
         IsAuthenticated,
@@ -306,3 +260,4 @@ class AdminSalesReportExportView(
         return _build_sales_export_response(
             request,
         )
+
