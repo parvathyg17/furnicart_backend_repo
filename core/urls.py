@@ -20,12 +20,29 @@ from django.urls import include, path
 from django.conf import settings
 from django.conf.urls.static import static
 
+from orders.views.admin_dashboard_views import AdminLedgerExportView
+from orders.views.admin_sales_report_views import AdminSalesReportExportView
+
 urlpatterns = [
     path("admin/", admin.site.urls),
     path(
         "api/admin/orders/",
         include(
             "orders.admin_urls",
+        ),
+    ),
+    path(
+        "api/admin/reports/sales/export/",
+        AdminSalesReportExportView.as_view(),
+    ),
+    path(
+        "api/admin/reports/ledger/export/",
+        AdminLedgerExportView.as_view(),
+    ),
+    path(
+        "api/admin/reports/",
+        include(
+            "orders.admin_report_urls",
         ),
     ),
     path('api/admin/', include('adminpanel.urls')),
@@ -123,9 +140,6 @@ urlpatterns = [
             "promotions.admin_offer_urls",
         ),
     ),
-  
-    
-
 ]
 
 if settings.DEBUG:
