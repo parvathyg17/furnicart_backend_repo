@@ -439,6 +439,16 @@ def create_order_from_cart(
             ),
         )
 
+    if payment_status == Order.PaymentStatus.PAID:
+
+        from promotions.services.referral_services import (
+            process_referral_referrer_reward,
+        )
+
+        process_referral_referrer_reward(
+            order,
+        )
+
     return order
 
 

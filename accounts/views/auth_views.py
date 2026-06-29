@@ -157,6 +157,20 @@ class VerifyOTPView(APIView):
 
             if purpose == "signup":
 
+                from promotions.services.referral_services import (
+                    try_attach_referral_on_signup,
+                )
+
+                try_attach_referral_on_signup(
+                    user,
+                    referral_token=serializer.validated_data.get(
+                        "referral_token",
+                    ),
+                    referral_code=serializer.validated_data.get(
+                        "referral_code",
+                    ),
+                )
+
                 return Response({
                     "message": "Email verified successfully"
                 })
@@ -299,6 +313,22 @@ class GoogleLoginView(APIView):
                 "is_staff": False        
     }
 )
+
+        if created:
+
+            from promotions.services.referral_services import (
+                try_attach_referral_on_signup,
+            )
+
+            try_attach_referral_on_signup(
+                user,
+                referral_token=request.data.get(
+                    "referral_token",
+                ),
+                referral_code=request.data.get(
+                    "referral_code",
+                ),
+            )
 
         if user.is_superuser or user.is_staff:
             return Response(

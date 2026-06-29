@@ -123,6 +123,14 @@ def list_active_coupons_for_checkout(
         )
         .filter(
             Q(
+                assigned_user__isnull=True,
+            )
+            | Q(
+                assigned_user=user,
+            ),
+        )
+        .filter(
+            Q(
                 valid_from__isnull=True,
             )
             | Q(

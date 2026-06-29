@@ -161,6 +161,17 @@ def validate_coupon_for_checkout(
             },
         )
 
+    if (
+        coupon.assigned_user_id is not None
+        and coupon.assigned_user_id != user.id
+    ):
+
+        raise ValidationError(
+            {
+                "code": "Invalid coupon code.",
+            },
+        )
+
     now = timezone.now()
 
     if coupon.valid_from and now < coupon.valid_from:

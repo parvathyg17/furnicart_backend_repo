@@ -43,7 +43,10 @@ class Coupon(models.Model):
         max_digits=12,
         decimal_places=2,
         default=Decimal("0.00"),
-        help_text="Minimum cart subtotal before tax/shipping for this coupon to apply.",
+        help_text=(
+            "Minimum order total (subtotal + tax + shipping, before coupon) "
+            "required for this coupon to apply."
+        ),
     )
 
     max_discount_amount = models.DecimalField(
@@ -81,6 +84,18 @@ class Coupon(models.Model):
     times_used = models.PositiveIntegerField(
         default=0,
         help_text="Incremented when an order completes with this coupon (user flow).",
+    )
+
+    assigned_user = models.ForeignKey(
+        "accounts.User",
+        on_delete=models.CASCADE,
+        null=True,
+        blank=True,
+        related_name="assigned_coupons",
+        help_text=(
+            "When set, only this user may redeem the coupon "
+            "(e.g. referral welcome offers)."
+        ),
     )
 
     is_active = models.BooleanField(
@@ -347,3 +362,166 @@ class Offer(models.Model):
     def save(self, *args, **kwargs):
 
         super().save(*args, **kwargs)
+
+
+class ReferralProgram(models.Model):
+
+    name = models.CharField(
+        max_length=128,
+        default="Default Referral Program",
+    )
+
+    is_active = models.BooleanField(
+        default=True,
+        db_index=True,
+    )
+
+    referee_discount_type = models.CharField(
+        max_length=16,
+        choices=Coupon.DiscountType.choices,
+        default=Coupon.DiscountType.PERCENT,
+    )
+
+    referee_discount_value = models.DecimalField(
+        max_digits=12,
+        decimal_places=2,
+        default=Decimal("10.00"),
+        help_text="Referee welcome coupon: percent (0–100) or fixed amount.",
+    )
+
+    referee_max_discount_amount = models.DecimalField(
+        max_digits=12,
+        decimal_places=2,
+        null=True,
+        blank=True,
+        help_text="Cap for percentage referee coupons (optional).",
+    )
+
+    referee_coupon_valid_days = models.PositiveIntegerField(
+        null=True,
+        blank=True,
+        help_text="Days the referee coupon stays valid (empty = no expiry).",
+    )
+
+    referrer_reward_amount = models.DecimalField(
+        max_digits=12,
+        decimal_places=2,
+        default=Decimal("500.00"),
+        help_text="Wallet credit for referrer after referee's first paid order.",
+    )
+
+    created_at = models.DateTimeField(
+        auto_now_add=True,
+    )
+
+    updated_at = models.DateTimeField(
+        auto_now=True,
+    )
+
+    class Meta:
+
+        ordering = ["-created_at"]
+        verbose_name = "Referral program"
+        verbose_name_plural = "Referral programs"
+
+    def __str__(self):
+
+        return self.name
+
+
+class ReferralCode(models.Model):
+
+    user = models.OneToOneField(
+        "accounts.User",
+        on_delete=models.CASCADE,
+        related_name="referral_code",
+    )
+
+    code = models.CharField(
+        max_length=32,
+        unique=True,
+        db_index=True,
+        help_text="Shareable referral code (stored uppercase).",
+    )
+
+    token = models.CharField(
+        max_length=64,
+        unique=True,
+        db_index=True,
+        help_text="Token for referral links (?ref=token).",
+    )
+
+    created_at = models.DateTimeField(
+        auto_now_add=True,
+    )
+
+    class Meta:
+
+        verbose_name = "Referral code"
+        verbose_name_plural = "Referral codes"
+
+    def __str__(self):
+
+        return f"{self.code} ({self.user_id})"
+
+    def save(self, *args, **kwargs):
+
+        if self.code:
+
+            self.code = self.code.strip().upper()
+
+        super().save(*args, **kwargs)
+
+
+class ReferralAttribution(models.Model):
+
+    referee = models.OneToOneField(
+        "accounts.User",
+        on_delete=models.CASCADE,
+        related_name="referral_attribution",
+    )
+
+    referrer = models.ForeignKey(
+        "accounts.User",
+        on_delete=models.CASCADE,
+        related_name="referrals_made",
+    )
+
+    referral_code = models.ForeignKey(
+        ReferralCode,
+        on_delete=models.PROTECT,
+        related_name="attributions",
+    )
+
+    referee_coupon = models.OneToOneField(
+        Coupon,
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name="referral_attribution",
+    )
+
+    referrer_rewarded = models.BooleanField(
+        default=False,
+    )
+
+    referrer_reward_order = models.ForeignKey(
+        "orders.Order",
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name="referral_rewards",
+    )
+
+    created_at = models.DateTimeField(
+        auto_now_add=True,
+    )
+
+    class Meta:
+
+        verbose_name = "Referral attribution"
+        verbose_name_plural = "Referral attributions"
+
+    def __str__(self):
+
+        return f"{self.referee_id} referred by {self.referrer_id}"

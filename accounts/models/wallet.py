@@ -47,6 +47,7 @@ class WalletTransaction(models.Model):
         ORDER_CANCEL = "order_cancel", "Order cancellation"
         RETURN_REFUND = "return_refund", "Return refund"
         ORDER_PAYMENT = "order_payment", "Order payment"
+        REFERRAL_REWARD = "referral_reward", "Referral reward"
         ADMIN_ADJUSTMENT = "admin_adjustment", "Admin adjustment"
         OTHER = "other", "Other"
 

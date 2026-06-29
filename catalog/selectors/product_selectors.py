@@ -3,6 +3,7 @@ from django.db.models import (
     Min,
     Max,
     Prefetch,
+    Count,
 )
 from django.db.models.functions import (
     Coalesce,
@@ -107,6 +108,15 @@ def get_user_filtered_products(params):
     category__is_active=True,
     variants__is_active=True,
 )
+#     .annotate(
+#     active_variant_count=Count(
+#         "variants",
+#         filter=Q(variants__is_active=True),
+#         distinct=True,
+#     ),
+# ).filter(
+#     active_variant_count__gte=2,
+# )
 
     products = annotate_catalog_prices(
         products,
@@ -166,10 +176,7 @@ def get_user_filtered_products(params):
 
 
 
-    # =========================
-    # ROOM TYPE FILTER
-    # =========================
-
+   
     if room_type:
 
         products = products.filter(

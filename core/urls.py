@@ -140,6 +140,20 @@ urlpatterns = [
             "promotions.admin_offer_urls",
         ),
     ),
+
+    path(
+        "api/promotions/",
+        include(
+            "promotions.referral_urls",
+        ),
+    ),
+
+    path(
+        "api/admin/",
+        include(
+            "promotions.admin_referral_urls",
+        ),
+    ),
 ]
 
 if settings.DEBUG:
