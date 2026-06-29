@@ -42,18 +42,17 @@ class UserProfileSerializer(serializers.ModelSerializer):
         if not value:
             return value
 
-        if (
-            not value.isdigit()
-            or
-            len(value) != 10
-        ):
+        import re
 
+        clean = str(value).strip()
+
+        if not re.match(r"^[6-9]\d{9}$", clean):
             raise serializers.ValidationError(
-                "Phone number must be 10 digits"
+                "Phone number must be a valid 10 digit number"
             )
 
         existing_profile = UserProfile.objects.filter(
-            phone=value
+            phone=clean
         ).exclude(
             user=user
         ).first()
@@ -64,7 +63,7 @@ class UserProfileSerializer(serializers.ModelSerializer):
                 "Phone number already in use"
             )
 
-        return value
+        return clean
 
 
 class EmailChangeRequestSerializer(serializers.Serializer):

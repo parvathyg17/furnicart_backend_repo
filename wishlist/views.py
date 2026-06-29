@@ -7,6 +7,12 @@ from rest_framework.exceptions import (
     ValidationError as DRFValidationError,
 )
 
+from core.pagination import CustomPagination
+
+from promotions.services.offer_display import (
+    extend_serializer_context_with_offers,
+)
+
 from .serializers import (
     WishlistItemSerializer,
 )
@@ -46,18 +52,56 @@ class WishlistListView(APIView):
             )
         )
 
+        paginator = CustomPagination()
+
+        page = paginator.paginate_queryset(
+            items,
+            request,
+            view=self,
+        )
+
+        if page is not None:
+
+            products = [
+                item.variant.product
+                for item in page
+            ]
+
+            serializer = WishlistItemSerializer(
+                page,
+                many=True,
+                context=extend_serializer_context_with_offers(
+                    {
+                        "request": request,
+                    },
+                    products,
+                ),
+            )
+
+            return paginator.get_paginated_response(
+                serializer.data,
+            )
+
+        products = [
+            item.variant.product
+            for item in items
+        ]
+
         serializer = WishlistItemSerializer(
             items,
             many=True,
-            context={
-                "request": request,
-            },
+            context=extend_serializer_context_with_offers(
+                {
+                    "request": request,
+                },
+                products,
+            ),
         )
 
         return Response(
             {
                 "results": serializer.data,
-            }
+            },
         )
 
 

@@ -1,7 +1,11 @@
 from django.db.models import (
     Q,
     Min,
+    Max,
     Prefetch,
+)
+from django.db.models.functions import (
+    Coalesce,
 )
 
 from catalog.models import (
@@ -15,6 +19,58 @@ from catalog.selectors.category_selectors import (
 from catalog.selectors.review_selectors import (
     annotate_product_ratings,
 )
+
+LISTABLE_VARIANT_FILTER = Q(
+    variants__is_active=True,
+    variants__stock__gt=0,
+)
+
+
+def annotate_catalog_prices(
+    queryset,
+):
+
+    in_stock_min = Min(
+        "variants__price",
+        filter=Q(
+            variants__is_active=True,
+            variants__stock__gt=0,
+        ),
+    )
+
+    in_stock_max = Max(
+        "variants__price",
+        filter=Q(
+            variants__is_active=True,
+            variants__stock__gt=0,
+        ),
+    )
+
+    active_min = Min(
+        "variants__price",
+        filter=Q(
+            variants__is_active=True,
+        ),
+    )
+
+    active_max = Max(
+        "variants__price",
+        filter=Q(
+            variants__is_active=True,
+        ),
+    )
+
+    return queryset.annotate(
+        catalog_min_price=Coalesce(
+            in_stock_min,
+            active_min,
+        ),
+        catalog_max_price=Coalesce(
+            in_stock_max,
+            active_max,
+        ),
+    )
+
 
 def get_user_filtered_products(params):
 
@@ -50,9 +106,11 @@ def get_user_filtered_products(params):
     is_active=True,
     category__is_active=True,
     variants__is_active=True,
-).annotate(
-    min_price=Min("variants__price")
 )
+
+    products = annotate_catalog_prices(
+        products,
+    )
 
     featured_raw = (params.get("featured") or "").strip().lower()
 
@@ -135,25 +193,31 @@ def get_user_filtered_products(params):
     if color:
 
         products = products.filter(
+            LISTABLE_VARIANT_FILTER,
             variants__color__iexact=color,
-            variants__is_active=True
         )
 
-    
+    price_variant_q = Q(
+        variants__is_active=True,
+        variants__stock__gt=0,
+    )
 
     if min_price:
 
-        products = products.filter(
+        price_variant_q &= Q(
             variants__price__gte=min_price,
-            variants__is_active=True
         )
-
 
     if max_price:
 
-        products = products.filter(
+        price_variant_q &= Q(
             variants__price__lte=max_price,
-            variants__is_active=True
+        )
+
+    if min_price or max_price:
+
+        products = products.filter(
+            price_variant_q,
         )
 
     products = products.distinct()
@@ -162,14 +226,14 @@ def get_user_filtered_products(params):
     if sort == "price_low":
 
         products = products.order_by(
-    "min_price"
-)
+            "catalog_min_price",
+        )
 
     elif sort == "price_high":
 
         products = products.order_by(
-    "-min_price"
-)
+            "-catalog_max_price",
+        )
 
     elif sort == "a_z":
 
@@ -223,11 +287,11 @@ def get_admin_filtered_products(params):
             )
         )
 
-    ).annotate(
-        min_price=Min("variants__price")
     )
 
-    
+    products = annotate_catalog_prices(
+        products,
+    )
 
     if search:
 
@@ -297,13 +361,13 @@ def get_admin_filtered_products(params):
     if sort == "price_low":
 
         products = products.order_by(
-            "min_price"
+            "catalog_min_price",
         )
 
     elif sort == "price_high":
 
         products = products.order_by(
-            "-min_price"
+            "-catalog_max_price",
         )
 
     elif sort == "a_z":

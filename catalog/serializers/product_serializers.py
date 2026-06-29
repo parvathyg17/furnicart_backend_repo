@@ -66,6 +66,7 @@ class ProductVariantSerializer(
 
     images = serializers.SerializerMethodField()
     image_count = serializers.SerializerMethodField()
+    discounted_price = serializers.SerializerMethodField()
 
     class Meta:
 
@@ -78,6 +79,7 @@ class ProductVariantSerializer(
         "size",
         "material",
         "price",
+        "discounted_price",
         "stock",
         "sku",
         "is_active",
@@ -104,6 +106,43 @@ class ProductVariantSerializer(
     def get_image_count(self, obj):
 
         return obj.images.count()
+
+    def get_discounted_price(
+        self,
+        obj,
+    ):
+
+        product_map = self.context.get(
+            "offer_product_map",
+        )
+
+        category_map = self.context.get(
+            "offer_category_map",
+        )
+
+        if (
+            product_map is None
+            or category_map is None
+        ):
+
+            return None
+
+        from promotions.services.offer_display import (
+            discounted_unit_price,
+        )
+
+        product = obj.product
+
+        net = discounted_unit_price(
+            product,
+            obj.price,
+            product_map,
+            category_map,
+        )
+
+        return str(
+            net,
+        )
 
     def validate_price(self, value):
 
@@ -756,19 +795,19 @@ class ProductSerializer(
         )
 
         from promotions.services.offer_display import (
-            build_offer_badges_for_products,
+            extend_serializer_context_with_offers,
         )
 
         serializer = ProductSerializer(
             related_list,
             many=True,
-            context={
-                "request": request,
-                "exclude_related": True,
-                "product_offer_badges": build_offer_badges_for_products(
-                    related_list,
-                ),
-            },
+            context=extend_serializer_context_with_offers(
+                {
+                    "request": request,
+                    "exclude_related": True,
+                },
+                related_list,
+            ),
         )
 
         return serializer.data

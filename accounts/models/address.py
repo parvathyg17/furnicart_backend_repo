@@ -19,8 +19,8 @@ class Address(models.Model):
         max_length=15,
         validators=[
             RegexValidator(
-                regex=r'^\+?\d{10,15}$',
-                message="Enter a valid phone number"
+                regex=r'^[6-9]\d{9}$',
+                message="Enter a valid 10 digit phone number"
             )
         ]
     )

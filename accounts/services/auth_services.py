@@ -91,7 +91,11 @@ def create_and_send_otp(user, purpose):
         expires_at=expiry_time
     )
 
-    send_otp_email(user.email, otp_code)
+    send_otp_email(
+        user.email,
+        otp_code,
+        purpose=purpose,
+    )
 
     return otp_code
 

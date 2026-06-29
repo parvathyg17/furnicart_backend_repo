@@ -13,7 +13,6 @@ from cart.models import (
     CartItem,
 )
 
-from wishlist.models import WishlistItem
 
 
 MAX_CART_QTY = 10
@@ -152,17 +151,6 @@ def get_cart_line_availability(item):
     }
 
 
-def _remove_wishlist_for_variant(
-    user,
-    variant,
-):
-
-    WishlistItem.objects.filter(
-        wishlist__user=user,
-        variant=variant,
-    ).delete()
-
-
 @transaction.atomic
 def add_to_cart(
     user,
@@ -232,11 +220,6 @@ def add_to_cart(
     item.quantity = new_qty
 
     item.save()
-
-    _remove_wishlist_for_variant(
-        user,
-        variant,
-    )
 
     return item
 

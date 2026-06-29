@@ -6,6 +6,33 @@ from accounts.models.users import User
 import re
 
 
+def _validate_user_password(value):
+
+    validate_password(value)
+
+    if len(value) < 8:
+        raise serializers.ValidationError(
+            "Password must be at least 8 characters",
+        )
+
+    if not re.search(r"[A-Z]", value):
+        raise serializers.ValidationError(
+            "Password must contain at least one uppercase letter",
+        )
+
+    if not re.search(r"[a-z]", value):
+        raise serializers.ValidationError(
+            "Password must contain at least one lowercase letter",
+        )
+
+    if not re.search(r"[0-9]", value):
+        raise serializers.ValidationError(
+            "Password must contain at least one number",
+        )
+
+    return value
+
+
 class SignupSerializer(
     serializers.ModelSerializer
 ):
@@ -117,42 +144,7 @@ class SignupSerializer(
         value,
     ):
 
-        validate_password(value)
-
-        if len(value) < 8:
-
-            raise serializers.ValidationError(
-                "Password must be at least 8 characters"
-            )
-
-        if not re.search(
-            r"[A-Z]",
-            value,
-        ):
-
-            raise serializers.ValidationError(
-                "Password must contain at least one uppercase letter"
-            )
-
-        if not re.search(
-            r"[a-z]",
-            value,
-        ):
-
-            raise serializers.ValidationError(
-                "Password must contain at least one lowercase letter"
-            )
-
-        if not re.search(
-            r"[0-9]",
-            value,
-        ):
-
-            raise serializers.ValidationError(
-                "Password must contain at least one number"
-            )
-
-        return value
+        return _validate_user_password(value)
 
     def create(
         self,
@@ -232,9 +224,7 @@ class ResetPasswordSerializer(
         value,
     ):
 
-        validate_password(value)
-
-        return value
+        return _validate_user_password(value)
 
 
 class ChangeEmailRequestSerializer(
@@ -272,6 +262,4 @@ class ChangePasswordSerializer(
         value,
     ):
 
-        validate_password(value)
-
-        return value
+        return _validate_user_password(value)

@@ -23,7 +23,11 @@ def send_email_change_otp(user, new_email):
         extra_data={"new_email": new_email}
     )
 
-    send_otp_email(new_email, otp_code)
+    send_otp_email(
+        new_email,
+        otp_code,
+        purpose="email_change",
+    )
 
     return otp_code
 

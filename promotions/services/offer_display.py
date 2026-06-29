@@ -15,7 +15,8 @@ def _min_active_variant_price(
     product,
 ):
 
-    prices = []
+    in_stock_prices = []
+    active_prices = []
 
     for variant in product.variants.all():
 
@@ -24,9 +25,20 @@ def _min_active_variant_price(
             and variant.price is not None
         ):
 
-            prices.append(
+            active_prices.append(
                 variant.price,
             )
+
+            if variant.stock > 0:
+
+                in_stock_prices.append(
+                    variant.price,
+                )
+
+    prices = (
+        in_stock_prices
+        or active_prices
+    )
 
     if not prices:
 
@@ -160,6 +172,168 @@ def _load_active_offer_maps(
     return product_map, category_map
 
 
+def best_offer_discount_for_product_price(
+    product,
+    line_subtotal,
+    product_map,
+    category_map,
+):
+
+    line_subtotal = Decimal(
+        line_subtotal,
+    ).quantize(
+        Decimal(
+            "0.01",
+        ),
+    )
+
+    if line_subtotal <= Decimal(
+        "0.00",
+    ):
+
+        return Decimal(
+            "0.00",
+        )
+
+    best_discount = Decimal(
+        "0.00",
+    )
+
+    for offer in product_map.get(
+        product.id,
+        [],
+    ):
+
+        best_discount = max(
+            best_discount,
+            compute_offer_discount_amount(
+                offer,
+                line_subtotal,
+            ),
+        )
+
+    for offer in category_map.get(
+        product.category_id,
+        [],
+    ):
+
+        best_discount = max(
+            best_discount,
+            compute_offer_discount_amount(
+                offer,
+                line_subtotal,
+            ),
+        )
+
+    return best_discount
+
+
+def discounted_unit_price(
+    product,
+    gross_price,
+    product_map,
+    category_map,
+):
+
+    gross = Decimal(
+        gross_price,
+    ).quantize(
+        Decimal(
+            "0.01",
+        ),
+    )
+
+    discount = best_offer_discount_for_product_price(
+        product,
+        gross,
+        product_map,
+        category_map,
+    )
+
+    return (
+        gross - discount
+    ).quantize(
+        Decimal(
+            "0.01",
+        ),
+    )
+
+
+def build_offer_pricing_context(
+    products,
+    *,
+    now=None,
+):
+
+    products = list(
+        products,
+    )
+
+    product_ids = {
+        product.id
+        for product in products
+    }
+
+    category_ids = {
+        product.category_id
+        for product in products
+    }
+
+    product_map, category_map = _load_active_offer_maps(
+        product_ids,
+        category_ids,
+        now=now,
+    )
+
+    badges = {}
+
+    for product in products:
+
+        badge = best_offer_badge_for_product(
+            product,
+            product_map,
+            category_map,
+        )
+
+        if badge is not None:
+
+            badges[
+                product.id
+            ] = badge
+
+    return {
+        "product_map": product_map,
+        "category_map": category_map,
+        "badges": badges,
+    }
+
+
+def extend_serializer_context_with_offers(
+    context,
+    products,
+    *,
+    now=None,
+):
+
+    pricing = build_offer_pricing_context(
+        products,
+        now=now,
+    )
+
+    return {
+        **context,
+        "product_offer_badges": pricing[
+            "badges"
+        ],
+        "offer_product_map": pricing[
+            "product_map"
+        ],
+        "offer_category_map": pricing[
+            "category_map"
+        ],
+    }
+
+
 def best_offer_badge_for_product(
     product,
     product_map,
@@ -176,8 +350,6 @@ def best_offer_badge_for_product(
 
         return None
 
-    line_subtotal = ref_price
-
     best_offer = None
 
     best_discount = Decimal(
@@ -191,7 +363,7 @@ def best_offer_badge_for_product(
 
         discount = compute_offer_discount_amount(
             offer,
-            line_subtotal,
+            ref_price,
         )
 
         if discount > best_discount:
@@ -206,7 +378,7 @@ def best_offer_badge_for_product(
 
         discount = compute_offer_discount_amount(
             offer,
-            line_subtotal,
+            ref_price,
         )
 
         if discount > best_discount:
@@ -214,7 +386,12 @@ def best_offer_badge_for_product(
             best_discount = discount
             best_offer = offer
 
-    if best_offer is None:
+    if (
+        best_offer is None
+        or best_discount <= Decimal(
+            "0.00",
+        )
+    ):
 
         return None
 
