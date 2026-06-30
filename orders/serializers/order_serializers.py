@@ -1,7 +1,7 @@
 from rest_framework import serializers
 
 from orders.models import Order, OrderLine, ReturnRequest
-from orders.services.order_pricing import (
+from orders.services.checkout_pricing import (
     order_subtotal_gross,
     sum_order_line_offer_discount,
 )
