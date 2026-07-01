@@ -22,10 +22,7 @@ logger = logging.getLogger(__name__)
 
 class AdminOfferListCreateView(APIView):
 
-    """
-    GET: paginated offer list (search, is_active, offer_type).
-    POST: create offer.
-    """
+   
 
     permission_classes = [
         IsAuthenticated,
@@ -118,11 +115,7 @@ class AdminOfferListCreateView(APIView):
 
 class AdminOfferDetailView(APIView):
 
-    """
-    GET: single offer.
-    PATCH: partial update.
-    DELETE: remove offer.
-    """
+   
 
     permission_classes = [
         IsAuthenticated,

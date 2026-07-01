@@ -52,9 +52,7 @@ def compute_offer_discount_amount(
     offer,
     line_subtotal,
 ):
-    """
-    Discount for a single cart line (variant price × quantity).
-    """
+    
 
     line_subtotal = _quantize_money(
         line_subtotal,
@@ -128,9 +126,7 @@ def line_gross_subtotal(
 
 class OfferResolver:
 
-    """
-    Batch-load active offers for cart lines to avoid N+1 queries.
-    """
+    
 
     def __init__(
         self,

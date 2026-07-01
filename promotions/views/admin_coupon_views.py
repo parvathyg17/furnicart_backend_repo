@@ -118,11 +118,7 @@ class AdminCouponListCreateView(APIView):
 
 class AdminCouponDetailView(APIView):
 
-    """
-    GET: single coupon.
-    PATCH: partial update.
-    DELETE: remove coupon.
-    """
+    
 
     permission_classes = [
         IsAuthenticated,

@@ -100,10 +100,7 @@ def list_active_coupons_for_checkout(
     *,
     exclude_code=None,
 ):
-    """
-    Active, date-valid coupons the customer may see at checkout.
-    Includes eligibility for the current cart subtotal and per-user limits.
-    """
+    
 
     now = timezone.now()
 

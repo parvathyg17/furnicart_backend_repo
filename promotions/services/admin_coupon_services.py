@@ -7,9 +7,7 @@ from promotions.models import Coupon
 def create_coupon(
     validated_data,
 ):
-    """
-    Persist a new coupon after serializer validation.
-    """
+   
 
     instance = Coupon(
         **validated_data,
@@ -25,9 +23,7 @@ def update_coupon(
     instance,
     validated_data,
 ):
-    """
-    Apply partial/full updates after serializer validation.
-    """
+
 
     for key, value in validated_data.items():
 
@@ -47,9 +43,7 @@ def update_coupon(
 def delete_coupon(
     instance,
 ):
-    """
-    Remove a coupon row (admin only).
-    """
+
 
     pk = instance.pk
     instance.delete()

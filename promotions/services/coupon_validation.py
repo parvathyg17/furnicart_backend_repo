@@ -12,9 +12,7 @@ from promotions.models import Coupon
 def normalise_redemption_limit(
     value,
 ):
-    """
-    Blank, null, or zero means unlimited (no cap).
-    """
+    
 
     if value is None:
 
@@ -69,9 +67,7 @@ def compute_coupon_discount_amount(
     coupon,
     subtotal,
 ):
-    """
-    Discount is applied to cart subtotal (before tax/shipping).
-    """
+    
 
     subtotal = (
         Decimal(
@@ -141,9 +137,7 @@ def validate_coupon_for_checkout(
     coupon,
     subtotal,
 ):
-    """
-    Raise DRF ValidationError when the coupon cannot be used.
-    """
+    
 
     if coupon is None:
 

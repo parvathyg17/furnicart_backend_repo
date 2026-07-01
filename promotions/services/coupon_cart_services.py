@@ -139,9 +139,7 @@ def resolve_applied_coupon_for_cart(
     user,
     subtotal,
 ):
-    """
-    Return the cart's coupon if still valid; otherwise clear it.
-    """
+    
 
     coupon = cart.applied_coupon
 
