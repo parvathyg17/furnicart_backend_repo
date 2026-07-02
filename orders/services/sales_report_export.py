@@ -7,22 +7,15 @@ from reportlab.lib import colors
 from reportlab.lib.pagesizes import A4, landscape
 from reportlab.lib.styles import ParagraphStyle, getSampleStyleSheet
 from reportlab.lib.units import cm
-from reportlab.platypus import (
-    Paragraph,
-    SimpleDocTemplate,
-    Spacer,
-    Table,
-    TableStyle,
-)
+from reportlab.platypus import (Paragraph, SimpleDocTemplate, Spacer, Table,
+                                TableStyle)
 
 
 def _money(
     value,
 ):
 
-    return (
-        f"INR {Decimal(str(value or '0')).quantize(Decimal('0.01')):,.2f}"
-    )
+    return f"INR {Decimal(str(value or '0')).quantize(Decimal('0.01')):,.2f}"
 
 
 def _summary_rows(
@@ -168,9 +161,7 @@ def build_sales_report_pdf(
                 "Value",
             ],
             *_summary_rows(
-                report_data[
-                    "summary"
-                ],
+                report_data["summary"],
             ),
         ],
         colWidths=[
@@ -437,9 +428,7 @@ def build_sales_report_pdf(
                     order.get(
                         "placed_at",
                         "",
-                    )[
-                        :16
-                    ],
+                    )[:16],
                     order.get(
                         "customer_email",
                         "",
@@ -563,27 +552,21 @@ def build_sales_report_excel(
     ws_summary.append(
         [
             "Period",
-            report_data[
-                "period"
-            ],
+            report_data["period"],
         ],
     )
 
     ws_summary.append(
         [
             "From",
-            report_data[
-                "date_from"
-            ],
+            report_data["date_from"],
         ],
     )
 
     ws_summary.append(
         [
             "To",
-            report_data[
-                "date_to"
-            ],
+            report_data["date_to"],
         ],
     )
 
@@ -599,9 +582,7 @@ def build_sales_report_excel(
     )
 
     for label, value in _summary_rows(
-        report_data[
-            "summary"
-        ],
+        report_data["summary"],
     ):
 
         ws_summary.append(
@@ -611,9 +592,7 @@ def build_sales_report_excel(
             ],
         )
 
-    ws_summary[
-        "A1"
-    ].font = Font(
+    ws_summary["A1"].font = Font(
         bold=True,
         size=14,
     )
@@ -774,13 +753,9 @@ def build_ledger_excel(
     ws.append(
         [
             "From",
-            report_data[
-                "date_from"
-            ],
+            report_data["date_from"],
             "To",
-            report_data[
-                "date_to"
-            ],
+            report_data["date_to"],
         ],
     )
 
@@ -847,9 +822,7 @@ def build_ledger_excel(
             ],
         )
 
-    ws[
-        "A1"
-    ].font = Font(
+    ws["A1"].font = Font(
         bold=True,
         size=14,
     )
@@ -935,9 +908,7 @@ def build_ledger_pdf(
                 order.get(
                     "placed_at",
                     "",
-                )[
-                    :10
-                ],
+                )[:10],
                 order.get(
                     "order_number",
                     "",

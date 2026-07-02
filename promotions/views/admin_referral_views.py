@@ -5,9 +5,7 @@ from rest_framework.views import APIView
 
 from core.utils.permissions import IsAdminUserCustom
 from promotions.models import ReferralProgram
-from promotions.referral_serializers import (
-    AdminReferralProgramSerializer,
-)
+from promotions.referral_serializers import AdminReferralProgramSerializer
 
 
 class AdminReferralProgramView(
@@ -24,11 +22,9 @@ class AdminReferralProgramView(
         request,
     ):
 
-        program = (
-            ReferralProgram.objects.order_by(
-                "-id",
-            ).first()
-        )
+        program = ReferralProgram.objects.order_by(
+            "-id",
+        ).first()
 
         if program is None:
 
@@ -77,11 +73,9 @@ class AdminReferralProgramView(
         request,
     ):
 
-        program = (
-            ReferralProgram.objects.order_by(
-                "-id",
-            ).first()
-        )
+        program = ReferralProgram.objects.order_by(
+            "-id",
+        ).first()
 
         if program is None:
 

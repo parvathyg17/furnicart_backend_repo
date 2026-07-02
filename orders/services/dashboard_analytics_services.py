@@ -1,31 +1,21 @@
 from datetime import timedelta
 from decimal import Decimal
 
-from django.db.models import (
-    Count,
-    Sum,
-    Value,
-)
+from django.db.models import Count, Sum, Value
 from django.db.models.functions import Coalesce
 from django.utils import timezone
 
 from accounts.models.users import User
 from orders.models import OrderLine
 from orders.services.sales_report_services import (
-    _aggregate_breakdown,
-    _breakdown_granularity,
-    _serialize_summary,
-    _sum_active_line_offer_discount,
-    _summary_from_aggregates,
-    _zero_decimal_value,
-    sales_report_base_queryset,
-)
+    _aggregate_breakdown, _breakdown_granularity, _serialize_summary,
+    _sum_active_line_offer_discount, _summary_from_aggregates,
+    _zero_decimal_value, sales_report_base_queryset)
 
 
 def resolve_chart_date_range(
     chart_period,
 ):
-    
 
     chart_period = (
         str(
@@ -40,7 +30,8 @@ def resolve_chart_date_range(
     if chart_period == "weekly":
 
         return (
-            today - timedelta(
+            today
+            - timedelta(
                 days=6,
             ),
             today,
@@ -58,9 +49,9 @@ def resolve_chart_date_range(
             chart_period,
         )
 
-    
     return (
-        today - timedelta(
+        today
+        - timedelta(
             days=29,
         ),
         today,
@@ -101,31 +92,19 @@ def _top_selling_products(
         )
         .order_by(
             "-revenue",
-        )[
-            :limit
-        ]
+        )[:limit]
     )
 
     return [
         {
-            "id": row[
-                "variant__product_id"
-            ],
-            "name": row[
-                "product_name"
-            ],
+            "id": row["variant__product_id"],
+            "name": row["product_name"],
             "quantity_sold": int(
-                row[
-                    "quantity_sold"
-                ]
-                or 0,
+                row["quantity_sold"] or 0,
             ),
             "revenue": str(
                 Decimal(
-                    row[
-                        "revenue"
-                    ]
-                    or "0.00",
+                    row["revenue"] or "0.00",
                 ).quantize(
                     Decimal(
                         "0.01",
@@ -170,32 +149,19 @@ def _top_selling_categories(
         )
         .order_by(
             "-revenue",
-        )[
-            :limit
-        ]
+        )[:limit]
     )
 
     return [
         {
-            "id": row[
-                "variant__product__category_id"
-            ],
-            "name": row[
-                "variant__product__category__name"
-            ]
-            or "Uncategorized",
+            "id": row["variant__product__category_id"],
+            "name": row["variant__product__category__name"] or "Uncategorized",
             "quantity_sold": int(
-                row[
-                    "quantity_sold"
-                ]
-                or 0,
+                row["quantity_sold"] or 0,
             ),
             "revenue": str(
                 Decimal(
-                    row[
-                        "revenue"
-                    ]
-                    or "0.00",
+                    row["revenue"] or "0.00",
                 ).quantize(
                     Decimal(
                         "0.01",
@@ -204,9 +170,7 @@ def _top_selling_categories(
             ),
         }
         for row in rows
-        if row[
-            "variant__product__category_id"
-        ]
+        if row["variant__product__category_id"]
     ]
 
 
@@ -246,28 +210,18 @@ def _top_selling_brands(
         )
         .order_by(
             "-revenue",
-        )[
-            :limit
-        ]
+        )[:limit]
     )
 
     return [
         {
-            "name": row[
-                "variant__product__brand"
-            ],
+            "name": row["variant__product__brand"],
             "quantity_sold": int(
-                row[
-                    "quantity_sold"
-                ]
-                or 0,
+                row["quantity_sold"] or 0,
             ),
             "revenue": str(
                 Decimal(
-                    row[
-                        "revenue"
-                    ]
-                    or "0.00",
+                    row["revenue"] or "0.00",
                 ).quantize(
                     Decimal(
                         "0.01",
@@ -284,10 +238,8 @@ def build_dashboard_analytics(
     chart_period="monthly",
 ):
 
-    date_from, date_to, normalized_period = (
-        resolve_chart_date_range(
-            chart_period,
-        )
+    date_from, date_to, normalized_period = resolve_chart_date_range(
+        chart_period,
     )
 
     queryset = sales_report_base_queryset(
@@ -332,9 +284,7 @@ def build_dashboard_analytics(
         ),
     )
 
-    agg[
-        "offer_discount_sum"
-    ] = _sum_active_line_offer_discount(
+    agg["offer_discount_sum"] = _sum_active_line_offer_discount(
         queryset,
     )
 
@@ -345,9 +295,7 @@ def build_dashboard_analytics(
     )
 
     granularity = _breakdown_granularity(
-        "yearly"
-        if normalized_period == "yearly"
-        else "weekly",
+        "yearly" if normalized_period == "yearly" else "weekly",
         date_from,
         date_to,
     )

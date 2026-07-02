@@ -5,11 +5,7 @@ def get_category_by_id(category_id):
 
     try:
 
-        return Category.objects.select_related(
-            "parent"
-        ).get(
-            id=category_id
-        )
+        return Category.objects.select_related("parent").get(id=category_id)
 
     except Category.DoesNotExist:
 
@@ -28,19 +24,12 @@ def soft_delete_category(category):
 
     return category
 
+
 def restore_category(category):
 
-    
+    if category.parent and not category.parent.is_active:
 
-    if (
-        category.parent
-        and
-        not category.parent.is_active
-    ):
-
-        raise ValueError(
-            "Restore parent category first"
-        )
+        raise ValueError("Restore parent category first")
 
     category.is_active = True
 

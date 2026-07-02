@@ -1,7 +1,6 @@
 from django.conf import settings
 from django.core.mail import send_mail
 
-
 OTP_EXPIRY_MINUTES = 5
 
 PURPOSE_COPY = {

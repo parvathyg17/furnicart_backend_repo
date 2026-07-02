@@ -12,8 +12,8 @@ https://docs.djangoproject.com/en/6.0/ref/settings/
 
 import os
 from pathlib import Path
-from dotenv import load_dotenv
 
+from dotenv import load_dotenv
 
 load_dotenv()
 
@@ -57,10 +57,6 @@ INSTALLED_APPS = [
     "promotions",
     "cloudinary",
     "cloudinary_storage",
-    
-
-    
-
 ]
 
 MIDDLEWARE = [
@@ -98,13 +94,13 @@ WSGI_APPLICATION = "core.wsgi.application"
 # https://docs.djangoproject.com/en/6.0/ref/settings/#databases
 
 DATABASES = {
-    'default': {
-        'ENGINE': 'django.db.backends.postgresql',
-        'NAME': 'furnicart_db',
-        'USER': 'postgres',
-        'PASSWORD': os.getenv("DB_PASSWORD"),
-        'HOST': 'localhost',
-        'PORT': '5433',
+    "default": {
+        "ENGINE": "django.db.backends.postgresql",
+        "NAME": "furnicart_db",
+        "USER": "postgres",
+        "PASSWORD": os.getenv("DB_PASSWORD"),
+        "HOST": "localhost",
+        "PORT": "5433",
     }
 }
 
@@ -118,7 +114,7 @@ AUTH_PASSWORD_VALIDATORS = [
     },
     {
         "NAME": "django.contrib.auth.password_validation.MinimumLengthValidator",
-        'OPTIONS': {'min_length': 8}
+        "OPTIONS": {"min_length": 8},
     },
     {
         "NAME": "django.contrib.auth.password_validation.CommonPasswordValidator",
@@ -160,30 +156,28 @@ CSRF_TRUSTED_ORIGINS = [
 ]
 
 
-
 AUTH_USER_MODEL = "accounts.User"
 
-MEDIA_URL = '/media/'
-MEDIA_ROOT = os.path.join(BASE_DIR, 'media')
+MEDIA_URL = "/media/"
+MEDIA_ROOT = os.path.join(BASE_DIR, "media")
 
 
 AUTHENTICATION_BACKENDS = [
-    'accounts.backends.EmailBackend',
-    'django.contrib.auth.backends.ModelBackend',
+    "accounts.backends.EmailBackend",
+    "django.contrib.auth.backends.ModelBackend",
 ]
 
 
 REST_FRAMEWORK = {
-    'DEFAULT_AUTHENTICATION_CLASSES': (
-        'core.utils.authentication.CookieJWTAuthentication',
+    "DEFAULT_AUTHENTICATION_CLASSES": (
+        "core.utils.authentication.CookieJWTAuthentication",
     ),
-    'DEFAULT_THROTTLE_CLASSES': [
-        'rest_framework.throttling.AnonRateThrottle',
+    "DEFAULT_THROTTLE_CLASSES": [
+        "rest_framework.throttling.AnonRateThrottle",
     ],
-
-    'DEFAULT_THROTTLE_RATES': {
-        'anon': '10/minute',
-    }
+    "DEFAULT_THROTTLE_RATES": {
+        "anon": "10/minute",
+    },
 }
 
 
@@ -193,16 +187,14 @@ SIMPLE_JWT = {
     "ACCESS_TOKEN_LIFETIME": timedelta(minutes=60),
     "REFRESH_TOKEN_LIFETIME": timedelta(days=1),
     "ROTATE_REFRESH_TOKENS": True,
-
     "BLACKLIST_AFTER_ROTATION": True,
     "AUTH_HEADER_TYPES": ("Bearer",),
 }
 
 
+EMAIL_BACKEND = "django.core.mail.backends.smtp.EmailBackend"
 
-EMAIL_BACKEND = 'django.core.mail.backends.smtp.EmailBackend'
-
-EMAIL_HOST = 'smtp.gmail.com'
+EMAIL_HOST = "smtp.gmail.com"
 EMAIL_PORT = 587
 EMAIL_HOST_USER = os.getenv("EMAIL_HOST_USER")
 EMAIL_HOST_PASSWORD = os.getenv("EMAIL_HOST_PASSWORD")
@@ -232,34 +224,22 @@ CLOUDINARY_STORAGE = {
 if USE_CLOUDINARY:
     STORAGES = {
         "default": {
-            "BACKEND": (
-                "cloudinary_storage.storage."
-                "MediaCloudinaryStorage"
-            ),
+            "BACKEND": ("cloudinary_storage.storage." "MediaCloudinaryStorage"),
         },
         "staticfiles": {
-            "BACKEND": (
-                "django.contrib.staticfiles.storage."
-                "StaticFilesStorage"
-            ),
+            "BACKEND": ("django.contrib.staticfiles.storage." "StaticFilesStorage"),
         },
     }
 else:
     STORAGES = {
         "default": {
-            "BACKEND": (
-                "django.core.files.storage."
-                "FileSystemStorage"
-            ),
+            "BACKEND": ("django.core.files.storage." "FileSystemStorage"),
             "OPTIONS": {
                 "location": MEDIA_ROOT,
                 "base_url": MEDIA_URL,
             },
         },
         "staticfiles": {
-            "BACKEND": (
-                "django.contrib.staticfiles.storage."
-                "StaticFilesStorage"
-            ),
+            "BACKEND": ("django.contrib.staticfiles.storage." "StaticFilesStorage"),
         },
     }

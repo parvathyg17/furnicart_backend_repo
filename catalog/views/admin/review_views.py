@@ -4,19 +4,12 @@ from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
 from rest_framework.views import APIView
 
+from catalog.selectors.review_selectors import get_admin_filtered_reviews
+from catalog.serializers.review_serializers import (
+    AdminReviewModerationSerializer, ProductReviewSerializer)
+from catalog.services.review_services import moderate_review_for_admin
 from core.pagination import CustomPagination
 from core.utils.permissions import IsAdminUserCustom
-
-from catalog.selectors.review_selectors import (
-    get_admin_filtered_reviews,
-)
-from catalog.serializers.review_serializers import (
-    AdminReviewModerationSerializer,
-    ProductReviewSerializer,
-)
-from catalog.services.review_services import (
-    moderate_review_for_admin,
-)
 
 
 def _validation_error_response(
@@ -120,9 +113,7 @@ class AdminReviewDetailView(
 
             review = moderate_review_for_admin(
                 review_id,
-                status=ser.validated_data[
-                    "status"
-                ],
+                status=ser.validated_data["status"],
             )
 
         except ValidationError as exc:

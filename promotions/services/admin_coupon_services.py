@@ -7,7 +7,6 @@ from promotions.models import Coupon
 def create_coupon(
     validated_data,
 ):
-   
 
     instance = Coupon(
         **validated_data,
@@ -23,7 +22,6 @@ def update_coupon(
     instance,
     validated_data,
 ):
-
 
     for key, value in validated_data.items():
 
@@ -43,7 +41,6 @@ def update_coupon(
 def delete_coupon(
     instance,
 ):
-
 
     pk = instance.pk
     instance.delete()

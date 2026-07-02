@@ -7,10 +7,8 @@ from rest_framework.response import Response
 from catalog.models import Category
 from catalog.selectors.category_selectors import get_admin_filtered_categories
 from catalog.serializers import CategorySerializer
-from catalog.services.category_services import (
-    restore_category,
-    soft_delete_category,
-)
+from catalog.services.category_services import (restore_category,
+                                                soft_delete_category)
 from core.pagination import CustomPagination
 from core.utils.permissions import IsAdminUserCustom
 
@@ -29,9 +27,7 @@ class AdminCategoryViewSet(viewsets.ModelViewSet):
     def get_queryset(self):
         if getattr(self, "action", None) == "list":
             return get_admin_filtered_categories(self.request.GET)
-        return Category.objects.select_related("parent").prefetch_related(
-            "children"
-        )
+        return Category.objects.select_related("parent").prefetch_related("children")
 
     def get_serializer_context(self):
         ctx = super().get_serializer_context()

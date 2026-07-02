@@ -1,10 +1,8 @@
 from django.db import transaction
 from django.utils import timezone
-
 from rest_framework.exceptions import ValidationError
 
 from catalog.models import ProductVariant
-
 from orders.models import Order, OrderLine, ReturnRequest
 from orders.services.order_status import persist_derived_order_status
 
@@ -33,9 +31,7 @@ def _normalize_return_reason(
             },
         )
 
-    return clean[
-        :2000
-    ]
+    return clean[:2000]
 
 
 @transaction.atomic
@@ -107,9 +103,7 @@ def admin_set_return_request_status(
 
     note_clean = str(
         admin_note or "",
-    ).strip()[
-        :2000
-    ]
+    ).strip()[:2000]
 
     req = (
         ReturnRequest.objects.select_for_update()
@@ -233,8 +227,7 @@ def admin_set_return_request_status(
 
         from orders.services.order_wallet_services import (
             credit_wallet_for_return_completion,
-            update_payment_status_after_return_completion,
-        )
+            update_payment_status_after_return_completion)
 
         credit_wallet_for_return_completion(
             req,

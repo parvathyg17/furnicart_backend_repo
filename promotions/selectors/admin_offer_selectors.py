@@ -7,11 +7,9 @@ def get_admin_filtered_offers(
     query_params,
 ):
 
-    qs = (
-        Offer.objects.select_related(
-            "product",
-            "category",
-        )
+    qs = Offer.objects.select_related(
+        "product",
+        "category",
     )
 
     search = (

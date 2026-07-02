@@ -64,15 +64,12 @@ class AdminReferralProgramSerializer(
         value,
     ):
 
-        discount_type = (
-            self.initial_data.get(
-                "referee_discount_type",
-            )
-            or (
-                self.instance.referee_discount_type
-                if self.instance
-                else Coupon.DiscountType.PERCENT
-            )
+        discount_type = self.initial_data.get(
+            "referee_discount_type",
+        ) or (
+            self.instance.referee_discount_type
+            if self.instance
+            else Coupon.DiscountType.PERCENT
         )
 
         value = Decimal(

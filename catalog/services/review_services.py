@@ -1,14 +1,10 @@
 from django.db import transaction
-
 from rest_framework.exceptions import ValidationError
 
 from catalog.models import ProductReview
 from catalog.selectors.review_selectors import (
-    get_delivered_order_line_for_product,
-    get_user_product_by_ref,
-    get_user_review_for_product,
-    user_has_delivered_purchase,
-)
+    get_delivered_order_line_for_product, get_user_product_by_ref,
+    get_user_review_for_product, user_has_delivered_purchase)
 
 
 def _normalize_rating(
@@ -55,9 +51,7 @@ def _normalize_title(
 
     return str(
         title or "",
-    ).strip()[
-        :120
-    ]
+    ).strip()[:120]
 
 
 def _normalize_body(
@@ -76,9 +70,7 @@ def _normalize_body(
             },
         )
 
-    return clean[
-        :2000
-    ]
+    return clean[:2000]
 
 
 def _get_product_or_error(

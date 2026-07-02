@@ -5,10 +5,8 @@ from django.db.models import Q
 from django.utils import timezone
 
 from promotions.models import Offer
-from promotions.services.offer_pricing import (
-    compute_offer_discount_amount,
-    offer_is_currently_valid,
-)
+from promotions.services.offer_pricing import (compute_offer_discount_amount,
+                                               offer_is_currently_valid)
 
 
 def _min_active_variant_price(
@@ -20,10 +18,7 @@ def _min_active_variant_price(
 
     for variant in product.variants.all():
 
-        if (
-            variant.is_active
-            and variant.price is not None
-        ):
+        if variant.is_active and variant.price is not None:
 
             active_prices.append(
                 variant.price,
@@ -35,10 +30,7 @@ def _min_active_variant_price(
                     variant.price,
                 )
 
-    prices = (
-        in_stock_prices
-        or active_prices
-    )
+    prices = in_stock_prices or active_prices
 
     if not prices:
 
@@ -122,20 +114,17 @@ def _load_active_offer_maps(
 
         now = timezone.now()
 
-    qs = (
-        Offer.objects.filter(
-            is_active=True,
+    qs = Offer.objects.filter(
+        is_active=True,
+    ).filter(
+        Q(
+            offer_type=Offer.OfferType.PRODUCT,
+            product_id__in=product_ids,
         )
-        .filter(
-            Q(
-                offer_type=Offer.OfferType.PRODUCT,
-                product_id__in=product_ids,
-            )
-            | Q(
-                offer_type=Offer.OfferType.CATEGORY,
-                category_id__in=category_ids,
-            ),
-        )
+        | Q(
+            offer_type=Offer.OfferType.CATEGORY,
+            category_id__in=category_ids,
+        ),
     )
 
     for offer in qs:
@@ -147,25 +136,15 @@ def _load_active_offer_maps(
 
             continue
 
-        if (
-            offer.offer_type == Offer.OfferType.PRODUCT
-            and offer.product_id
-        ):
+        if offer.offer_type == Offer.OfferType.PRODUCT and offer.product_id:
 
-            product_map[
-                offer.product_id
-            ].append(
+            product_map[offer.product_id].append(
                 offer,
             )
 
-        elif (
-            offer.offer_type == Offer.OfferType.CATEGORY
-            and offer.category_id
-        ):
+        elif offer.offer_type == Offer.OfferType.CATEGORY and offer.category_id:
 
-            category_map[
-                offer.category_id
-            ].append(
+            category_map[offer.category_id].append(
                 offer,
             )
 
@@ -250,9 +229,7 @@ def discounted_unit_price(
         category_map,
     )
 
-    return (
-        gross - discount
-    ).quantize(
+    return (gross - discount).quantize(
         Decimal(
             "0.01",
         ),
@@ -269,15 +246,9 @@ def build_offer_pricing_context(
         products,
     )
 
-    product_ids = {
-        product.id
-        for product in products
-    }
+    product_ids = {product.id for product in products}
 
-    category_ids = {
-        product.category_id
-        for product in products
-    }
+    category_ids = {product.category_id for product in products}
 
     product_map, category_map = _load_active_offer_maps(
         product_ids,
@@ -297,9 +268,7 @@ def build_offer_pricing_context(
 
         if badge is not None:
 
-            badges[
-                product.id
-            ] = badge
+            badges[product.id] = badge
 
     return {
         "product_map": product_map,
@@ -322,15 +291,9 @@ def extend_serializer_context_with_offers(
 
     return {
         **context,
-        "product_offer_badges": pricing[
-            "badges"
-        ],
-        "offer_product_map": pricing[
-            "product_map"
-        ],
-        "offer_category_map": pricing[
-            "category_map"
-        ],
+        "product_offer_badges": pricing["badges"],
+        "offer_product_map": pricing["product_map"],
+        "offer_category_map": pricing["category_map"],
     }
 
 
@@ -386,11 +349,8 @@ def best_offer_badge_for_product(
             best_discount = discount
             best_offer = offer
 
-    if (
-        best_offer is None
-        or best_discount <= Decimal(
-            "0.00",
-        )
+    if best_offer is None or best_discount <= Decimal(
+        "0.00",
     ):
 
         return None
@@ -414,15 +374,9 @@ def build_offer_badges_for_products(
 
         return {}
 
-    product_ids = {
-        product.id
-        for product in products
-    }
+    product_ids = {product.id for product in products}
 
-    category_ids = {
-        product.category_id
-        for product in products
-    }
+    category_ids = {product.category_id for product in products}
 
     product_map, category_map = _load_active_offer_maps(
         product_ids,
@@ -442,8 +396,6 @@ def build_offer_badges_for_products(
 
         if badge is not None:
 
-            badges[
-                product.id
-            ] = badge
+            badges[product.id] = badge
 
     return badges

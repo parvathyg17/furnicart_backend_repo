@@ -9,19 +9,15 @@ from rest_framework.views import APIView
 from core.pagination import CustomPagination
 from core.utils.permissions import IsAdminUserCustom
 from promotions.models import Coupon
-from promotions.selectors.admin_coupon_selectors import (
-    get_admin_filtered_coupons,
-)
+from promotions.selectors.admin_coupon_selectors import \
+    get_admin_filtered_coupons
 from promotions.serializers import AdminCouponSerializer
-from promotions.services.admin_coupon_services import (
-    delete_coupon,
-)
+from promotions.services.admin_coupon_services import delete_coupon
 
 logger = logging.getLogger(__name__)
 
 
 class AdminCouponListCreateView(APIView):
-
     """
     GET: paginated coupon list (search, is_active).
     POST: create coupon.
@@ -117,8 +113,6 @@ class AdminCouponListCreateView(APIView):
 
 
 class AdminCouponDetailView(APIView):
-
-    
 
     permission_classes = [
         IsAuthenticated,

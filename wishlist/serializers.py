@@ -1,11 +1,7 @@
 from rest_framework import serializers
 
 from catalog.models import Product
-
-from catalog.serializers.product_serializers import (
-    ProductVariantSerializer,
-)
-
+from catalog.serializers.product_serializers import ProductVariantSerializer
 from wishlist.models import WishlistItem
 
 
@@ -36,12 +32,7 @@ class WishlistVariantSerializer(
         ProductVariantSerializer.Meta,
     ):
 
-        fields = (
-            list(
-                ProductVariantSerializer.Meta.fields
-            )
-            + ["product"]
-        )
+        fields = list(ProductVariantSerializer.Meta.fields) + ["product"]
 
 
 class WishlistItemSerializer(

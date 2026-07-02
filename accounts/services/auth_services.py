@@ -1,75 +1,42 @@
-from django.contrib.auth import authenticate
-from accounts.models.users import User
-from accounts.models.otp import OTP
-from django.utils import timezone
 from datetime import timedelta
+
+from django.contrib.auth import authenticate
+from django.utils import timezone
+
+from accounts.models.otp import OTP
+from accounts.models.users import User
 from core.utils.email import send_otp_email
 
 
-def user_login_service(
-    email,
-    password
-):
+def user_login_service(email, password):
 
     try:
 
-        user = User.objects.get(
-            email=email
-        )
+        user = User.objects.get(email=email)
 
     except User.DoesNotExist:
 
-        return (
-            None,
-            "Invalid email or password"
-        )
+        return (None, "Invalid email or password")
 
-    
+    if user.is_staff or user.is_superuser:
 
-    if (
-        user.is_staff or
-        user.is_superuser
-    ):
-
-        return (
-            None,
-            "Admins must login through admin panel"
-        )
-
-    
+        return (None, "Admins must login through admin panel")
 
     if not user.is_verified:
 
-        return (
-            None,
-            "Email not verified"
-        )
-
-    
+        return (None, "Email not verified")
 
     if not user.is_active:
 
-        return (
-            None,
-            "User is blocked"
-        )
+        return (None, "User is blocked")
 
-    
-
-    user = authenticate(
-        email=email,
-        password=password
-    )
+    user = authenticate(email=email, password=password)
 
     if user is None:
 
-        return (
-            None,
-            "Invalid email or password"
-        )
+        return (None, "Invalid email or password")
 
     return user, None
-
 
 
 def create_and_send_otp(user, purpose):
@@ -78,18 +45,9 @@ def create_and_send_otp(user, purpose):
     otp_code = OTP.generate_otp()
     expiry_time = timezone.now() + timedelta(minutes=5)
 
-    
-    OTP.objects.filter(
-        user=user,
-        purpose=purpose
-    ).delete()
+    OTP.objects.filter(user=user, purpose=purpose).delete()
 
-    OTP.objects.create(
-        user=user,
-        purpose=purpose,
-        otp=otp_code,
-        expires_at=expiry_time
-    )
+    OTP.objects.create(user=user, purpose=purpose, otp=otp_code, expires_at=expiry_time)
 
     send_otp_email(
         user.email,
@@ -105,10 +63,7 @@ def verify_otp_service(user, otp_input, purpose):
     purpose = purpose.strip().lower()
 
     try:
-        otp_obj = OTP.objects.get(
-            user=user,
-            purpose=purpose
-        )
+        otp_obj = OTP.objects.get(user=user, purpose=purpose)
 
     except OTP.DoesNotExist:
         return False, "OTP not found"
@@ -119,8 +74,6 @@ def verify_otp_service(user, otp_input, purpose):
 
     if otp_obj.otp != otp_input:
         return False, "Invalid OTP"
-
-    
 
     if purpose == "signup":
 
@@ -134,65 +87,32 @@ def verify_otp_service(user, otp_input, purpose):
     return True, None
 
 
+def resend_otp_service(user, purpose="signup"):
 
-def resend_otp_service(
-    user,
-    purpose="signup"
-):
-
-    purpose = (
-        purpose
-        .strip()
-        .lower()
-    )
+    purpose = purpose.strip().lower()
 
     latest_otp = (
-        OTP.objects.filter(
-            user=user,
-            purpose=purpose
-        )
-        .order_by("-created_at")
-        .first()
+        OTP.objects.filter(user=user, purpose=purpose).order_by("-created_at").first()
     )
-
-    
 
     if latest_otp:
 
-        seconds_passed = (
-            timezone.now() -
-            latest_otp.created_at
-        ).seconds
+        seconds_passed = (timezone.now() - latest_otp.created_at).seconds
 
         cooldown_seconds = 60
 
         if seconds_passed < cooldown_seconds:
 
-            remaining = (
-                cooldown_seconds -
-                seconds_passed
-            )
+            remaining = cooldown_seconds - seconds_passed
 
-            return (
-                False,
-                f"Please wait {remaining}s before requesting another OTP."
-            )
+            return (False, f"Please wait {remaining}s before requesting another OTP.")
 
-   
+    create_and_send_otp(user, purpose)
 
-    create_and_send_otp(
-        user,
-        purpose
-    )
-
-    return (
-        True,
-        None
-    )
+    return (True, None)
 
 
 def forgot_password_service(email):
-
 
     try:
         user = User.objects.get(email=email)
@@ -202,7 +122,7 @@ def forgot_password_service(email):
     if not user.is_active:
         return None, "User is blocked"
 
-    create_and_send_otp(user,"forgot_password")
+    create_and_send_otp(user, "forgot_password")
 
     return user, None
 
@@ -215,10 +135,7 @@ def reset_password_service(email, otp_input, new_password):
         return False, "User not found"
 
     try:
-        otp_obj = OTP.objects.get(
-            user=user,
-            purpose="forgot_password"
-        )
+        otp_obj = OTP.objects.get(user=user, purpose="forgot_password")
     except OTP.DoesNotExist:
         return False, "OTP not found"
 
@@ -234,5 +151,3 @@ def reset_password_service(email, otp_input, new_password):
     otp_obj.delete()
 
     return True, None
-
-

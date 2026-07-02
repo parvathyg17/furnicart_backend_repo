@@ -1,7 +1,5 @@
 from django.db.models import Count, Prefetch, Q
-
 from django.http import HttpResponse
-
 from rest_framework import status
 from rest_framework.exceptions import NotFound, ValidationError
 from rest_framework.permissions import IsAuthenticated
@@ -9,23 +7,16 @@ from rest_framework.response import Response
 from rest_framework.views import APIView
 
 from core.pagination import CustomPagination
-
 from orders.models import Order, OrderLine
-from orders.serializers import (
-    OrderCancelRequestSerializer,
-    OrderCreateSerializer,
-    OrderDetailSerializer,
-    OrderListSerializer,
-    PurchaseLineSerializer,
-    ReturnCreateSerializer,
-)
+from orders.serializers import (OrderCancelRequestSerializer,
+                                OrderCreateSerializer, OrderDetailSerializer,
+                                OrderListSerializer, PurchaseLineSerializer,
+                                ReturnCreateSerializer)
 from orders.services.invoice_pdf import build_order_invoice_pdf
-from orders.services.order_services import (
-    cancel_entire_order_for_user,
-    cancel_order_line_for_user,
-    create_order_from_cart,
-    get_order_for_user,
-)
+from orders.services.order_services import (cancel_entire_order_for_user,
+                                            cancel_order_line_for_user,
+                                            create_order_from_cart,
+                                            get_order_for_user)
 from orders.services.return_services import create_return_request_for_user
 
 
@@ -96,10 +87,7 @@ class OrderCreateView(APIView):
 
         if status_param:
 
-            valid_statuses = {
-                v
-                for v, _ in Order.Status.choices
-            }
+            valid_statuses = {v for v, _ in Order.Status.choices}
 
             if status_param in valid_statuses:
 
@@ -341,8 +329,7 @@ class OrderInvoicePdfView(APIView):
         )
 
         safe_name = "".join(
-            c if c.isalnum() or c in "-._" else "_"
-            for c in order.order_number
+            c if c.isalnum() or c in "-._" else "_" for c in order.order_number
         )
 
         filename = f"FurniCart-invoice-{safe_name}.pdf"
@@ -352,9 +339,7 @@ class OrderInvoicePdfView(APIView):
             content_type="application/pdf",
         )
 
-        response["Content-Disposition"] = (
-            f'attachment; filename="{filename}"'
-        )
+        response["Content-Disposition"] = f'attachment; filename="{filename}"'
 
         return response
 
@@ -412,10 +397,7 @@ class UserPurchasesListView(APIView):
 
         if fs:
 
-            valid_fs = {
-                c
-                for c, _ in OrderLine.FulfillmentStatus.choices
-            }
+            valid_fs = {c for c, _ in OrderLine.FulfillmentStatus.choices}
 
             if fs in valid_fs:
 
@@ -433,10 +415,7 @@ class UserPurchasesListView(APIView):
 
         if line_st:
 
-            valid_ls = {
-                c
-                for c, _ in OrderLine.LineStatus.choices
-            }
+            valid_ls = {c for c, _ in OrderLine.LineStatus.choices}
 
             if line_st in valid_ls:
 
@@ -493,9 +472,7 @@ class OrderLineReturnCreateView(APIView):
                 request.user,
                 order_number,
                 line_id,
-                reason=serializer.validated_data[
-                    "reason"
-                ],
+                reason=serializer.validated_data["reason"],
             )
 
         except Order.DoesNotExist:

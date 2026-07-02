@@ -2,15 +2,10 @@ from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
 from rest_framework.views import APIView
 
-from promotions.referral_serializers import (
-    ReferralMeSerializer,
-)
+from promotions.referral_serializers import ReferralMeSerializer
 from promotions.services.referral_services import (
-    get_active_referral_program,
-    get_or_create_referral_code,
-    referee_welcome_coupon_payload,
-    referral_program_summary,
-)
+    get_active_referral_program, get_or_create_referral_code,
+    referee_welcome_coupon_payload, referral_program_summary)
 
 
 class ReferralMeView(
@@ -53,12 +48,8 @@ class ReferralMeView(
                 "program_active": True,
                 "referral_code": referral_code.code,
                 "referral_token": referral_code.token,
-                "referee_benefit": summary[
-                    "referee_benefit"
-                ],
-                "referrer_reward_amount": summary[
-                    "referrer_reward_amount"
-                ],
+                "referee_benefit": summary["referee_benefit"],
+                "referrer_reward_amount": summary["referrer_reward_amount"],
                 "welcome_coupon": referee_welcome_coupon_payload(
                     request.user,
                 ),

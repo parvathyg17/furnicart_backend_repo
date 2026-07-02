@@ -1,26 +1,26 @@
-from accounts.models.users import User
-from accounts.models.otp import OTP
-from core.utils.email import send_otp_email
-from django.utils import timezone
-from datetime import timedelta
 import random
+from datetime import timedelta
+
+from django.utils import timezone
+
+from accounts.models.otp import OTP
+from accounts.models.users import User
+from core.utils.email import send_otp_email
+
 
 def send_email_change_otp(user, new_email):
 
     otp_code = OTP.generate_otp()
     expiry = timezone.now() + timedelta(minutes=5)
 
-    OTP.objects.filter(
-        user=user,
-        purpose="email_change"
-    ).delete()
+    OTP.objects.filter(user=user, purpose="email_change").delete()
 
     OTP.objects.create(
         user=user,
         purpose="email_change",
         otp=otp_code,
         expires_at=expiry,
-        extra_data={"new_email": new_email}
+        extra_data={"new_email": new_email},
     )
 
     send_otp_email(
@@ -31,12 +31,14 @@ def send_email_change_otp(user, new_email):
 
     return otp_code
 
+
 def verify_email_change(user, new_email, otp_input):
 
-    otp_obj = OTP.objects.filter(
-        user=user,
-        purpose="email_change"
-    ).order_by("-created_at").first()
+    otp_obj = (
+        OTP.objects.filter(user=user, purpose="email_change")
+        .order_by("-created_at")
+        .first()
+    )
 
     if not otp_obj:
         return False, "OTP not found"

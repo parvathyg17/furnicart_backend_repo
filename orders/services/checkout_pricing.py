@@ -1,4 +1,4 @@
-from decimal import Decimal, ROUND_HALF_UP
+from decimal import ROUND_HALF_UP, Decimal
 
 from django.conf import settings
 
@@ -33,16 +33,13 @@ def compute_checkout_totals(
     *,
     coupon=None,
 ):
-    
 
-    subtotal = (
+    subtotal = Decimal(
+        subtotal,
+    ).quantize(
         Decimal(
-            subtotal,
-        ).quantize(
-            Decimal(
-                "0.01",
-            ),
-        )
+            "0.01",
+        ),
     )
 
     if subtotal <= Decimal(
@@ -99,9 +96,7 @@ def compute_checkout_totals(
     if coupon is not None:
 
         from promotions.services.coupon_validation import (
-            compute_coupon_discount_amount,
-            coupon_summary_dict,
-        )
+            compute_coupon_discount_amount, coupon_summary_dict)
 
         discount_total = compute_coupon_discount_amount(
             coupon,
@@ -112,9 +107,7 @@ def compute_checkout_totals(
             coupon,
         )
 
-    tax_total = (
-        subtotal * gst_rate
-    ).quantize(
+    tax_total = (subtotal * gst_rate).quantize(
         Decimal(
             "0.01",
         ),
@@ -139,12 +132,7 @@ def compute_checkout_totals(
 
         shipping_tier = "flat"
 
-    grand_total = (
-        subtotal
-        + tax_total
-        + shipping_total
-        - discount_total
-    ).quantize(
+    grand_total = (subtotal + tax_total + shipping_total - discount_total).quantize(
         Decimal(
             "0.01",
         ),
@@ -178,7 +166,6 @@ def totals_as_response_dict(
     gross_subtotal=None,
     offer_discount_total=None,
 ):
-   
 
     def s(
         key,
@@ -268,11 +255,8 @@ def sum_order_line_offer_discount(
 
     for line in order.lines.all():
 
-        amount = (
-            line.discount_amount
-            or Decimal(
-                "0.00",
-            )
+        amount = line.discount_amount or Decimal(
+            "0.00",
         )
 
         total += amount

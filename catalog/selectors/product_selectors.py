@@ -1,25 +1,9 @@
-from django.db.models import (
-    Q,
-    Min,
-    Max,
-    Prefetch,
-    Count,
-)
-from django.db.models.functions import (
-    Coalesce,
-)
+from django.db.models import Count, Max, Min, Prefetch, Q
+from django.db.models.functions import Coalesce
 
-from catalog.models import (
-    Product,
-    ProductVariant,
-)
-from catalog.models import Category
-from catalog.selectors.category_selectors import (
-    get_all_child_categories
-)
-from catalog.selectors.review_selectors import (
-    annotate_product_ratings,
-)
+from catalog.models import Category, Product, ProductVariant
+from catalog.selectors.category_selectors import get_all_child_categories
+from catalog.selectors.review_selectors import annotate_product_ratings
 
 LISTABLE_VARIANT_FILTER = Q(
     variants__is_active=True,
@@ -89,34 +73,32 @@ def get_user_filtered_products(params):
 
     sort = params.get("sort")
 
-    products = Product.objects.select_related(
-    "category"
-).prefetch_related(
-    "room_types",
-
-    Prefetch(
-        "variants",
-        queryset=ProductVariant.objects.filter(
-            is_active=True
-        ).prefetch_related(
-            "images"
+    products = (
+        Product.objects.select_related("category")
+        .prefetch_related(
+            "room_types",
+            Prefetch(
+                "variants",
+                queryset=ProductVariant.objects.filter(is_active=True).prefetch_related(
+                    "images"
+                ),
+            ),
+        )
+        .filter(
+            is_active=True,
+            category__is_active=True,
+            variants__is_active=True,
         )
     )
-
-).filter(
-    is_active=True,
-    category__is_active=True,
-    variants__is_active=True,
-)
-#     .annotate(
-#     active_variant_count=Count(
-#         "variants",
-#         filter=Q(variants__is_active=True),
-#         distinct=True,
-#     ),
-# ).filter(
-#     active_variant_count__gte=2,
-# )
+    #     .annotate(
+    #     active_variant_count=Count(
+    #         "variants",
+    #         filter=Q(variants__is_active=True),
+    #         distinct=True,
+    #     ),
+    # ).filter(
+    #     active_variant_count__gte=2,
+    # )
 
     products = annotate_catalog_prices(
         products,
@@ -134,57 +116,33 @@ def get_user_filtered_products(params):
             is_featured=True,
         )
 
-    
-
     if search:
 
         products = products.filter(
-
             Q(name__icontains=search)
-
-            |
-
-            Q(brand__icontains=search)
-
-            |
-
-            Q(category__name__icontains=search)
+            | Q(brand__icontains=search)
+            | Q(category__name__icontains=search)
         )
-
-    
 
     if category:
 
         try:
 
-            selected_category = Category.objects.get(
-                slug=category,
-                is_active=True
-            )
+            selected_category = Category.objects.get(slug=category, is_active=True)
 
-            category_list = get_all_child_categories(
-                selected_category
-            )
+            category_list = get_all_child_categories(selected_category)
 
-            products = products.filter(
-                category__in=category_list
-            )
+            products = products.filter(category__in=category_list)
 
         except Category.DoesNotExist:
 
             products = products.none()
 
-
-
-   
     if room_type:
 
         products = products.filter(
-            room_types__slug=room_type,
-            room_types__is_active=True
+            room_types__slug=room_type, room_types__is_active=True
         )
-
-    
 
     brand_param = (params.get("brand") or "").strip()
 
@@ -194,8 +152,6 @@ def get_user_filtered_products(params):
             brand__icontains=brand_param,
             variants__is_active=True,
         )
-
-    
 
     if color:
 
@@ -229,7 +185,6 @@ def get_user_filtered_products(params):
 
     products = products.distinct()
 
-
     if sort == "price_low":
 
         products = products.order_by(
@@ -244,27 +199,19 @@ def get_user_filtered_products(params):
 
     elif sort == "a_z":
 
-        products = products.order_by(
-            "name"
-        )
+        products = products.order_by("name")
 
     elif sort == "z_a":
 
-        products = products.order_by(
-            "-name"
-        )
+        products = products.order_by("-name")
 
     elif sort == "oldest":
 
-        products = products.order_by(
-            "created_at"
-        )
+        products = products.order_by("created_at")
 
     else:
 
-        products = products.order_by(
-            "-created_at"
-        )
+        products = products.order_by("-created_at")
 
     return annotate_product_ratings(
         products,
@@ -282,18 +229,11 @@ def get_admin_filtered_products(params):
     sort = params.get("sort")
     is_active = params.get("is_active")
 
-    products = Product.objects.select_related(
-        "category"
-    ).prefetch_related(
+    products = Product.objects.select_related("category").prefetch_related(
         "room_types",
-
         Prefetch(
-            "variants",
-            queryset=ProductVariant.objects.prefetch_related(
-                "images"
-            )
-        )
-
+            "variants", queryset=ProductVariant.objects.prefetch_related("images")
+        ),
     )
 
     products = annotate_catalog_prices(
@@ -303,67 +243,38 @@ def get_admin_filtered_products(params):
     if search:
 
         products = products.filter(
-
             Q(name__icontains=search)
-
-            |
-
-            Q(brand__icontains=search)
-
-            |
-
-            Q(category__name__icontains=search)
+            | Q(brand__icontains=search)
+            | Q(category__name__icontains=search)
         )
-
-   
 
     if is_active == "true":
 
-        products = products.filter(
-            is_active=True
-        )
+        products = products.filter(is_active=True)
 
     elif is_active == "false":
 
-        products = products.filter(
-            is_active=False
-        )
-        
-    
-    
+        products = products.filter(is_active=False)
 
     if category:
 
         try:
 
-            selected_category = Category.objects.get(
-                slug=category
-            )
+            selected_category = Category.objects.get(slug=category)
 
-            category_list = get_all_child_categories(
-                selected_category
-            )
+            category_list = get_all_child_categories(selected_category)
 
-            products = products.filter(
-                category__in=category_list
-            )
+            products = products.filter(category__in=category_list)
 
         except Category.DoesNotExist:
 
             products = products.none()
 
-
-    
-
     if room_type:
 
-        products = products.filter(
-            room_types__slug=room_type
-            
-        )
+        products = products.filter(room_types__slug=room_type)
 
     products = products.distinct()
- 
 
     if sort == "price_low":
 
@@ -379,26 +290,18 @@ def get_admin_filtered_products(params):
 
     elif sort == "a_z":
 
-        products = products.order_by(
-            "name"
-        )
+        products = products.order_by("name")
 
     elif sort == "z_a":
 
-        products = products.order_by(
-            "-name"
-        )
+        products = products.order_by("-name")
 
     elif sort == "oldest":
 
-        products = products.order_by(
-            "created_at"
-        )
+        products = products.order_by("created_at")
 
     else:
 
-        products = products.order_by(
-            "-created_at"
-        )
+        products = products.order_by("-created_at")
 
     return products

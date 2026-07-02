@@ -1,36 +1,17 @@
 from django.db import transaction
-
 from rest_framework import serializers
 
-
-from catalog.models import (
-    Product,
-    ProductVariant,
-    VariantImage,
-    RoomType,
-)
-from catalog.serializers.room_type_serializers import (
-    RoomTypeSerializer
-)
-
-from catalog.selectors.recommendation_selectors import (
-        get_related_products
-    )
-from catalog.selectors.review_selectors import (
-    get_user_review_for_product,
-    user_can_review_product,
-)
-
+from catalog.models import Product, ProductVariant, RoomType, VariantImage
+from catalog.selectors.recommendation_selectors import get_related_products
+from catalog.selectors.review_selectors import (get_user_review_for_product,
+                                                user_can_review_product)
+from catalog.serializers.room_type_serializers import RoomTypeSerializer
 from catalog.services.product_services import (
-    validate_product_can_activate,
-    validate_variant_fields_and_images,
-)
+    validate_product_can_activate, validate_variant_fields_and_images)
 from core.utils.media import resolve_media_url
 
 
-class VariantImageSerializer(
-    serializers.ModelSerializer
-):
+class VariantImageSerializer(serializers.ModelSerializer):
 
     image_url = serializers.SerializerMethodField()
 
@@ -54,15 +35,9 @@ class VariantImageSerializer(
             obj.image,
             request,
         )
-    
-    
 
 
-
-
-class ProductVariantSerializer(
-    serializers.ModelSerializer
-):
+class ProductVariantSerializer(serializers.ModelSerializer):
 
     images = serializers.SerializerMethodField()
     image_count = serializers.SerializerMethodField()
@@ -73,36 +48,32 @@ class ProductVariantSerializer(
         model = ProductVariant
 
         fields = [
-        "id",
-        "variant_name",
-        "color",
-        "size",
-        "material",
-        "price",
-        "discounted_price",
-        "stock",
-        "sku",
-        "is_active",
-        "images",
-        "image_count",
-]
+            "id",
+            "variant_name",
+            "color",
+            "size",
+            "material",
+            "price",
+            "discounted_price",
+            "stock",
+            "sku",
+            "is_active",
+            "images",
+            "image_count",
+        ]
 
     def get_images(self, obj):
 
         request = self.context.get("request")
 
         serializer = VariantImageSerializer(
-           obj.images.order_by(
-               "display_order",
-               "-created_at"
-               ),
+            obj.images.order_by("display_order", "-created_at"),
             many=True,
-            context={
-                "request": request
-            }
+            context={"request": request},
         )
 
         return serializer.data
+
     def get_image_count(self, obj):
 
         return obj.images.count()
@@ -120,16 +91,11 @@ class ProductVariantSerializer(
             "offer_category_map",
         )
 
-        if (
-            product_map is None
-            or category_map is None
-        ):
+        if product_map is None or category_map is None:
 
             return None
 
-        from promotions.services.offer_display import (
-            discounted_unit_price,
-        )
+        from promotions.services.offer_display import discounted_unit_price
 
         product = obj.product
 
@@ -148,9 +114,7 @@ class ProductVariantSerializer(
 
         if value <= 0:
 
-            raise serializers.ValidationError(
-                "Price must be greater than 0"
-            )
+            raise serializers.ValidationError("Price must be greater than 0")
 
         return value
 
@@ -158,39 +122,27 @@ class ProductVariantSerializer(
 
         if value < 0:
 
-            raise serializers.ValidationError(
-                "Stock cannot be negative"
-            )
+            raise serializers.ValidationError("Stock cannot be negative")
 
         return value
-    
+
     def validate_sku(self, value):
 
         cleaned = (value or "").strip()
 
         if not cleaned:
 
-            raise serializers.ValidationError(
-                "SKU is required."
-            )
+            raise serializers.ValidationError("SKU is required.")
 
-        queryset = ProductVariant.objects.filter(
-            sku=cleaned
-        )
-
-        
+        queryset = ProductVariant.objects.filter(sku=cleaned)
 
         if self.instance:
 
-            queryset = queryset.exclude(
-                id=self.instance.id
-            )
+            queryset = queryset.exclude(id=self.instance.id)
 
         if queryset.exists():
 
-            raise serializers.ValidationError(
-                "SKU already exists"
-            )
+            raise serializers.ValidationError("SKU already exists")
 
         return cleaned
 
@@ -202,17 +154,13 @@ class ProductVariantSerializer(
 
         if value is None:
 
-            raise serializers.ValidationError(
-                f"{label} is required."
-            )
+            raise serializers.ValidationError(f"{label} is required.")
 
         cleaned = str(value).strip()
 
         if not cleaned:
 
-            raise serializers.ValidationError(
-                f"{label} is required."
-            )
+            raise serializers.ValidationError(f"{label} is required.")
 
         return cleaned
 
@@ -230,8 +178,6 @@ class ProductVariantSerializer(
         self,
         value,
     ):
-
-       
 
         if value is None:
 
@@ -288,17 +234,14 @@ class ProductVariantSerializer(
             if create_active:
 
                 for field, label in (
-
                     (
                         "color",
                         "Color / finish",
                     ),
-
                     (
                         "material",
                         "Material",
                     ),
-
                     (
                         "size",
                         "Size / dimensions",
@@ -309,10 +252,7 @@ class ProductVariantSerializer(
                         field,
                     )
 
-                    if (
-                        raw is None
-                        or not str(raw).strip()
-                    ):
+                    if raw is None or not str(raw).strip():
 
                         raise serializers.ValidationError(
                             {
@@ -339,21 +279,13 @@ class ProductVariantSerializer(
         try:
 
             allowed_keys = {
-
                 "variant_name",
-
                 "sku",
-
                 "price",
-
                 "stock",
-
                 "color",
-
                 "material",
-
                 "size",
-
                 "is_active",
             }
 
@@ -398,26 +330,15 @@ class ProductVariantSerializer(
 
         return attrs
 
-class ProductSerializer(
-    serializers.ModelSerializer
-):
 
-    variants = ProductVariantSerializer(
-        many=True,
-        required=False
-    )
+class ProductSerializer(serializers.ModelSerializer):
 
-    category_name = serializers.CharField(
-        source="category.name",
-        read_only=True
-    )
+    variants = ProductVariantSerializer(many=True, required=False)
 
-    room_types = RoomTypeSerializer(
-        many=True,
-        read_only=True
-    )
+    category_name = serializers.CharField(source="category.name", read_only=True)
 
-    
+    room_types = RoomTypeSerializer(many=True, read_only=True)
+
     room_type_ids = serializers.PrimaryKeyRelatedField(
         queryset=RoomType.objects.all(),
         many=True,
@@ -427,8 +348,7 @@ class ProductSerializer(
 
     thumbnail = serializers.SerializerMethodField()
 
-    related_products = serializers.SerializerMethodField(
-    read_only=True)
+    related_products = serializers.SerializerMethodField(read_only=True)
 
     breadcrumbs = serializers.SerializerMethodField()
 
@@ -487,18 +407,13 @@ class ProductSerializer(
 
         if self.context.get("exclude_related"):
 
-            self.fields.pop(
-                "related_products",
-                None
-            )
+            self.fields.pop("related_products", None)
 
     def get_thumbnail(self, obj):
 
         request = self.context.get("request")
 
         primary_image = None
-
-       
 
         for variant in obj.variants.all():
 
@@ -507,13 +422,8 @@ class ProductSerializer(
 
             images = sorted(
                 variant.images.all(),
-                key=lambda img: (
-                    img.display_order,
-                    -img.created_at.timestamp()
-                )
+                key=lambda img: (img.display_order, -img.created_at.timestamp()),
             )
-
-           
 
             for image in images:
 
@@ -521,8 +431,6 @@ class ProductSerializer(
 
                     primary_image = image
                     break
-
-            
 
             if not primary_image and images:
 
@@ -546,25 +454,17 @@ class ProductSerializer(
 
         if not cleaned:
 
-            raise serializers.ValidationError(
-                "Product name is required."
-            )
+            raise serializers.ValidationError("Product name is required.")
 
-        queryset = Product.objects.filter(
-            name__iexact=cleaned
-        )
+        queryset = Product.objects.filter(name__iexact=cleaned)
 
         if self.instance:
 
-            queryset = queryset.exclude(
-                id=self.instance.id
-            )
+            queryset = queryset.exclude(id=self.instance.id)
 
         if queryset.exists():
 
-            raise serializers.ValidationError(
-                "Product name already exists."
-            )
+            raise serializers.ValidationError("Product name already exists.")
 
         return cleaned
 
@@ -572,9 +472,7 @@ class ProductSerializer(
 
         if not value.is_active:
 
-            raise serializers.ValidationError(
-                "Cannot add product to inactive category"
-            )
+            raise serializers.ValidationError("Cannot add product to inactive category")
 
         return value
 
@@ -594,25 +492,17 @@ class ProductSerializer(
             if sku in sku_list:
 
                 raise serializers.ValidationError(
-                    {
-                        "sku":
-                            f"Duplicate SKU found: {sku}"
-                    }
+                    {"sku": f"Duplicate SKU found: {sku}"}
                 )
 
             sku_list.append(sku)
 
             if self.instance is None:
 
-                if ProductVariant.objects.filter(
-                    sku=sku
-                ).exists():
+                if ProductVariant.objects.filter(sku=sku).exists():
 
                     raise serializers.ValidationError(
-                        {
-                            "sku":
-                                f"SKU already exists: {sku}"
-                        }
+                        {"sku": f"SKU already exists: {sku}"}
                     )
 
         if self.instance is None:
@@ -621,8 +511,7 @@ class ProductSerializer(
 
                 raise serializers.ValidationError(
                     {
-                        "name":
-                            "Product name is required.",
+                        "name": "Product name is required.",
                     }
                 )
 
@@ -630,8 +519,7 @@ class ProductSerializer(
 
                 raise serializers.ValidationError(
                     {
-                        "description":
-                            "Description is required.",
+                        "description": "Description is required.",
                     }
                 )
 
@@ -639,15 +527,11 @@ class ProductSerializer(
                 "room_type_ids",
             )
 
-            if (
-                not room_types
-                or len(room_types) < 1
-            ):
+            if not room_types or len(room_types) < 1:
 
                 raise serializers.ValidationError(
                     {
-                        "room_type_ids":
-                            "Select at least one room type.",
+                        "room_type_ids": "Select at least one room type.",
                     }
                 )
 
@@ -667,14 +551,7 @@ class ProductSerializer(
                 self.instance.description,
             )
 
-            rooms_arg = (
-
-                attrs["room_type_ids"]
-
-                if "room_type_ids" in attrs
-
-                else None
-            )
+            rooms_arg = attrs["room_type_ids"] if "room_type_ids" in attrs else None
 
             if not self.instance.is_active:
 
@@ -698,20 +575,15 @@ class ProductSerializer(
 
                     raise serializers.ValidationError(
                         {
-                            "description":
-                                "Description is required.",
+                            "description": "Description is required.",
                         }
                     )
 
-                if (
-                    rooms_arg is not None
-                    and len(rooms_arg) < 1
-                ):
+                if rooms_arg is not None and len(rooms_arg) < 1:
 
                     raise serializers.ValidationError(
                         {
-                            "room_type_ids":
-                                "Select at least one room type.",
+                            "room_type_ids": "Select at least one room type.",
                         }
                     )
 
@@ -722,50 +594,26 @@ class ProductSerializer(
 
         validated_data["is_active"] = False
 
-        variants_data = validated_data.pop(
-            "variants",
-            []
-        )
+        variants_data = validated_data.pop("variants", [])
 
-        room_types = validated_data.pop(
-        "room_type_ids",
-        []
-        )
+        room_types = validated_data.pop("room_type_ids", [])
 
-        product = Product.objects.create(
-            **validated_data
-        )
+        product = Product.objects.create(**validated_data)
 
-        product.room_types.set(
-            room_types
-        )
+        product.room_types.set(room_types)
 
         for variant_data in variants_data:
 
-            ProductVariant.objects.create(
-                product=product,
-                **variant_data
-            )
+            ProductVariant.objects.create(product=product, **variant_data)
 
         return product
-    
+
     @transaction.atomic
-    def update(
-        self,
-        instance,
-        validated_data
-    ):
+    def update(self, instance, validated_data):
 
-        validated_data.pop(
-            "variants",
-            None
-        )
+        validated_data.pop("variants", None)
 
-        room_types = validated_data.pop(
-            "room_type_ids",
-            None
-        )
-
+        room_types = validated_data.pop("room_type_ids", None)
 
         for attr, value in validated_data.items():
 
@@ -775,17 +623,12 @@ class ProductSerializer(
 
         if room_types is not None:
 
-            instance.room_types.set(
-                room_types
-            )
-
-        
+            instance.room_types.set(room_types)
 
         return instance
 
     def get_related_products(self, obj):
 
-   
         request = self.context.get("request")
 
         related_products = get_related_products(obj)
@@ -794,9 +637,8 @@ class ProductSerializer(
             related_products,
         )
 
-        from promotions.services.offer_display import (
-            extend_serializer_context_with_offers,
-        )
+        from promotions.services.offer_display import \
+            extend_serializer_context_with_offers
 
         serializer = ProductSerializer(
             related_list,
@@ -811,9 +653,7 @@ class ProductSerializer(
         )
 
         return serializer.data
-    
-    
-    
+
     # def to_representation(self, instance):
 
     #     representation = super().to_representation(
@@ -828,7 +668,7 @@ class ProductSerializer(
     #         )
 
     #     return representation
-    
+
     def get_breadcrumbs(self, obj):
 
         breadcrumbs = []
@@ -837,26 +677,23 @@ class ProductSerializer(
 
         while category:
 
-            breadcrumbs.insert(0, {
-                "id": category.id,
-                "name": category.name,
-                "slug": category.slug,
-            })
+            breadcrumbs.insert(
+                0,
+                {
+                    "id": category.id,
+                    "name": category.name,
+                    "slug": category.slug,
+                },
+            )
 
             category = category.parent
 
         return breadcrumbs
-    
 
     def get_stock_status(self, obj):
 
         total_stock = sum(
-
-            variant.stock
-
-            for variant in obj.variants.all()
-
-            if variant.is_active
+            variant.stock for variant in obj.variants.all() if variant.is_active
         )
 
         if total_stock <= 0:
@@ -947,9 +784,8 @@ class ProductSerializer(
 
             return None
 
-        from catalog.serializers.review_serializers import (
-            ProductReviewSerializer,
-        )
+        from catalog.serializers.review_serializers import \
+            ProductReviewSerializer
 
         return ProductReviewSerializer(
             review,
@@ -971,9 +807,8 @@ class ProductSerializer(
                 obj.id,
             )
 
-        from promotions.services.offer_display import (
-            build_offer_badges_for_products,
-        )
+        from promotions.services.offer_display import \
+            build_offer_badges_for_products
 
         return build_offer_badges_for_products(
             [

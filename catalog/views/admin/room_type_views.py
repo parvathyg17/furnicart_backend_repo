@@ -9,10 +9,8 @@ from rest_framework.response import Response
 from catalog.models import RoomType
 from catalog.selectors.room_type_selectors import get_admin_filtered_room_types
 from catalog.serializers.room_type_serializers import RoomTypeSerializer
-from catalog.services.room_type_services import (
-    restore_room_type,
-    soft_delete_room_type,
-)
+from catalog.services.room_type_services import (restore_room_type,
+                                                 soft_delete_room_type)
 from core.pagination import CustomPagination
 from core.utils.permissions import IsAdminUserCustom
 
@@ -20,7 +18,6 @@ logger = logging.getLogger(__name__)
 
 
 class AdminRoomTypeViewSet(viewsets.ModelViewSet):
-    """Admin CRUD for room types; deactivate/reactivate via custom actions."""
 
     serializer_class = RoomTypeSerializer
     permission_classes = [IsAuthenticated, IsAdminUserCustom]

@@ -1,28 +1,16 @@
-from rest_framework.views import APIView
-from rest_framework.response import Response
-from rest_framework.permissions import IsAuthenticated
 from rest_framework import status
-
-from rest_framework.exceptions import (
-    ValidationError as DRFValidationError,
-)
+from rest_framework.exceptions import ValidationError as DRFValidationError
+from rest_framework.permissions import IsAuthenticated
+from rest_framework.response import Response
+from rest_framework.views import APIView
 
 from core.pagination import CustomPagination
-
-from promotions.services.offer_display import (
-    extend_serializer_context_with_offers,
-)
-
-from .serializers import (
-    WishlistItemSerializer,
-)
-
-from .services import (
-    get_or_create_wishlist,
-    toggle_wishlist_item,
-)
-
+from promotions.services.offer_display import \
+    extend_serializer_context_with_offers
 from wishlist.models import WishlistItem
+
+from .serializers import WishlistItemSerializer
+from .services import get_or_create_wishlist, toggle_wishlist_item
 
 
 class WishlistListView(APIView):
@@ -62,10 +50,7 @@ class WishlistListView(APIView):
 
         if page is not None:
 
-            products = [
-                item.variant.product
-                for item in page
-            ]
+            products = [item.variant.product for item in page]
 
             serializer = WishlistItemSerializer(
                 page,
@@ -82,10 +67,7 @@ class WishlistListView(APIView):
                 serializer.data,
             )
 
-        products = [
-            item.variant.product
-            for item in items
-        ]
+        products = [item.variant.product for item in items]
 
         serializer = WishlistItemSerializer(
             items,

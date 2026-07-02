@@ -1,25 +1,26 @@
-from django.db.models import (
-    Q,
-)
+from django.db.models import Q
 
 from catalog.models import Product
-from catalog.selectors.review_selectors import (
-    annotate_product_ratings,
-)
+from catalog.selectors.review_selectors import annotate_product_ratings
 
 
 def get_related_products(product):
 
-    base = Product.objects.select_related(
-        "category",
-    ).prefetch_related(
-        "variants__images",
-        "room_types",
-    ).filter(
-        is_active=True,
-        category__is_active=True,
-    ).exclude(
-        pk=product.pk,
+    base = (
+        Product.objects.select_related(
+            "category",
+        )
+        .prefetch_related(
+            "variants__images",
+            "room_types",
+        )
+        .filter(
+            is_active=True,
+            category__is_active=True,
+        )
+        .exclude(
+            pk=product.pk,
+        )
     )
 
     room_ids = list(
@@ -40,7 +41,9 @@ def get_related_products(product):
         )
 
     return annotate_product_ratings(
-        base.filter(q).distinct().order_by(
+        base.filter(q)
+        .distinct()
+        .order_by(
             "-created_at",
         ),
     )[:8]

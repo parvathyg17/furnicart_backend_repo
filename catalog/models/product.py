@@ -2,60 +2,32 @@ from django.db import models
 from django.utils.text import slugify
 
 from catalog.models.category import Category
-from catalog.models.room_type import (
-    RoomType
-)
+from catalog.models.room_type import RoomType
+
 
 class Product(models.Model):
 
     category = models.ForeignKey(
-        Category,
-        on_delete=models.CASCADE,
-        related_name="products"
+        Category, on_delete=models.CASCADE, related_name="products"
     )
 
-    room_types = models.ManyToManyField(
-        RoomType,
-        related_name="products",
-        blank=True
-    )
+    room_types = models.ManyToManyField(RoomType, related_name="products", blank=True)
 
-    name = models.CharField(
-        max_length=255
-    )
+    name = models.CharField(max_length=255)
 
-    slug = models.SlugField(
-        unique=True,
-        blank=True
-    )
+    slug = models.SlugField(unique=True, blank=True)
 
-    description = models.TextField(
-        blank=True
-    )
+    description = models.TextField(blank=True)
 
-    brand = models.CharField(
-        max_length=100,
-        blank=True,
-        null=True
-    )
+    brand = models.CharField(max_length=100, blank=True, null=True)
 
-    is_active = models.BooleanField(
-        default=True
-    )
+    is_active = models.BooleanField(default=True)
 
-    is_featured = models.BooleanField(
-        default=False
-    )
+    is_featured = models.BooleanField(default=False)
 
-    created_at = models.DateTimeField(
-        auto_now_add=True
-    )
+    created_at = models.DateTimeField(auto_now_add=True)
 
-    updated_at = models.DateTimeField(
-        auto_now=True
-    )
-
-    
+    updated_at = models.DateTimeField(auto_now=True)
 
     class Meta:
 
@@ -73,9 +45,7 @@ class Product(models.Model):
 
             counter = 1
 
-            while Product.objects.filter(
-                slug=slug
-            ).exclude(id=self.id).exists():
+            while Product.objects.filter(slug=slug).exclude(id=self.id).exists():
 
                 slug = f"{base_slug}-{counter}"
 

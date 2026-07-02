@@ -1,5 +1,5 @@
 from collections import defaultdict
-from decimal import Decimal, ROUND_HALF_UP
+from decimal import ROUND_HALF_UP, Decimal
 
 from django.db.models import Q
 from django.utils import timezone
@@ -11,15 +11,13 @@ def _quantize_money(
     value,
 ):
 
-    return (
+    return Decimal(
+        value,
+    ).quantize(
         Decimal(
-            value,
-        ).quantize(
-            Decimal(
-                "0.01",
-            ),
-            rounding=ROUND_HALF_UP,
-        )
+            "0.01",
+        ),
+        rounding=ROUND_HALF_UP,
     )
 
 
@@ -52,7 +50,6 @@ def compute_offer_discount_amount(
     offer,
     line_subtotal,
 ):
-    
 
     line_subtotal = _quantize_money(
         line_subtotal,
@@ -116,17 +113,12 @@ def line_gross_subtotal(
     quantity,
 ):
 
-    return (
-        variant.price
-        * Decimal(
-            quantity,
-        )
+    return variant.price * Decimal(
+        quantity,
     )
 
 
 class OfferResolver:
-
-    
 
     def __init__(
         self,
@@ -196,25 +188,15 @@ class OfferResolver:
 
                 continue
 
-            if (
-                offer.offer_type == Offer.OfferType.PRODUCT
-                and offer.product_id
-            ):
+            if offer.offer_type == Offer.OfferType.PRODUCT and offer.product_id:
 
-                self._product_offers[
-                    offer.product_id
-                ].append(
+                self._product_offers[offer.product_id].append(
                     offer,
                 )
 
-            elif (
-                offer.offer_type == Offer.OfferType.CATEGORY
-                and offer.category_id
-            ):
+            elif offer.offer_type == Offer.OfferType.CATEGORY and offer.category_id:
 
-                self._category_offers[
-                    offer.category_id
-                ].append(
+                self._category_offers[offer.category_id].append(
                     offer,
                 )
 

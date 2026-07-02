@@ -1,9 +1,9 @@
-from rest_framework import serializers
+import re
+
 from django.contrib.auth.password_validation import validate_password
+from rest_framework import serializers
 
 from accounts.models.users import User
-
-import re
 
 
 def _validate_user_password(value):
@@ -33,13 +33,9 @@ def _validate_user_password(value):
     return value
 
 
-class SignupSerializer(
-    serializers.ModelSerializer
-):
+class SignupSerializer(serializers.ModelSerializer):
 
-    password = serializers.CharField(
-        write_only=True
-    )
+    password = serializers.CharField(write_only=True)
 
     class Meta:
 
@@ -57,21 +53,15 @@ class SignupSerializer(
     ):
 
         # Remove leading/trailing spaces and collapse multiple spaces
-        username = " ".join(
-            value.strip().split()
-        )
+        username = " ".join(value.strip().split())
 
         if len(username) < 3:
 
-            raise serializers.ValidationError(
-                "Username must be at least 3 characters"
-            )
+            raise serializers.ValidationError("Username must be at least 3 characters")
 
         if len(username) > 20:
 
-            raise serializers.ValidationError(
-                "Username cannot exceed 20 characters"
-            )
+            raise serializers.ValidationError("Username cannot exceed 20 characters")
 
         # Allow letters, numbers, and spaces
         if not re.match(
@@ -86,9 +76,7 @@ class SignupSerializer(
         # Reject usernames that are only numbers (ignoring spaces)
         if username.replace(" ", "").isdigit():
 
-            raise serializers.ValidationError(
-                "Username cannot contain only numbers"
-            )
+            raise serializers.ValidationError("Username cannot contain only numbers")
 
         blocked_usernames = [
             "admin",
@@ -103,17 +91,11 @@ class SignupSerializer(
 
         if username.lower() in blocked_usernames:
 
-            raise serializers.ValidationError(
-                "This username is not allowed"
-            )
+            raise serializers.ValidationError("This username is not allowed")
 
-        if User.objects.filter(
-            username__iexact=username
-        ).exists():
+        if User.objects.filter(username__iexact=username).exists():
 
-            raise serializers.ValidationError(
-                "Username already exists"
-            )
+            raise serializers.ValidationError("Username already exists")
 
         return username
 
@@ -124,18 +106,11 @@ class SignupSerializer(
 
         email = value.lower().strip()
 
-        existing_user = User.objects.filter(
-            email__iexact=email
-        ).first()
+        existing_user = User.objects.filter(email__iexact=email).first()
 
-        if (
-            existing_user
-            and existing_user.is_verified
-        ):
+        if existing_user and existing_user.is_verified:
 
-            raise serializers.ValidationError(
-                "Email already exists"
-            )
+            raise serializers.ValidationError("Email already exists")
 
         return email
 
@@ -164,18 +139,14 @@ class SignupSerializer(
         return user
 
 
-class LoginSerializer(
-    serializers.Serializer
-):
+class LoginSerializer(serializers.Serializer):
 
     email = serializers.EmailField()
 
     password = serializers.CharField()
 
 
-class OTPVerifySerializer(
-    serializers.Serializer
-):
+class OTPVerifySerializer(serializers.Serializer):
 
     email = serializers.EmailField()
 
@@ -198,9 +169,7 @@ class OTPVerifySerializer(
     )
 
 
-class ResendOTPSerializer(
-    serializers.Serializer
-):
+class ResendOTPSerializer(serializers.Serializer):
 
     email = serializers.EmailField()
 
@@ -210,16 +179,12 @@ class ResendOTPSerializer(
     )
 
 
-class ForgotPasswordSerializer(
-    serializers.Serializer
-):
+class ForgotPasswordSerializer(serializers.Serializer):
 
     email = serializers.EmailField()
 
 
-class ResetPasswordSerializer(
-    serializers.Serializer
-):
+class ResetPasswordSerializer(serializers.Serializer):
 
     email = serializers.EmailField()
 
@@ -239,16 +204,12 @@ class ResetPasswordSerializer(
         return _validate_user_password(value)
 
 
-class ChangeEmailRequestSerializer(
-    serializers.Serializer
-):
+class ChangeEmailRequestSerializer(serializers.Serializer):
 
     new_email = serializers.EmailField()
 
 
-class VerifyEmailChangeSerializer(
-    serializers.Serializer
-):
+class VerifyEmailChangeSerializer(serializers.Serializer):
 
     new_email = serializers.EmailField()
 
@@ -257,9 +218,7 @@ class VerifyEmailChangeSerializer(
     )
 
 
-class ChangePasswordSerializer(
-    serializers.Serializer
-):
+class ChangePasswordSerializer(serializers.Serializer):
 
     old_password = serializers.CharField(
         write_only=True,

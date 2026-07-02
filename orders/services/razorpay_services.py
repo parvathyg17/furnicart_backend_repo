@@ -2,28 +2,20 @@ import logging
 import uuid
 from decimal import Decimal
 
+import razorpay
 from django.conf import settings
 from django.db import transaction
 from django.utils import timezone
-
-import razorpay
-
 from rest_framework.exceptions import ValidationError
 
 from accounts.models.address import Address
-
-from cart.services import (
-    get_cart_payload,
-    get_or_create_cart,
-    validate_cart_for_checkout,
-)
-
+from cart.services import (get_cart_payload, get_or_create_cart,
+                           validate_cart_for_checkout)
 from orders.models import Order, PaymentIntent
 from orders.serializers import OrderDetailSerializer
 from orders.services.checkout_pricing import compute_checkout_totals
 from orders.services.order_services import create_order_from_cart
 from orders.services.razorpay_client import get_razorpay_client
-
 
 logger = logging.getLogger(__name__)
 
@@ -43,11 +35,7 @@ def _intent_lifetime():
 
 def _user_prefill(user):
 
-    name = (
-        user.get_full_name()
-        or user.first_name
-        or user.email.split("@")[0]
-    )
+    name = user.get_full_name() or user.first_name or user.email.split("@")[0]
 
     return {
         "name": name,
@@ -78,9 +66,8 @@ def compute_checkout_grand_total(
             "Your cart is empty.",
         )
 
-    from promotions.services.coupon_cart_services import (
-        resolve_applied_coupon_for_cart,
-    )
+    from promotions.services.coupon_cart_services import \
+        resolve_applied_coupon_for_cart
 
     coupon = resolve_applied_coupon_for_cart(
         cart,
@@ -101,14 +88,8 @@ def compute_checkout_grand_total(
     )
 
     return {
-        "grand_total": pricing[
-            "grand_total"
-        ],
-        "applied_coupon_id": (
-            coupon.pk
-            if coupon
-            else None
-        ),
+        "grand_total": pricing["grand_total"],
+        "applied_coupon_id": (coupon.pk if coupon else None),
     }
 
 
@@ -220,9 +201,7 @@ def refund_razorpay_partial_on_order_change(
 
         return
 
-    refund_amount = (
-        old_grand_total - order.grand_total
-    ).quantize(
+    refund_amount = (old_grand_total - order.grand_total).quantize(
         Decimal(
             "0.01",
         ),
@@ -249,9 +228,7 @@ def refund_razorpay_partial_on_order_change(
 
     if line_id is not None:
 
-        notes[
-            "order_line_id"
-        ] = str(
+        notes["order_line_id"] = str(
             line_id,
         )
 
@@ -275,9 +252,7 @@ def refund_razorpay_partial_on_order_change(
             "Please contact support.",
         )
 
-    order.payment_status = (
-        Order.PaymentStatus.PARTIALLY_REFUNDED
-    )
+    order.payment_status = Order.PaymentStatus.PARTIALLY_REFUNDED
 
 
 @transaction.atomic
@@ -323,9 +298,7 @@ def initiate_razorpay_checkout(
         user,
     )
 
-    grand_total = pricing[
-        "grand_total"
-    ]
+    grand_total = pricing["grand_total"]
 
     amount_paise = int(
         grand_total * 100,
@@ -380,23 +353,16 @@ def initiate_razorpay_checkout(
     PaymentIntent.objects.create(
         user=user,
         shipping_address=address,
-        razorpay_order_id=rz_order[
-            "id"
-        ],
+        razorpay_order_id=rz_order["id"],
         amount_paise=amount_paise,
         grand_total=grand_total,
-        applied_coupon_id=pricing[
-            "applied_coupon_id"
-        ],
+        applied_coupon_id=pricing["applied_coupon_id"],
         status=PaymentIntent.Status.PENDING,
-        expires_at=timezone.now()
-        + _intent_lifetime(),
+        expires_at=timezone.now() + _intent_lifetime(),
     )
 
     return {
-        "razorpay_order_id": rz_order[
-            "id"
-        ],
+        "razorpay_order_id": rz_order["id"],
         "key_id": settings.RAZORPAY_KEY_ID,
         "amount_paise": amount_paise,
         "currency": "INR",
@@ -424,22 +390,23 @@ def _validation_message(
         if "detail" in detail:
 
             return str(
-                detail[
-                    "detail"
-                ],
+                detail["detail"],
             )
 
         parts = []
 
         for key, val in detail.items():
 
-            if isinstance(
-                val,
-                (
-                    list,
-                    tuple,
-                ),
-            ) and val:
+            if (
+                isinstance(
+                    val,
+                    (
+                        list,
+                        tuple,
+                    ),
+                )
+                and val
+            ):
 
                 parts.append(
                     f"{key}: {val[0]}",
@@ -457,13 +424,16 @@ def _validation_message(
                 parts,
             )
 
-    if isinstance(
-        detail,
-        (
-            list,
-            tuple,
-        ),
-    ) and detail:
+    if (
+        isinstance(
+            detail,
+            (
+                list,
+                tuple,
+            ),
+        )
+        and detail
+    ):
 
         return str(
             detail[0],
@@ -543,18 +513,14 @@ def _complete_intent_from_payment(
         _fail_intent_with_refund(
             intent,
             payment_id,
-            message=(
-                "Checkout session expired. Your payment has been refunded."
-            ),
+            message=("Checkout session expired. Your payment has been refunded."),
         )
 
     current_pricing = compute_checkout_grand_total(
         intent.user,
     )
 
-    if current_pricing[
-        "grand_total"
-    ] != intent.grand_total:
+    if current_pricing["grand_total"] != intent.grand_total:
 
         _fail_intent_with_refund(
             intent,
@@ -631,11 +597,9 @@ def verify_razorpay_payment(
 
     try:
 
-        intent = (
-            PaymentIntent.objects.select_for_update().get(
-                razorpay_order_id=razorpay_order_id,
-                user=user,
-            )
+        intent = PaymentIntent.objects.select_for_update().get(
+            razorpay_order_id=razorpay_order_id,
+            user=user,
         )
 
     except PaymentIntent.DoesNotExist:
@@ -655,9 +619,7 @@ def verify_razorpay_payment(
             "Please contact support.",
         )
 
-    if intent.status not in (
-        PaymentIntent.Status.PENDING,
-    ):
+    if intent.status not in (PaymentIntent.Status.PENDING,):
 
         raise ValidationError(
             "This payment session is no longer valid.",
@@ -762,13 +724,10 @@ def handle_razorpay_webhook(
         )
     )
 
-    razorpay_order_id = (
-        payment_entity.get(
-            "order_id",
-        )
-        or order_entity.get(
-            "id",
-        )
+    razorpay_order_id = payment_entity.get(
+        "order_id",
+    ) or order_entity.get(
+        "id",
     )
 
     payment_id = payment_entity.get(
@@ -783,10 +742,8 @@ def handle_razorpay_webhook(
 
         try:
 
-            intent = (
-                PaymentIntent.objects.select_for_update().get(
-                    razorpay_order_id=razorpay_order_id,
-                )
+            intent = PaymentIntent.objects.select_for_update().get(
+                razorpay_order_id=razorpay_order_id,
             )
 
         except PaymentIntent.DoesNotExist:

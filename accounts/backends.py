@@ -5,12 +5,7 @@ User = get_user_model()
 
 
 class EmailBackend(ModelBackend):
-    """
-    Custom authentication backend to allow login using email.
-    Works with both:
-    - authenticate(username=email, password=...)
-    - authenticate(email=email, password=...)
-    """
+    
 
     def authenticate(self, request, username=None, password=None, **kwargs):
         

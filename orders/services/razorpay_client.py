@@ -1,6 +1,5 @@
-from django.conf import settings
-
 import razorpay
+from django.conf import settings
 
 
 def get_razorpay_client():

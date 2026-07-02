@@ -14,26 +14,15 @@ class OTP(models.Model):
         ("email_change", "Email Change"),
     )
 
-    user = models.ForeignKey(
-        User,
-        on_delete=models.CASCADE
-    )
+    user = models.ForeignKey(User, on_delete=models.CASCADE)
 
-    purpose = models.CharField(
-        max_length=30,
-        choices=PURPOSE_CHOICES
-    )
+    purpose = models.CharField(max_length=30, choices=PURPOSE_CHOICES)
 
     otp = models.CharField(max_length=6)
 
-    extra_data = models.JSONField(
-        null=True,
-        blank=True
-    )
+    extra_data = models.JSONField(null=True, blank=True)
 
-    created_at = models.DateTimeField(
-        auto_now_add=True
-    )
+    created_at = models.DateTimeField(auto_now_add=True)
 
     expires_at = models.DateTimeField()
 

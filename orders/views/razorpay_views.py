@@ -1,22 +1,17 @@
 from django.utils.decorators import method_decorator
 from django.views.decorators.csrf import csrf_exempt
-
 from rest_framework import status
 from rest_framework.exceptions import ValidationError
 from rest_framework.permissions import AllowAny, IsAuthenticated
 from rest_framework.response import Response
 from rest_framework.views import APIView
 
-from orders.serializers import (
-    RazorpayInitiateSerializer,
-    RazorpayVerifySerializer,
-)
-from orders.services.razorpay_services import (
-    handle_razorpay_webhook,
-    initiate_razorpay_checkout,
-    serialize_order_response,
-    verify_razorpay_payment,
-)
+from orders.serializers import (RazorpayInitiateSerializer,
+                                RazorpayVerifySerializer)
+from orders.services.razorpay_services import (handle_razorpay_webhook,
+                                               initiate_razorpay_checkout,
+                                               serialize_order_response,
+                                               verify_razorpay_payment)
 
 
 def _validation_error_response(exc):
@@ -59,9 +54,7 @@ class RazorpayInitiateView(APIView):
 
             payload = initiate_razorpay_checkout(
                 request.user,
-                serializer.validated_data[
-                    "address_id"
-                ],
+                serializer.validated_data["address_id"],
             )
 
         except ValidationError as exc:
@@ -96,15 +89,9 @@ class RazorpayVerifyView(APIView):
 
             order = verify_razorpay_payment(
                 request.user,
-                razorpay_order_id=data[
-                    "razorpay_order_id"
-                ],
-                razorpay_payment_id=data[
-                    "razorpay_payment_id"
-                ],
-                razorpay_signature=data[
-                    "razorpay_signature"
-                ],
+                razorpay_order_id=data["razorpay_order_id"],
+                razorpay_payment_id=data["razorpay_payment_id"],
+                razorpay_signature=data["razorpay_signature"],
             )
 
         except ValidationError as exc:

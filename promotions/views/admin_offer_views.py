@@ -9,20 +9,15 @@ from rest_framework.views import APIView
 from core.pagination import CustomPagination
 from core.utils.permissions import IsAdminUserCustom
 from promotions.models import Offer
-from promotions.selectors.admin_offer_selectors import (
-    get_admin_filtered_offers,
-)
+from promotions.selectors.admin_offer_selectors import \
+    get_admin_filtered_offers
 from promotions.serializers import AdminOfferSerializer
-from promotions.services.admin_offer_services import (
-    delete_offer,
-)
+from promotions.services.admin_offer_services import delete_offer
 
 logger = logging.getLogger(__name__)
 
 
 class AdminOfferListCreateView(APIView):
-
-   
 
     permission_classes = [
         IsAuthenticated,
@@ -115,8 +110,6 @@ class AdminOfferListCreateView(APIView):
 
 class AdminOfferDetailView(APIView):
 
-   
-
     permission_classes = [
         IsAuthenticated,
         IsAdminUserCustom,
@@ -130,13 +123,11 @@ class AdminOfferDetailView(APIView):
 
         try:
 
-            instance = (
-                Offer.objects.select_related(
-                    "product",
-                    "category",
-                ).get(
-                    pk=offer_id,
-                )
+            instance = Offer.objects.select_related(
+                "product",
+                "category",
+            ).get(
+                pk=offer_id,
             )
 
         except Offer.DoesNotExist:

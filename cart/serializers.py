@@ -2,19 +2,12 @@ from decimal import Decimal
 
 from rest_framework import serializers
 
-from catalog.serializers.product_serializers import (
-    ProductVariantSerializer,
-)
-
 from cart.models import CartItem
+from catalog.serializers.product_serializers import ProductVariantSerializer
 
-from .services import (
-    MAX_CART_QTY,
-    cart_line_gross_subtotal,
-    cart_line_offer_discount,
-    cart_line_subtotal,
-    get_cart_line_availability,
-)
+from .services import (MAX_CART_QTY, cart_line_gross_subtotal,
+                       cart_line_offer_discount, cart_line_subtotal,
+                       get_cart_line_availability)
 
 
 class CartItemSerializer(

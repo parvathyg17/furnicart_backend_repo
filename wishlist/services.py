@@ -1,13 +1,8 @@
 from django.db import transaction
-
 from rest_framework import serializers
 
 from catalog.models import ProductVariant
-
-from wishlist.models import (
-    Wishlist,
-    WishlistItem,
-)
+from wishlist.models import Wishlist, WishlistItem
 
 
 def get_or_create_wishlist(user):

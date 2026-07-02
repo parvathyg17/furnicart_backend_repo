@@ -3,18 +3,12 @@ from io import BytesIO
 from xml.sax.saxutils import escape
 
 from django.utils import timezone
-
 from reportlab.lib import colors
 from reportlab.lib.pagesizes import A4
 from reportlab.lib.styles import ParagraphStyle, getSampleStyleSheet
 from reportlab.lib.units import cm
-from reportlab.platypus import (
-    Paragraph,
-    SimpleDocTemplate,
-    Spacer,
-    Table,
-    TableStyle,
-)
+from reportlab.platypus import (Paragraph, SimpleDocTemplate, Spacer, Table,
+                                TableStyle)
 
 
 def _money_str(
@@ -37,8 +31,6 @@ def _money_str(
 def build_order_invoice_pdf(
     order,
 ):
-
-    
 
     buffer = BytesIO()
 

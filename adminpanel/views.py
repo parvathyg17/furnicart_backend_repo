@@ -1,25 +1,18 @@
-
 from django.conf import settings
 from django.contrib.auth import authenticate
-from django.db.models import Q
 from django.core.paginator import Paginator
-from django.db.models import Count
-from rest_framework.views import APIView
-from rest_framework.response import Response
+from django.db.models import Q
+from rest_framework import status
 from rest_framework.permissions import IsAuthenticated
-
+from rest_framework.response import Response
+from rest_framework.views import APIView
 from rest_framework_simplejwt.tokens import RefreshToken
 
 from accounts.models.users import User
-
-
 from core.utils.permissions import IsAdminUserCustom
 
-from .throttles import AdminLoginThrottle
-
 from .serializers import AdminLoginSerializer
-
-
+from .throttles import AdminLoginThrottle
 
 
 class AdminLoginView(APIView):
@@ -28,9 +21,7 @@ class AdminLoginView(APIView):
 
     def post(self, request):
 
-        serializer = AdminLoginSerializer(
-            data=request.data
-        )
+        serializer = AdminLoginSerializer(data=request.data)
 
         serializer.is_valid(raise_exception=True)
 
@@ -38,45 +29,40 @@ class AdminLoginView(APIView):
 
         password = serializer.validated_data["password"]
 
-        user = authenticate(
-            email=email,
-            password=password
-        )
+        user = authenticate(email=email, password=password)
 
         if not user:
 
             return Response(
                 {"error": "Invalid credentials"},
-                status=400
+                status=status.HTTP_400_BAD_REQUEST,
             )
 
         if not user.is_superuser:
-
             return Response(
                 {"error": "Not authorized"},
-                status=403
+                status=status.HTTP_403_FORBIDDEN,
             )
 
         if not user.is_active:
-
             return Response(
                 {"error": "Account blocked"},
-                status=403
+                status=status.HTTP_403_FORBIDDEN,
             )
 
         refresh = RefreshToken.for_user(user)
 
-        response = Response({
-
-            "message": "Admin login successful",
-
-            "user": {
-                "id": user.id,
-                "email": user.email,
-                "username": user.username,
-                "is_admin": True,
+        response = Response(
+            {
+                "message": "Admin login successful",
+                "user": {
+                    "id": user.id,
+                    "email": user.email,
+                    "username": user.username,
+                    "is_admin": True,
+                },
             }
-        })
+        )
 
         response.set_cookie(
             key="access_token",
@@ -99,14 +85,9 @@ class AdminLoginView(APIView):
         return response
 
 
-
-
 class UserListView(APIView):
 
-    permission_classes = [
-        IsAuthenticated,
-        IsAdminUserCustom
-    ]
+    permission_classes = [IsAuthenticated, IsAdminUserCustom]
 
     def get(self, request):
 
@@ -119,71 +100,49 @@ class UserListView(APIView):
             page = 1
 
         users = User.objects.only(
-            "id",
-            "email",
-            "username",
-            "is_active",
-            "is_verified",
-            "date_joined"
+            "id", "email", "username", "is_active", "is_verified", "date_joined"
         ).order_by("-date_joined")
 
         # SEARCH
         if search:
 
             users = users.filter(
-                Q(email__icontains=search) |
-                Q(username__icontains=search)
+                Q(email__icontains=search) | Q(username__icontains=search)
             )
 
-        
         paginator = Paginator(users, 5)
 
         page_obj = paginator.get_page(page)
 
-      
         data = [
-
             {
                 "id": user.id,
-
                 "email": user.email,
-
                 "username": user.username,
-
                 "is_active": user.is_active,
-
                 "is_verified": user.is_verified,
-
                 "status": (
-                    "blocked" if not user.is_active
-                    else "unverified" if not user.is_verified
-                    else "active"
+                    "blocked"
+                    if not user.is_active
+                    else "unverified" if not user.is_verified else "active"
                 ),
-
-                "date_joined": user.date_joined
+                "date_joined": user.date_joined,
             }
-
             for user in page_obj
         ]
 
-        return Response({
-
-            "total_pages": paginator.num_pages,
-
-            "current_page": page_obj.number,
-
-            "users": data
-        })
-
-
+        return Response(
+            {
+                "total_pages": paginator.num_pages,
+                "current_page": page_obj.number,
+                "users": data,
+            }
+        )
 
 
 class BlockUserView(APIView):
 
-    permission_classes = [
-        IsAuthenticated,
-        IsAdminUserCustom
-    ]
+    permission_classes = [IsAuthenticated, IsAdminUserCustom]
 
     def patch(self, request, user_id):
 
@@ -195,157 +154,107 @@ class BlockUserView(APIView):
 
             return Response(
                 {"error": "User not found"},
-                status=404
+                status=status.HTTP_404_NOT_FOUND,
             )
 
-      
         if user == request.user:
-
             return Response(
                 {"error": "Cannot block yourself"},
-                status=400
+                status=status.HTTP_400_BAD_REQUEST,
             )
 
-     
         if user.is_staff or user.is_superuser:
-
             return Response(
                 {"error": "Cannot block another admin"},
-                status=403
+                status=status.HTTP_403_FORBIDDEN,
             )
 
-        
         user.is_active = not user.is_active
 
         user.save()
 
-        return Response({
-
-    "id": user.id,
-
-    "message": (
-        "User blocked"
-        if not user.is_active
-        else "User unblocked"
-    ),
-
-    "is_active": user.is_active,
-
-    "status": (
-        "blocked" if not user.is_active
-        else "unverified" if not user.is_verified
-        else "active"
-    )
-})
-
-
+        return Response(
+            {
+                "id": user.id,
+                "message": ("User blocked" if not user.is_active else "User unblocked"),
+                "is_active": user.is_active,
+                "status": (
+                    "blocked"
+                    if not user.is_active
+                    else "unverified" if not user.is_verified else "active"
+                ),
+            }
+        )
 
 
 class AdminLogoutView(APIView):
 
-    permission_classes = [
-        IsAuthenticated,
-        IsAdminUserCustom
-    ]
+    permission_classes = [IsAuthenticated, IsAdminUserCustom]
 
     def post(self, request):
 
-        refresh_token = request.COOKIES.get(
-            "refresh_token"
-        )
+        refresh_token = request.COOKIES.get("refresh_token")
 
         if refresh_token:
 
             try:
 
-                token = RefreshToken(
-                    refresh_token
-                )
+                token = RefreshToken(refresh_token)
 
                 token.blacklist()
 
             except Exception:
                 pass
 
-        response = Response({
-            "message": "Admin logged out"
-        })
+        response = Response({"message": "Admin logged out"})
 
         response.delete_cookie(
             "access_token",
             path="/",
             samesite=settings.COOKIE_SAMESITE,
-            )
+        )
         response.delete_cookie(
             "refresh_token",
             path="/",
             samesite=settings.COOKIE_SAMESITE,
-            )
+        )
         return response
-
 
 
 class AdminMeView(APIView):
 
-    permission_classes = [
-        IsAuthenticated,
-        IsAdminUserCustom
-    ]
+    permission_classes = [IsAuthenticated, IsAdminUserCustom]
 
     def get(self, request):
 
         user = request.user
 
-        return Response({
-
-            "id": user.id,
-
-            "email": user.email,
-
-            "username": user.username,
-
-            "is_admin": user.is_superuser,
-        })
+        return Response(
+            {
+                "id": user.id,
+                "email": user.email,
+                "username": user.username,
+                "is_admin": user.is_superuser,
+            }
+        )
 
 
 class AdminDashboardStatsView(APIView):
 
-    permission_classes = [
-        IsAuthenticated,
-        IsAdminUserCustom
-    ]
+    permission_classes = [IsAuthenticated, IsAdminUserCustom]
 
     def get(self, request):
 
         total_users = User.objects.count()
 
-        active_users = User.objects.filter(
-            is_active=True
-        ).count()
+        active_users = User.objects.filter(is_active=True).count()
 
-        blocked_users = User.objects.filter(
-            is_active=False
-        ).count()
+        blocked_users = User.objects.filter(is_active=False).count()
 
-        # order_status=get_order_status();
-
-
-        return Response({
-
-            "total_users": total_users,
-
-            "active_users": active_users,
-
-            "blocked_users": blocked_users,
-
-            # "order_status":order_status,
-
-
-        })
-
-
-
-
-
-
-
+        return Response(
+            {
+                "total_users": total_users,
+                "active_users": active_users,
+                "blocked_users": blocked_users,
+            }
+        )

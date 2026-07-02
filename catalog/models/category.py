@@ -4,45 +4,23 @@ from django.utils.text import slugify
 
 class Category(models.Model):
 
-    name = models.CharField(
-        max_length=100,
-        unique=True
-    )
+    name = models.CharField(max_length=100, unique=True)
 
-    slug = models.SlugField(
-        unique=True,
-        blank=True
-    )
+    slug = models.SlugField(unique=True, blank=True)
 
     parent = models.ForeignKey(
-        "self",
-        on_delete=models.CASCADE,
-        null=True,
-        blank=True,
-        related_name="children"
+        "self", on_delete=models.CASCADE, null=True, blank=True, related_name="children"
     )
 
-    description = models.TextField(
-        blank=True
-    )
+    description = models.TextField(blank=True)
 
-    image = models.ImageField(
-    upload_to="categories/",
-    blank=True,
-    null=True
-    )
+    image = models.ImageField(upload_to="categories/", blank=True, null=True)
 
-    is_active = models.BooleanField(
-        default=True
-    )
+    is_active = models.BooleanField(default=True)
 
-    created_at = models.DateTimeField(
-        auto_now_add=True
-    )
+    created_at = models.DateTimeField(auto_now_add=True)
 
-    updated_at = models.DateTimeField(
-        auto_now=True
-    )
+    updated_at = models.DateTimeField(auto_now=True)
 
     class Meta:
 
@@ -63,9 +41,7 @@ class Category(models.Model):
 
             counter = 1
 
-            while Category.objects.filter(
-                slug=slug
-            ).exclude(id=self.id).exists():
+            while Category.objects.filter(slug=slug).exclude(id=self.id).exists():
 
                 slug = f"{base_slug}-{counter}"
 

@@ -8,7 +8,6 @@ from orders.models import Order, OrderLine
 def order_eligible_for_wallet_refund(
     order,
 ):
-    
 
     return order.payment_method in (
         Order.PaymentMethod.RAZORPAY,
@@ -29,16 +28,14 @@ def credit_wallet_for_order_cancellation(
 
         return
 
-    amount = (
+    amount = Decimal(
+        str(
+            amount,
+        ),
+    ).quantize(
         Decimal(
-            str(
-                amount,
-            ),
-        ).quantize(
-            Decimal(
-                "0.01",
-            ),
-        )
+            "0.01",
+        ),
     )
 
     if amount <= Decimal(
@@ -47,15 +44,11 @@ def credit_wallet_for_order_cancellation(
 
         return
 
-    note = (
-        f"Cancellation refund for order {order.order_number}"
-    )
+    note = f"Cancellation refund for order {order.order_number}"
 
     if line_id is not None:
 
-        note = (
-            f"{note} (line #{line_id})"
-        )
+        note = f"{note} (line #{line_id})"
 
     credit_wallet(
         order.user,
@@ -81,16 +74,14 @@ def credit_wallet_for_return_completion(
 
         return
 
-    amount = (
+    amount = Decimal(
+        str(
+            amount,
+        ),
+    ).quantize(
         Decimal(
-            str(
-                amount,
-            ),
-        ).quantize(
-            Decimal(
-                "0.01",
-            ),
-        )
+            "0.01",
+        ),
     )
 
     if amount <= Decimal(
@@ -106,8 +97,7 @@ def credit_wallet_for_return_completion(
         order=order,
         return_request=return_request,
         reference_note=(
-            f"Return refund for {line.sku} "
-            f"(order {order.order_number})"
+            f"Return refund for {line.sku} " f"(order {order.order_number})"
         ),
     )
 
@@ -115,7 +105,6 @@ def credit_wallet_for_return_completion(
 def update_payment_status_after_return_completion(
     order,
 ):
-   
 
     if order.payment_status not in (
         Order.PaymentStatus.PAID,
@@ -133,8 +122,7 @@ def update_payment_status_after_return_completion(
         return False
 
     all_returned = all(
-        line.fulfillment_status
-        == OrderLine.FulfillmentStatus.RETURNED
+        line.fulfillment_status == OrderLine.FulfillmentStatus.RETURNED
         for line in active_lines
     )
 
@@ -154,9 +142,7 @@ def wallet_refund_delta_on_partial_cancel(
     line_id=None,
 ):
 
-    refund_amount = (
-        old_grand_total - order.grand_total
-    ).quantize(
+    refund_amount = (old_grand_total - order.grand_total).quantize(
         Decimal(
             "0.01",
         ),
@@ -174,19 +160,14 @@ def wallet_refund_delta_on_partial_cancel(
         line_id=line_id,
     )
 
-    if (
-        order_eligible_for_wallet_refund(
-            order,
-        )
-        and order.payment_status in (
-            Order.PaymentStatus.PAID,
-            Order.PaymentStatus.PARTIALLY_REFUNDED,
-        )
+    if order_eligible_for_wallet_refund(
+        order,
+    ) and order.payment_status in (
+        Order.PaymentStatus.PAID,
+        Order.PaymentStatus.PARTIALLY_REFUNDED,
     ):
 
-        order.payment_status = (
-            Order.PaymentStatus.PARTIALLY_REFUNDED
-        )
+        order.payment_status = Order.PaymentStatus.PARTIALLY_REFUNDED
 
 
 def wallet_refund_on_full_cancel(
@@ -208,17 +189,12 @@ def wallet_refund_on_full_cancel(
             refund_amount,
         )
 
-    if (
-        order_eligible_for_wallet_refund(
-            order,
-        )
-        and order.payment_status in (
-            Order.PaymentStatus.PAID,
-            Order.PaymentStatus.PARTIALLY_REFUNDED,
-            Order.PaymentStatus.PROCESSING,
-        )
+    if order_eligible_for_wallet_refund(
+        order,
+    ) and order.payment_status in (
+        Order.PaymentStatus.PAID,
+        Order.PaymentStatus.PARTIALLY_REFUNDED,
+        Order.PaymentStatus.PROCESSING,
     ):
 
-        order.payment_status = (
-            Order.PaymentStatus.REFUNDED
-        )
+        order.payment_status = Order.PaymentStatus.REFUNDED

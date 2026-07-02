@@ -4,27 +4,18 @@ from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
 from rest_framework.views import APIView
 
+from catalog.selectors.review_selectors import (
+    get_approved_reviews_for_product, get_eligible_products_for_user,
+    get_user_product_by_ref, get_user_review_for_product,
+    user_can_review_product)
+from catalog.serializers.review_serializers import (
+    EligibleProductSerializer, ProductReviewCreateSerializer,
+    ProductReviewSerializer, ProductReviewUpdateSerializer)
+from catalog.services.review_services import (create_review_for_user,
+                                              delete_review_for_user,
+                                              update_review_for_user)
 from core.pagination import CustomPagination
 from core.utils.media import resolve_media_url
-
-from catalog.selectors.review_selectors import (
-    get_approved_reviews_for_product,
-    get_eligible_products_for_user,
-    get_user_product_by_ref,
-    get_user_review_for_product,
-    user_can_review_product,
-)
-from catalog.serializers.review_serializers import (
-    EligibleProductSerializer,
-    ProductReviewCreateSerializer,
-    ProductReviewSerializer,
-    ProductReviewUpdateSerializer,
-)
-from catalog.services.review_services import (
-    create_review_for_user,
-    delete_review_for_user,
-    update_review_for_user,
-)
 
 
 def _validation_error_response(
@@ -186,16 +177,12 @@ class ProductReviewListCreateView(
             review = create_review_for_user(
                 request.user,
                 product_ref,
-                rating=ser.validated_data[
-                    "rating"
-                ],
+                rating=ser.validated_data["rating"],
                 title=ser.validated_data.get(
                     "title",
                     "",
                 ),
-                body=ser.validated_data[
-                    "body"
-                ],
+                body=ser.validated_data["body"],
             )
 
         except ValidationError as exc:
@@ -313,13 +300,17 @@ class UserReviewListView(
 
         from catalog.models import ProductReview
 
-        reviews = ProductReview.objects.filter(
-            user=request.user,
-        ).select_related(
-            "product",
-            "order_line",
-        ).order_by(
-            "-created_at",
+        reviews = (
+            ProductReview.objects.filter(
+                user=request.user,
+            )
+            .select_related(
+                "product",
+                "order_line",
+            )
+            .order_by(
+                "-created_at",
+            )
         )
 
         paginator = CustomPagination()
@@ -355,9 +346,8 @@ class EligibleReviewProductsView(
         request,
     ):
 
-        from catalog.selectors.review_selectors import (
-            get_delivered_order_line_for_product,
-        )
+        from catalog.selectors.review_selectors import \
+            get_delivered_order_line_for_product
 
         products = get_eligible_products_for_user(
             request.user,
@@ -383,9 +373,7 @@ class EligibleReviewProductsView(
                         product,
                         request,
                     ),
-                    "order_line_id": (
-                        line.id if line else None
-                    ),
+                    "order_line_id": (line.id if line else None),
                 },
             )
 

@@ -85,7 +85,4 @@ class ProductReview(models.Model):
 
     def __str__(self):
 
-        return (
-            f"Review {self.id} — "
-            f"{self.product.name} ({self.rating}/5)"
-        )
+        return f"Review {self.id} — " f"{self.product.name} ({self.rating}/5)"

@@ -1,5 +1,4 @@
 from django.db import transaction
-
 from rest_framework.exceptions import ValidationError
 
 from orders.models import Order, OrderLine
@@ -31,10 +30,7 @@ def admin_set_order_line_fulfillment(
             "Cannot change fulfillment for a cancelled line.",
         )
 
-    valid = {
-        c
-        for c, _ in OrderLine.FulfillmentStatus.choices
-    }
+    valid = {c for c, _ in OrderLine.FulfillmentStatus.choices}
 
     if fulfillment_status not in valid:
 

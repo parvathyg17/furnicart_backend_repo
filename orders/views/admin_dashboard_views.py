@@ -5,16 +5,11 @@ from rest_framework.response import Response
 from rest_framework.views import APIView
 
 from core.utils.permissions import IsAdminUserCustom
-from orders.services.dashboard_analytics_services import (
-    build_dashboard_analytics,
-)
-from orders.services.sales_report_export import (
-    build_ledger_excel,
-    build_ledger_pdf,
-)
-from orders.services.sales_report_services import (
-    load_report_for_export,
-)
+from orders.services.dashboard_analytics_services import \
+    build_dashboard_analytics
+from orders.services.sales_report_export import (build_ledger_excel,
+                                                 build_ledger_pdf)
+from orders.services.sales_report_services import load_report_for_export
 
 
 def _build_ledger_export_response(
@@ -68,8 +63,7 @@ def _build_ledger_export_response(
         response = HttpResponse(
             xlsx_bytes,
             content_type=(
-                "application/vnd.openxmlformats-"
-                "officedocument.spreadsheetml.sheet"
+                "application/vnd.openxmlformats-" "officedocument.spreadsheetml.sheet"
             ),
         )
 
@@ -77,15 +71,11 @@ def _build_ledger_export_response(
 
         raise ValidationError(
             {
-                "export_format": (
-                    "Supported formats: pdf, excel."
-                ),
+                "export_format": ("Supported formats: pdf, excel."),
             },
         )
 
-    response[
-        "Content-Disposition"
-    ] = f'attachment; filename="{filename}"'
+    response["Content-Disposition"] = f'attachment; filename="{filename}"'
 
     return response
 
@@ -149,4 +139,3 @@ class AdminLedgerExportView(
         return _build_ledger_export_response(
             request,
         )
-

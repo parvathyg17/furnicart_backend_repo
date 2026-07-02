@@ -34,9 +34,7 @@ class Coupon(models.Model):
     discount_value = models.DecimalField(
         max_digits=12,
         decimal_places=2,
-        help_text=(
-            "If percentage: 0–100. If fixed: amount in shop currency."
-        ),
+        help_text=("If percentage: 0–100. If fixed: amount in shop currency."),
     )
 
     min_order_subtotal = models.DecimalField(
@@ -137,7 +135,9 @@ class Coupon(models.Model):
 
         if self.discount_type == self.DiscountType.PERCENT:
 
-            if self.discount_value <= Decimal("0") or self.discount_value > Decimal("100"):
+            if self.discount_value <= Decimal("0") or self.discount_value > Decimal(
+                "100"
+            ):
 
                 raise ValidationError(
                     {
@@ -219,9 +219,7 @@ class Offer(models.Model):
     discount_value = models.DecimalField(
         max_digits=12,
         decimal_places=2,
-        help_text=(
-            "If percentage: 0–100. If fixed: amount off the line subtotal."
-        ),
+        help_text=("If percentage: 0–100. If fixed: amount off the line subtotal."),
     )
 
     max_discount_amount = models.DecimalField(
@@ -336,9 +334,8 @@ class Offer(models.Model):
 
         if self.discount_type == self.DiscountType.PERCENT:
 
-            if (
-                self.discount_value <= Decimal("0")
-                or self.discount_value > Decimal("100")
+            if self.discount_value <= Decimal("0") or self.discount_value > Decimal(
+                "100"
             ):
 
                 raise ValidationError(

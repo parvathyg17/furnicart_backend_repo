@@ -1,6 +1,5 @@
 import secrets
 import string
-
 from datetime import timedelta
 from decimal import Decimal
 
@@ -8,12 +7,8 @@ from django.db import IntegrityError, transaction
 from django.utils import timezone
 
 from orders.models import Order
-from promotions.models import (
-    Coupon,
-    ReferralAttribution,
-    ReferralCode,
-    ReferralProgram,
-)
+from promotions.models import (Coupon, ReferralAttribution, ReferralCode,
+                               ReferralProgram)
 
 
 def get_active_referral_program():
@@ -33,10 +28,7 @@ def _generate_referral_code_value(
     length=8,
 ):
 
-    alphabet = (
-        string.ascii_uppercase
-        + string.digits
-    )
+    alphabet = string.ascii_uppercase + string.digits
 
     return "".join(
         secrets.choice(
@@ -63,10 +55,7 @@ def _generate_unique_coupon_code(
         30,
     ):
 
-        code = (
-            f"{prefix}"
-            f"{secrets.token_hex(3).upper()}"
-        )
+        code = f"{prefix}" f"{secrets.token_hex(3).upper()}"
 
         if not Coupon.objects.filter(
             code=code,
@@ -84,11 +73,9 @@ def get_or_create_referral_code(
     user,
 ):
 
-    existing = (
-        ReferralCode.objects.filter(
-            user=user,
-        ).first()
-    )
+    existing = ReferralCode.objects.filter(
+        user=user,
+    ).first()
 
     if existing is not None:
 
@@ -125,12 +112,9 @@ def resolve_referrer_from_input(
     referral_code=None,
 ):
 
-    token = (
-        str(
-            referral_token or "",
-        )
-        .strip()
-    )
+    token = str(
+        referral_token or "",
+    ).strip()
 
     code = (
         str(
@@ -184,11 +168,8 @@ def _create_referee_coupon(
 
     if program.referee_coupon_valid_days:
 
-        valid_until = (
-            timezone.now()
-            + timedelta(
-                days=program.referee_coupon_valid_days,
-            )
+        valid_until = timezone.now() + timedelta(
+            days=program.referee_coupon_valid_days,
         )
 
     return Coupon.objects.create(
@@ -281,9 +262,8 @@ def referee_welcome_coupon_payload(
 
         return None
 
-    from promotions.services.coupon_validation import (
-        count_user_coupon_redemptions,
-    )
+    from promotions.services.coupon_validation import \
+        count_user_coupon_redemptions
 
     uses = count_user_coupon_redemptions(
         user,
@@ -314,26 +294,17 @@ def referral_program_summary(
 
         return None
 
-    if (
-        program.referee_discount_type
-        == Coupon.DiscountType.PERCENT
-    ):
+    if program.referee_discount_type == Coupon.DiscountType.PERCENT:
 
-        benefit = (
-            f"{program.referee_discount_value.quantize(Decimal('0.01'))}% off"
-        )
+        benefit = f"{program.referee_discount_value.quantize(Decimal('0.01'))}% off"
 
         if program.referee_max_discount_amount is not None:
 
-            benefit += (
-                f" (up to ₹{program.referee_max_discount_amount.quantize(Decimal('0.01'))})"
-            )
+            benefit += f" (up to ₹{program.referee_max_discount_amount.quantize(Decimal('0.01'))})"
 
     else:
 
-        benefit = (
-            f"₹{program.referee_discount_value.quantize(Decimal('0.01'))} off"
-        )
+        benefit = f"₹{program.referee_discount_value.quantize(Decimal('0.01'))} off"
 
     return {
         "referee_benefit": benefit,
@@ -414,9 +385,7 @@ def process_referral_referrer_reward(
         amount,
         reason=WalletTransaction.Reason.REFERRAL_REWARD,
         order=order,
-        reference_note=(
-            f"Referral reward for order {order.order_number}"
-        ),
+        reference_note=(f"Referral reward for order {order.order_number}"),
     )
 
     attribution.referrer_rewarded = True

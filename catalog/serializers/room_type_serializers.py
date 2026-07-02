@@ -3,9 +3,7 @@ from rest_framework import serializers
 from catalog.models import RoomType
 
 
-class RoomTypeSerializer(
-    serializers.ModelSerializer
-):
+class RoomTypeSerializer(serializers.ModelSerializer):
 
     class Meta:
 
@@ -29,12 +27,7 @@ class RoomTypeSerializer(
             "updated_at",
         ]
 
-    
-
-    def validate_name(
-        self,
-        value
-    ):
+    def validate_name(self, value):
 
         value = value.strip()
 
@@ -44,19 +37,11 @@ class RoomTypeSerializer(
                 "Room type name must contain at least 2 characters."
             )
 
-        existing_room_type = (
-            RoomType.objects.filter(
-                name__iexact=value
-            )
-        )
+        existing_room_type = RoomType.objects.filter(name__iexact=value)
 
         if self.instance:
 
-            existing_room_type = (
-                existing_room_type.exclude(
-                    id=self.instance.id
-                )
-            )
+            existing_room_type = existing_room_type.exclude(id=self.instance.id)
 
         if existing_room_type.exists():
 
@@ -66,26 +51,17 @@ class RoomTypeSerializer(
 
         return value
 
-
-
-    def validate_image(
-        self,
-        value
-    ):
+    def validate_image(self, value):
 
         if not value:
 
             return value
 
-        max_size = (
-            5 * 1024 * 1024
-        )
+        max_size = 5 * 1024 * 1024
 
         if value.size > max_size:
 
-            raise serializers.ValidationError(
-                "Image size must be below 5MB."
-            )
+            raise serializers.ValidationError("Image size must be below 5MB.")
 
         allowed_types = [
             "image/jpeg",
@@ -93,10 +69,7 @@ class RoomTypeSerializer(
             "image/webp",
         ]
 
-        if (
-            value.content_type
-            not in allowed_types
-        ):
+        if value.content_type not in allowed_types:
 
             raise serializers.ValidationError(
                 "Only JPEG, PNG and WEBP images are allowed."

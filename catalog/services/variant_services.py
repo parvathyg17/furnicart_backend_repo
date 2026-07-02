@@ -1,8 +1,6 @@
 from catalog.models import ProductVariant
-
-from catalog.services.product_services import (
-    validate_variant_fields_and_images,
-)
+from catalog.services.product_services import \
+    validate_variant_fields_and_images
 
 
 def get_variant_by_id(variant_id):
@@ -30,8 +28,4 @@ def toggle_variant_status(variant):
 
 def validate_variant_can_activate(variant):
 
-   
-
-    return validate_variant_fields_and_images(
-        variant
-    )
+    return validate_variant_fields_and_images(variant)

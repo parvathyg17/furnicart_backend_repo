@@ -1,17 +1,10 @@
 from django.urls import path
 
-from orders.views import (
-    OrderCancelView,
-    OrderCreateView,
-    OrderDetailView,
-    OrderInvoicePdfView,
-    OrderLineCancelView,
-    OrderLineReturnCreateView,
-    RazorpayInitiateView,
-    RazorpayVerifyView,
-    RazorpayWebhookView,
-    UserPurchasesListView,
-)
+from orders.views import (OrderCancelView, OrderCreateView, OrderDetailView,
+                          OrderInvoicePdfView, OrderLineCancelView,
+                          OrderLineReturnCreateView, RazorpayInitiateView,
+                          RazorpayVerifyView, RazorpayWebhookView,
+                          UserPurchasesListView)
 
 urlpatterns = [
     path(

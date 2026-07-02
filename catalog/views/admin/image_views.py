@@ -1,101 +1,54 @@
-from rest_framework.views import APIView
-from rest_framework.response import Response
-from rest_framework.permissions import (
-    IsAuthenticated
-)
 from rest_framework import status
-from rest_framework.parsers import (
-    MultiPartParser,
-    FormParser
-)
+from rest_framework.parsers import FormParser, MultiPartParser
+from rest_framework.permissions import IsAuthenticated
+from rest_framework.response import Response
+from rest_framework.views import APIView
 
-from core.utils.permissions import (
-    IsAdminUserCustom
-)
+from catalog.models import ProductVariant
+from catalog.serializers.variant_image_serializers import VariantImageUploadSerializer
+from core.utils.permissions import IsAdminUserCustom
 
-from catalog.models import (
-    ProductVariant
-)
-
-from catalog.serializers.variant_image_serializers import (
-    VariantImageUploadSerializer
-)
 
 class VariantImageUploadView(APIView):
 
-    permission_classes = [
-        IsAuthenticated,
-        IsAdminUserCustom
-    ]
+    permission_classes = [IsAuthenticated, IsAdminUserCustom]
 
-    parser_classes = [
-        MultiPartParser,
-        FormParser
-    ]
+    parser_classes = [MultiPartParser, FormParser]
 
     def post(self, request):
 
-        variant_id = request.data.get(
-            "variant"
-        )
+        variant_id = request.data.get("variant")
 
-        files = request.FILES.getlist(
-            "images"
-        )
-
-    
+        files = request.FILES.getlist("images")
 
         try:
 
-            variant = ProductVariant.objects.get(
-                id=variant_id
-            )
+            variant = ProductVariant.objects.get(id=variant_id)
 
         except ProductVariant.DoesNotExist:
 
             return Response(
-                {
-                    "error":
-                    "Variant not found"
-                },
-                status=404
+                {"error": "Variant not found"},
+                status=status.HTTP_404_NOT_FOUND,
             )
 
-     
-
-        existing_count = (
-            variant.images.count()
-        )
-
+        existing_count = variant.images.count()
 
         uploaded_images = []
 
-      
-
         for index, file in enumerate(files):
 
-            serializer = (
-                VariantImageUploadSerializer(
-                    data={
-                        "variant":
-                        variant.id,
-
-                        "image":
-                        file,
-
-                        "display_order":
-                        existing_count + index,
-                    }
-                )
+            serializer = VariantImageUploadSerializer(
+                data={
+                    "variant": variant.id,
+                    "image": file,
+                    "display_order": existing_count + index,
+                }
             )
 
-            serializer.is_valid(
-                raise_exception=True
-            )
+            serializer.is_valid(raise_exception=True)
 
             image = serializer.save()
-
-          
 
             if variant.images.count() == 1:
 
@@ -103,11 +56,6 @@ class VariantImageUploadView(APIView):
 
                 image.save()
 
-            uploaded_images.append(
-                serializer.data
-            )
+            uploaded_images.append(serializer.data)
 
-        return Response(
-            uploaded_images,
-            status=status.HTTP_201_CREATED
-        )
+        return Response(uploaded_images, status=status.HTTP_201_CREATED)

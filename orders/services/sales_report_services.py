@@ -1,18 +1,8 @@
 from datetime import date, datetime, timedelta
 from decimal import Decimal
 
-from django.db.models import (
-    Count,
-    DecimalField,
-    Q,
-    Sum,
-    Value,
-)
-from django.db.models.functions import (
-    Coalesce,
-    TruncDate,
-    TruncMonth,
-)
+from django.db.models import Count, DecimalField, Q, Sum, Value
+from django.db.models.functions import Coalesce, TruncDate, TruncMonth
 from django.utils import timezone
 
 from orders.models import Order, OrderLine
@@ -22,14 +12,12 @@ def _quantize_money(
     value,
 ):
 
-    return (
+    return Decimal(
+        value or "0.00",
+    ).quantize(
         Decimal(
-            value or "0.00",
-        ).quantize(
-            Decimal(
-                "0.01",
-            ),
-        )
+            "0.01",
+        ),
     )
 
 
@@ -38,7 +26,6 @@ def _parse_date_param(
     *,
     field_name,
 ):
-    
 
     if not raw:
 
@@ -54,9 +41,12 @@ def _parse_date_param(
 
     try:
 
-        if len(
-            cleaned,
-        ) == 10:
+        if (
+            len(
+                cleaned,
+            )
+            == 10
+        ):
 
             return date.fromisoformat(
                 cleaned,
@@ -92,7 +82,6 @@ def resolve_sales_report_date_range(
     date_from_raw=None,
     date_to_raw=None,
 ):
-    
 
     period = (
         str(
@@ -111,7 +100,8 @@ def resolve_sales_report_date_range(
     if period == "weekly":
 
         return (
-            today - timedelta(
+            today
+            - timedelta(
                 days=6,
             ),
             today,
@@ -235,20 +225,16 @@ def _sum_active_line_offer_discount(
     queryset,
 ):
 
-    
-
-    result = (
-        OrderLine.objects.filter(
-            order__in=queryset,
-            status=OrderLine.LineStatus.ACTIVE,
-        ).aggregate(
-            total=Coalesce(
-                Sum(
-                    "discount_amount",
-                ),
-                _zero_decimal_value(),
+    result = OrderLine.objects.filter(
+        order__in=queryset,
+        status=OrderLine.LineStatus.ACTIVE,
+    ).aggregate(
+        total=Coalesce(
+            Sum(
+                "discount_amount",
             ),
-        )
+            _zero_decimal_value(),
+        ),
     )
 
     return _quantize_money(
@@ -300,9 +286,7 @@ def _offer_discount_by_bucket(
 
     for row in rows:
 
-        bucket = row[
-            "bucket"
-        ]
+        bucket = row["bucket"]
 
         if bucket is None:
 
@@ -319,12 +303,8 @@ def _offer_discount_by_bucket(
 
             bucket_date = bucket
 
-        mapping[
-            bucket_date.isoformat()
-        ] = _quantize_money(
-            row[
-                "offer_discount_sum"
-            ],
+        mapping[bucket_date.isoformat()] = _quantize_money(
+            row["offer_discount_sum"],
         )
 
     return mapping
@@ -421,9 +401,7 @@ def _breakdown_granularity(
     date_to,
 ):
 
-    span_days = (
-        date_to - date_from
-    ).days + 1
+    span_days = (date_to - date_from).days + 1
 
     if period == "yearly":
 
@@ -520,9 +498,7 @@ def _aggregate_breakdown(
 
     for row in rows:
 
-        bucket = row[
-            "bucket"
-        ]
+        bucket = row["bucket"]
 
         if bucket is None:
 
@@ -539,9 +515,7 @@ def _aggregate_breakdown(
 
             bucket_date = bucket
 
-        row[
-            "offer_discount_sum"
-        ] = offer_by_bucket.get(
+        row["offer_discount_sum"] = offer_by_bucket.get(
             bucket_date.isoformat(),
             Decimal(
                 "0.00",
@@ -574,12 +548,10 @@ def build_sales_report_payload(
     date_to_raw=None,
 ):
 
-    date_from, date_to, normalized_period = (
-        resolve_sales_report_date_range(
-            period,
-            date_from_raw=date_from_raw,
-            date_to_raw=date_to_raw,
-        )
+    date_from, date_to, normalized_period = resolve_sales_report_date_range(
+        period,
+        date_from_raw=date_from_raw,
+        date_to_raw=date_to_raw,
     )
 
     queryset = sales_report_base_queryset(
@@ -624,9 +596,7 @@ def build_sales_report_payload(
         ),
     )
 
-    agg[
-        "offer_discount_sum"
-    ] = _sum_active_line_offer_discount(
+    agg["offer_discount_sum"] = _sum_active_line_offer_discount(
         queryset,
     )
 
@@ -708,8 +678,7 @@ def serialize_sales_report_order(
         ),
         "total_discount": str(
             _quantize_money(
-                offer_discount
-                + order.discount_total,
+                offer_discount + order.discount_total,
             ),
         ),
         "tax_total": str(
@@ -749,15 +718,11 @@ def build_sales_report_for_export(
         "orders_queryset",
     )
 
-    payload[
-        "orders"
-    ] = [
+    payload["orders"] = [
         serialize_sales_report_order(
             order,
         )
-        for order in orders_qs[
-            :max_orders
-        ]
+        for order in orders_qs[:max_orders]
     ]
 
     return payload
@@ -766,7 +731,6 @@ def build_sales_report_for_export(
 def load_report_for_export(
     request,
 ):
-    
 
     from rest_framework.exceptions import ValidationError
 

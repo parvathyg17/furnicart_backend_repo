@@ -5,9 +5,7 @@ def get_room_type_by_id(room_type_id):
 
     try:
 
-        return RoomType.objects.get(
-            id=room_type_id
-        )
+        return RoomType.objects.get(id=room_type_id)
 
     except RoomType.DoesNotExist:
 

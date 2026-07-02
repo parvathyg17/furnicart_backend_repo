@@ -1,21 +1,12 @@
-from rest_framework.views import APIView
-from rest_framework.response import Response
-from rest_framework.permissions import IsAuthenticated
 from rest_framework import status
+from rest_framework.permissions import IsAuthenticated
+from rest_framework.response import Response
+from rest_framework.views import APIView
 
+from catalog.selectors.product_selectors import get_admin_filtered_products
+from catalog.serializers.product_serializers import ProductSerializer
 from core.pagination import CustomPagination
-
-from catalog.selectors.product_selectors import (
-    get_admin_filtered_products,
-)
-
-from catalog.serializers.product_serializers import (
-    ProductSerializer,
-)
-
-from core.utils.permissions import (
-    IsAdminUserCustom,
-)
+from core.utils.permissions import IsAdminUserCustom
 
 
 class ProductListCreateView(APIView):

@@ -1,24 +1,13 @@
-from rest_framework.views import APIView
-from rest_framework.response import Response
 from rest_framework import status
+from rest_framework.response import Response
+from rest_framework.views import APIView
 
+from catalog.selectors.product_selectors import get_user_filtered_products
+from catalog.serializers.product_serializers import ProductSerializer
+from catalog.services.product_services import get_user_product_by_id_or_slug
 from core.pagination import CustomPagination
-
-from catalog.selectors.product_selectors import (
-    get_user_filtered_products
-)
-
-from catalog.services.product_services import (
-    get_user_product_by_id_or_slug,
-)
-
-from catalog.serializers.product_serializers import (
-    ProductSerializer
-)
-
-from promotions.services.offer_display import (
-    extend_serializer_context_with_offers,
-)
+from promotions.services.offer_display import \
+    extend_serializer_context_with_offers
 
 
 class UserProductListView(APIView):
@@ -27,16 +16,11 @@ class UserProductListView(APIView):
 
     def get(self, request):
 
-        products = get_user_filtered_products(
-            request.GET
-        )
+        products = get_user_filtered_products(request.GET)
 
         paginator = CustomPagination()
 
-        paginated_products = paginator.paginate_queryset(
-            products,
-            request
-        )
+        paginated_products = paginator.paginate_queryset(products, request)
 
         serializer = ProductSerializer(
             paginated_products,
@@ -50,9 +34,7 @@ class UserProductListView(APIView):
             ),
         )
 
-        return paginator.get_paginated_response(
-            serializer.data
-        )
+        return paginator.get_paginated_response(serializer.data)
 
 
 class UserProductDetailView(APIView):
@@ -69,17 +51,10 @@ class UserProductDetailView(APIView):
         ref = (
             product_ref
             if product_ref is not None
-            else (
-                str(product_id)
-                if product_id is not None
-                else None
-            )
+            else (str(product_id) if product_id is not None else None)
         )
 
-        if (
-            ref is None
-            or ref == ""
-        ):
+        if ref is None or ref == "":
 
             return Response(
                 {
@@ -95,11 +70,7 @@ class UserProductDetailView(APIView):
         if not product:
 
             return Response(
-                {
-                    "error":
-                    "Product not available"
-                },
-                status=status.HTTP_404_NOT_FOUND
+                {"error": "Product not available"}, status=status.HTTP_404_NOT_FOUND
             )
 
         serializer = ProductSerializer(
@@ -114,6 +85,4 @@ class UserProductDetailView(APIView):
             ),
         )
 
-        return Response(
-            serializer.data
-        )
+        return Response(serializer.data)

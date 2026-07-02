@@ -1,13 +1,6 @@
-from django.db.models import (
-    Avg,
-    Count,
-    Q,
-)
+from django.db.models import Avg, Count, Q
 
-from catalog.models import (
-    Product,
-    ProductReview,
-)
+from catalog.models import Product, ProductReview
 from orders.models import OrderLine
 
 
@@ -85,12 +78,16 @@ def get_user_review_for_product(
 
         return None
 
-    return ProductReview.objects.filter(
-        user=user,
-        product=product,
-    ).select_related(
-        "order_line",
-    ).first()
+    return (
+        ProductReview.objects.filter(
+            user=user,
+            product=product,
+        )
+        .select_related(
+            "order_line",
+        )
+        .first()
+    )
 
 
 def user_has_delivered_purchase(
@@ -174,15 +171,20 @@ def get_eligible_products_for_user(
         .distinct()
     )
 
-    return Product.objects.filter(
-        id__in=delivered_product_ids,
-        is_active=True,
-    ).exclude(
-        id__in=reviewed_product_ids,
-    ).select_related(
-        "category",
-    ).order_by(
-        "-created_at",
+    return (
+        Product.objects.filter(
+            id__in=delivered_product_ids,
+            is_active=True,
+        )
+        .exclude(
+            id__in=reviewed_product_ids,
+        )
+        .select_related(
+            "category",
+        )
+        .order_by(
+            "-created_at",
+        )
     )
 
 

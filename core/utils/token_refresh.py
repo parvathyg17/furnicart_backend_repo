@@ -1,146 +1,66 @@
 from django.conf import settings
-
 from django.contrib.auth import get_user_model
-
 from rest_framework import status
-
 from rest_framework.response import Response
-
-from rest_framework_simplejwt.serializers import (
-    TokenRefreshSerializer,
-)
-
-from rest_framework_simplejwt.tokens import (
-    RefreshToken,
-)
-
-from rest_framework_simplejwt.views import (
-    TokenRefreshView,
-)
+from rest_framework_simplejwt.serializers import TokenRefreshSerializer
+from rest_framework_simplejwt.tokens import RefreshToken
+from rest_framework_simplejwt.views import TokenRefreshView
 
 User = get_user_model()
 
 
-class CookieTokenRefreshView(
-    TokenRefreshView
-):
+class CookieTokenRefreshView(TokenRefreshView):
 
-    serializer_class = (
-        TokenRefreshSerializer
-    )
+    serializer_class = TokenRefreshSerializer
 
-    def post(
-        self,
-        request,
-        *args,
-        **kwargs
-    ):
+    def post(self, request, *args, **kwargs):
 
-        
-
-        refresh_token = (
-            request.COOKIES.get(
-                "refresh_token"
-            )
-        )
+        refresh_token = request.COOKIES.get("refresh_token")
 
         if refresh_token is None:
 
             return Response(
-                {
-                    "error":
-                    "No refresh token"
-                },
-                status=status.HTTP_401_UNAUTHORIZED
+                {"error": "No refresh token"}, status=status.HTTP_401_UNAUTHORIZED
             )
-
-       
 
         try:
 
-            token_obj = RefreshToken(
-                refresh_token
-            )
+            token_obj = RefreshToken(refresh_token)
 
-            user_id = token_obj.get(
-                "user_id"
-            )
+            user_id = token_obj.get("user_id")
 
-            user = User.objects.get(
-                id=user_id
-            )
+            user = User.objects.get(id=user_id)
 
             if not user.is_active:
 
                 return Response(
-                    {
-                        "error":
-                        "Your account is blocked"
-                    },
-                    status=status.HTTP_401_UNAUTHORIZED
+                    {"error": "Your account is blocked"},
+                    status=status.HTTP_401_UNAUTHORIZED,
                 )
 
         except Exception:
 
             return Response(
-                {
-                    "error":
-                    "Invalid refresh token"
-                },
-                status=status.HTTP_401_UNAUTHORIZED
+                {"error": "Invalid refresh token"}, status=status.HTTP_401_UNAUTHORIZED
             )
 
-   
-
-        serializer = (
-            self.get_serializer(
-                data={
-                    "refresh":
-                    refresh_token
-                }
-            )
-        )
+        serializer = self.get_serializer(data={"refresh": refresh_token})
 
         try:
 
-            serializer.is_valid(
-                raise_exception=True
-            )
+            serializer.is_valid(raise_exception=True)
 
         except Exception:
 
             return Response(
-                {
-                    "error":
-                    "Invalid refresh token"
-                },
-                status=status.HTTP_401_UNAUTHORIZED
+                {"error": "Invalid refresh token"}, status=status.HTTP_401_UNAUTHORIZED
             )
 
-        
+        access_token = serializer.validated_data["access"]
 
-        access_token = (
-            serializer.validated_data[
-                "access"
-            ]
-        )
+        new_refresh_token = serializer.validated_data.get("refresh")
 
-        new_refresh_token = (
-            serializer.validated_data.get(
-                "refresh"
-            )
-        )
-
-      
-
-        response = Response(
-            {
-                "message":
-                "Token refreshed"
-            }
-        )
-
- 
+        response = Response({"message": "Token refreshed"})
 
         response.set_cookie(
             key="access_token",
@@ -148,10 +68,8 @@ class CookieTokenRefreshView(
             httponly=True,
             secure=settings.COOKIE_SECURE,
             samesite=settings.COOKIE_SAMESITE,
-            path="/"
+            path="/",
         )
-
-        
 
         if new_refresh_token:
 
@@ -161,67 +79,7 @@ class CookieTokenRefreshView(
                 httponly=True,
                 secure=settings.COOKIE_SECURE,
                 samesite=settings.COOKIE_SAMESITE,
-                path="/"
+                path="/",
             )
 
         return response
-
-
-# from rest_framework_simplejwt.views import TokenRefreshView
-# from rest_framework.response import Response
-# from rest_framework import status
-# from django.conf import settings
-# from rest_framework_simplejwt.serializers import TokenRefreshSerializer
-
-
-# class CookieTokenRefreshView(TokenRefreshView):
-
-#     serializer_class = TokenRefreshSerializer
-
-#     def post(self, request, *args, **kwargs):
-
-#         refresh_token = request.COOKIES.get("refresh_token")
-
-#         if refresh_token is None:
-#             return Response(
-#                 {"error": "No refresh token"},
-#                 status=status.HTTP_401_UNAUTHORIZED
-#             )
-
-#         serializer = self.get_serializer(
-#             data={"refresh": refresh_token}
-#         )
-
-#         try:
-#             serializer.is_valid(raise_exception=True)
-
-#         except Exception:
-#             return Response(
-#                 {"error": "Invalid refresh token"},
-#                 status=status.HTTP_401_UNAUTHORIZED
-#             )
-
-#         access_token = serializer.validated_data["access"]
-#         new_refresh_token = serializer.validated_data.get("refresh")
-#         response = Response({
-#             "message": "Token refreshed"
-#             })
-#         response.set_cookie(
-#             key="access_token",
-#             value=access_token,
-#             httponly=True,
-#             secure=settings.COOKIE_SECURE,
-#             samesite=settings.COOKIE_SAMESITE,
-#             path="/"
-#             )
-#         if new_refresh_token:
-#             response.set_cookie(
-#                 key="refresh_token",
-#                 value=new_refresh_token,
-#                 httponly=True,
-#                 secure=settings.COOKIE_SECURE,
-#                 samesite=settings.COOKIE_SAMESITE,
-#                 path="/"
-#                 )
-#         return response
-

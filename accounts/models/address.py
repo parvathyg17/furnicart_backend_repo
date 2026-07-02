@@ -1,17 +1,13 @@
+from django.core.validators import RegexValidator
 from django.db import models
 from django.db.models import Q
-from django.core.validators import RegexValidator
 
 from .users import User
 
 
 class Address(models.Model):
 
-    user = models.ForeignKey(
-        User,
-        on_delete=models.CASCADE,
-        related_name="addresses"
-    )
+    user = models.ForeignKey(User, on_delete=models.CASCADE, related_name="addresses")
 
     name = models.CharField(max_length=100)
 
@@ -19,10 +15,9 @@ class Address(models.Model):
         max_length=15,
         validators=[
             RegexValidator(
-                regex=r'^[6-9]\d{9}$',
-                message="Enter a valid 10 digit phone number"
+                regex=r"^[6-9]\d{9}$", message="Enter a valid 10 digit phone number"
             )
-        ]
+        ],
     )
 
     address_line = models.TextField()
@@ -33,12 +28,7 @@ class Address(models.Model):
 
     pincode = models.CharField(
         max_length=10,
-        validators=[
-            RegexValidator(
-                regex=r'^\d{6}$',
-                message="Enter a valid pincode"
-            )
-        ]
+        validators=[RegexValidator(regex=r"^\d{6}$", message="Enter a valid pincode")],
     )
 
     is_default = models.BooleanField(default=False)
@@ -57,7 +47,7 @@ class Address(models.Model):
             models.UniqueConstraint(
                 fields=["user"],
                 condition=Q(is_default=True),
-                name="unique_default_address_per_user"
+                name="unique_default_address_per_user",
             )
         ]
 

@@ -3,16 +3,9 @@ from decimal import Decimal
 from rest_framework import serializers
 
 from promotions.models import Coupon, Offer
-
-from promotions.services.admin_coupon_services import (
-    create_coupon,
-    update_coupon,
-)
-
-from promotions.services.admin_offer_services import (
-    create_offer,
-    update_offer,
-)
+from promotions.services.admin_coupon_services import (create_coupon,
+                                                       update_coupon)
+from promotions.services.admin_offer_services import create_offer, update_offer
 
 
 class AdminCouponSerializer(
@@ -134,12 +127,8 @@ class AdminCouponSerializer(
 
         if discount_type == Coupon.DiscountType.PERCENT:
 
-            if (
-                discount_value is not None
-                and (
-                    discount_value <= Decimal("0")
-                    or discount_value > Decimal("100")
-                )
+            if discount_value is not None and (
+                discount_value <= Decimal("0") or discount_value > Decimal("100")
             ):
 
                 raise serializers.ValidationError(
@@ -152,16 +141,11 @@ class AdminCouponSerializer(
 
         elif discount_type == Coupon.DiscountType.FIXED:
 
-            if (
-                discount_value is not None
-                and discount_value <= Decimal("0")
-            ):
+            if discount_value is not None and discount_value <= Decimal("0"):
 
                 raise serializers.ValidationError(
                     {
-                        "discount_value": (
-                            "Fixed amount must be greater than 0."
-                        ),
+                        "discount_value": ("Fixed amount must be greater than 0."),
                     },
                 )
 
@@ -334,12 +318,8 @@ class AdminOfferSerializer(
 
         if discount_type == Offer.DiscountType.PERCENT:
 
-            if (
-                discount_value is not None
-                and (
-                    discount_value <= Decimal("0")
-                    or discount_value > Decimal("100")
-                )
+            if discount_value is not None and (
+                discount_value <= Decimal("0") or discount_value > Decimal("100")
             ):
 
                 raise serializers.ValidationError(
@@ -352,16 +332,11 @@ class AdminOfferSerializer(
 
         elif discount_type == Offer.DiscountType.FIXED:
 
-            if (
-                discount_value is not None
-                and discount_value <= Decimal("0")
-            ):
+            if discount_value is not None and discount_value <= Decimal("0"):
 
                 raise serializers.ValidationError(
                     {
-                        "discount_value": (
-                            "Fixed amount must be greater than 0."
-                        ),
+                        "discount_value": ("Fixed amount must be greater than 0."),
                     },
                 )
 

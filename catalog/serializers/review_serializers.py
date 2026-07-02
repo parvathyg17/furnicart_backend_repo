@@ -53,9 +53,7 @@ class ProductReviewSerializer(
         obj,
     ):
 
-        full_name = (
-            obj.user.get_full_name() or ""
-        ).strip()
+        full_name = (obj.user.get_full_name() or "").strip()
 
         if full_name:
 

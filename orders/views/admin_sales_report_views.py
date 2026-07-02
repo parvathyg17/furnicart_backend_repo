@@ -7,15 +7,11 @@ from rest_framework.views import APIView
 
 from core.pagination import CustomPagination
 from core.utils.permissions import IsAdminUserCustom
-from orders.services.sales_report_export import (
-    build_sales_report_excel,
-    build_sales_report_pdf,
-)
+from orders.services.sales_report_export import (build_sales_report_excel,
+                                                 build_sales_report_pdf)
 from orders.services.sales_report_services import (
-    build_sales_report_payload,
-    load_report_for_export,
-    serialize_sales_report_order,
-)
+    build_sales_report_payload, load_report_for_export,
+    serialize_sales_report_order)
 
 
 def _build_sales_export_response(
@@ -69,8 +65,7 @@ def _build_sales_export_response(
         response = HttpResponse(
             xlsx_bytes,
             content_type=(
-                "application/vnd.openxmlformats-"
-                "officedocument.spreadsheetml.sheet"
+                "application/vnd.openxmlformats-" "officedocument.spreadsheetml.sheet"
             ),
         )
 
@@ -78,15 +73,11 @@ def _build_sales_export_response(
 
         raise ValidationError(
             {
-                "export_format": (
-                    "Supported formats: pdf, excel."
-                ),
+                "export_format": ("Supported formats: pdf, excel."),
             },
         )
 
-    response[
-        "Content-Disposition"
-    ] = f'attachment; filename="{filename}"'
+    response["Content-Disposition"] = f'attachment; filename="{filename}"'
 
     return response
 
@@ -116,9 +107,6 @@ def _requested_export_format(
 class AdminSalesReportView(
     APIView,
 ):
-
-    
-    
 
     permission_classes = [
         IsAuthenticated,
@@ -199,29 +187,17 @@ class AdminSalesReportView(
 
             body = response.data
 
-            body["period"] = payload[
-                "period"
-            ]
+            body["period"] = payload["period"]
 
-            body["date_from"] = payload[
-                "date_from"
-            ]
+            body["date_from"] = payload["date_from"]
 
-            body["date_to"] = payload[
-                "date_to"
-            ]
+            body["date_to"] = payload["date_to"]
 
-            body["breakdown_granularity"] = payload[
-                "breakdown_granularity"
-            ]
+            body["breakdown_granularity"] = payload["breakdown_granularity"]
 
-            body["summary"] = payload[
-                "summary"
-            ]
+            body["summary"] = payload["summary"]
 
-            body["breakdown"] = payload[
-                "breakdown"
-            ]
+            body["breakdown"] = payload["breakdown"]
 
             return Response(
                 body,
@@ -260,4 +236,3 @@ class AdminSalesReportExportView(
         return _build_sales_export_response(
             request,
         )
-

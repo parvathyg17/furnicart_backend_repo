@@ -1,13 +1,8 @@
-from rest_framework.views import APIView
 from rest_framework.response import Response
+from rest_framework.views import APIView
 
-from catalog.selectors.category_selectors import (
-    get_user_filtered_categories
-)
-
-from catalog.serializers.category_serializers import (
-    CategorySerializer
-)
+from catalog.selectors.category_selectors import get_user_filtered_categories
+from catalog.serializers.category_serializers import CategorySerializer
 
 
 class UserCategoryListView(APIView):
@@ -16,18 +11,10 @@ class UserCategoryListView(APIView):
 
     def get(self, request):
 
-        categories = get_user_filtered_categories(
-            request.GET
-        )
+        categories = get_user_filtered_categories(request.GET)
 
         serializer = CategorySerializer(
-            categories,
-            many=True,
-            context={
-                "request": request
-            }
+            categories, many=True, context={"request": request}
         )
 
-        return Response(
-            serializer.data
-        )
+        return Response(serializer.data)

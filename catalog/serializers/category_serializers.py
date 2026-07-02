@@ -1,14 +1,11 @@
-from rest_framework import serializers
-
 from PIL import Image
+from rest_framework import serializers
 
 from catalog.models import Category
 from core.utils.media import resolve_media_url
 
 
-class CategoryChildSerializer(
-    serializers.ModelSerializer
-):
+class CategoryChildSerializer(serializers.ModelSerializer):
 
     class Meta:
 
@@ -23,14 +20,9 @@ class CategoryChildSerializer(
         ]
 
 
-class CategorySerializer(
-    serializers.ModelSerializer
-):
+class CategorySerializer(serializers.ModelSerializer):
 
-    parent_name = serializers.CharField(
-        source="parent.name",
-        read_only=True
-    )
+    parent_name = serializers.CharField(source="parent.name", read_only=True)
 
     children = serializers.SerializerMethodField()
 
@@ -66,25 +58,13 @@ class CategorySerializer(
             "is_active",
         ]
 
-    
-
     def validate(self, attrs):
 
-       
-        if (
-            not self.instance
-            and
-            not attrs.get("image")
-        ):
+        if not self.instance and not attrs.get("image"):
 
-            raise serializers.ValidationError({
-                "image":
-                "Category image is required"
-            })
+            raise serializers.ValidationError({"image": "Category image is required"})
 
         return attrs
-
-
 
     def validate_name(self, value):
 
@@ -92,9 +72,7 @@ class CategorySerializer(
 
         if not value:
 
-            raise serializers.ValidationError(
-                "Category name is required"
-            )
+            raise serializers.ValidationError("Category name is required")
 
         if len(value) < 4:
 
@@ -104,17 +82,13 @@ class CategorySerializer(
 
         return value
 
-   
-
     def validate_description(self, value):
 
         value = value.strip()
 
         if not value:
 
-            raise serializers.ValidationError(
-                "Description is required"
-            )
+            raise serializers.ValidationError("Description is required")
 
         if len(value) < 10:
 
@@ -124,24 +98,13 @@ class CategorySerializer(
 
         return value
 
-
-
     def validate_image(self, value):
 
         if value:
 
-            
+            if value.size > 5 * 1024 * 1024:
 
-            if (
-                value.size >
-                5 * 1024 * 1024
-            ):
-
-                raise serializers.ValidationError(
-                    "Image size must be below 5MB"
-                )
-
-           
+                raise serializers.ValidationError("Image size must be below 5MB")
 
             valid_types = [
                 "image/jpeg",
@@ -149,17 +112,11 @@ class CategorySerializer(
                 "image/webp",
             ]
 
-            if (
-                hasattr(value, "content_type")
-                and
-                value.content_type not in valid_types
-            ):
+            if hasattr(value, "content_type") and value.content_type not in valid_types:
 
                 raise serializers.ValidationError(
                     "Only JPEG, PNG and WEBP images are allowed"
                 )
-
-           
 
             try:
 
@@ -169,78 +126,43 @@ class CategorySerializer(
 
             except Exception:
 
-                raise serializers.ValidationError(
-                    "Invalid or corrupted image file"
-                )
-
-       
+                raise serializers.ValidationError("Invalid or corrupted image file")
 
             value.seek(0)
-
 
             image = Image.open(value)
 
             width, height = image.size
 
-            
-            if (
-                width < 300
-                or
-                height < 300
-            ):
+            if width < 300 or height < 300:
 
                 raise serializers.ValidationError(
                     "Image must be at least 300x300 pixels"
                 )
 
-           
-            if (
-                width > 5000
-                or
-                height > 5000
-            ):
+            if width > 5000 or height > 5000:
 
-                raise serializers.ValidationError(
-                    "Image dimensions too large"
-                )
+                raise serializers.ValidationError("Image dimensions too large")
 
-           
             value.seek(0)
 
         return value
 
-    
-
     def validate_parent(self, value):
-
-        
 
         if not value:
 
             return value
 
-        
-        if (
-            self.instance
-            and
-            value == self.instance
-        ):
+        if self.instance and value == self.instance:
 
-            raise serializers.ValidationError(
-                "Category cannot be parent of itself"
-            )
-
-        
+            raise serializers.ValidationError("Category cannot be parent of itself")
 
         parent = value
 
         while parent:
 
-            if (
-                self.instance
-                and
-                parent == self.instance
-            ):
+            if self.instance and parent == self.instance:
 
                 raise serializers.ValidationError(
                     "Circular category hierarchy detected"
@@ -250,54 +172,29 @@ class CategorySerializer(
 
         return value
 
-  
-
     def get_children(self, obj):
 
-        request = self.context.get(
-            "request"
-        )
+        request = self.context.get("request")
 
-       
-        if (
-            request
-            and
-            request.path.startswith(
-                "/api/admin/"
-            )
-        ):
+        if request and request.path.startswith("/api/admin/"):
 
             children = obj.children.all()
 
-        
-
         else:
 
-            children = obj.children.filter(
-                is_active=True
-            )
+            children = obj.children.filter(is_active=True)
 
-        serializer = CategoryChildSerializer(
-            children,
-            many=True,
-            context=self.context
-        )
+        serializer = CategoryChildSerializer(children, many=True, context=self.context)
 
         return serializer.data
-
-    
 
     def get_children_count(self, obj):
 
         return obj.children.count()
 
-    
-
     def get_image_url(self, obj):
 
-        request = self.context.get(
-            "request"
-        )
+        request = self.context.get("request")
 
         return resolve_media_url(
             obj.image,

@@ -1,33 +1,22 @@
 from django.db.models import Prefetch
 
-from catalog.models import (
-    Product,
-    ProductVariant,
-)
-from catalog.selectors.review_selectors import (
-    annotate_product_ratings,
-)
-
-
+from catalog.models import Product, ProductVariant
+from catalog.selectors.review_selectors import annotate_product_ratings
 
 
 def get_admin_product_by_id(product_id):
 
     try:
 
-        return Product.objects.select_related(
-            "category"
-        ).prefetch_related(
-
-            Prefetch(
-                "variants",
-                queryset=ProductVariant.objects.prefetch_related(
-                    "images"
+        return (
+            Product.objects.select_related("category")
+            .prefetch_related(
+                Prefetch(
+                    "variants",
+                    queryset=ProductVariant.objects.prefetch_related("images"),
                 )
             )
-
-        ).get(
-            id=product_id
+            .get(id=product_id)
         )
 
     except Product.DoesNotExist:
@@ -35,19 +24,21 @@ def get_admin_product_by_id(product_id):
         return None
 
 
-
-
 def _user_product_detail_queryset(
     **filters,
 ):
 
-    base = Product.objects.filter(
-        is_active=True,
-        category__is_active=True,
-        **filters,
-    ).filter(
-        variants__is_active=True,
-    ).distinct()
+    base = (
+        Product.objects.filter(
+            is_active=True,
+            category__is_active=True,
+            **filters,
+        )
+        .filter(
+            variants__is_active=True,
+        )
+        .distinct()
+    )
 
     if not base.exists():
 
@@ -59,9 +50,7 @@ def _user_product_detail_queryset(
             base.select_related(
                 "category",
             ).prefetch_related(
-
                 "room_types",
-
                 Prefetch(
                     "variants",
                     queryset=ProductVariant.objects.filter(
@@ -127,8 +116,6 @@ def get_user_product_by_id_or_slug(
     )
 
 
-
-
 def soft_delete_product(product):
 
     product.is_active = False
@@ -136,8 +123,6 @@ def soft_delete_product(product):
     product.save()
 
     return product
-
-
 
 
 def toggle_product_status(product):
@@ -151,11 +136,7 @@ def toggle_product_status(product):
 
 def validate_product_images(product):
 
-   
-
-    active_variants = product.variants.filter(
-        is_active=True
-    )
+    active_variants = product.variants.filter(is_active=True)
 
     for variant in active_variants:
 
@@ -163,10 +144,7 @@ def validate_product_images(product):
 
             return (
                 False,
-                (
-                    f'Variant "{variant.variant_name}" '
-                    "must have at least 3 images"
-                ),
+                (f'Variant "{variant.variant_name}" ' "must have at least 3 images"),
             )
 
     return True, None
@@ -177,8 +155,6 @@ def validate_product_can_activate(
     description=None,
     room_type_ids=None,
 ):
-
-    
 
     name = (product.name or "").strip()
 
@@ -212,9 +188,7 @@ def validate_product_can_activate(
             "Add at least one variants before activating the product.",
         )
 
-    active_variants = product.variants.filter(
-        is_active=True
-    )
+    active_variants = product.variants.filter(is_active=True)
 
     if active_variants.count() < 1:
 
@@ -225,9 +199,7 @@ def validate_product_can_activate(
 
     for variant in active_variants:
 
-        ok, err = validate_variant_fields_and_images(
-            variant
-        )
+        ok, err = validate_variant_fields_and_images(variant)
 
         if not ok:
 
@@ -238,16 +210,11 @@ def validate_product_can_activate(
 
 def validate_variant_fields_and_images(variant):
 
-    
-
     if variant.images.count() < 3:
 
         return (
             False,
-            (
-                f'Variant "{variant.variant_name}" '
-                "must have at least 3 images."
-            ),
+            (f'Variant "{variant.variant_name}" ' "must have at least 3 images."),
         )
 
     checks = [
@@ -279,30 +246,21 @@ def validate_variant_fields_and_images(variant):
 
             return (
                 False,
-                (
-                    f'Variant "{variant.variant_name}" '
-                    f"is missing {label}."
-                ),
+                (f'Variant "{variant.variant_name}" ' f"is missing {label}."),
             )
 
     if variant.price is None or variant.price <= 0:
 
         return (
             False,
-            (
-                f'Variant "{variant.variant_name}" '
-                "must have a price greater than 0."
-            ),
+            (f'Variant "{variant.variant_name}" ' "must have a price greater than 0."),
         )
 
     if variant.stock is None or variant.stock < 0:
 
         return (
             False,
-            (
-                f'Variant "{variant.variant_name}" '
-                "cannot have negative stock."
-            ),
+            (f'Variant "{variant.variant_name}" ' "cannot have negative stock."),
         )
 
     return True, None

@@ -3,18 +3,12 @@ from decimal import Decimal
 from django.db import IntegrityError, transaction
 from django.db.models import Prefetch, Sum
 from django.utils import timezone
-
 from rest_framework.exceptions import ValidationError
 
 from accounts.models.address import Address
-from catalog.models import ProductVariant, VariantImage
-
 from cart.models import Cart, CartItem
-from cart.services import (
-    validate_cart_for_checkout,
-    get_or_create_cart,
-)
-
+from cart.services import get_or_create_cart, validate_cart_for_checkout
+from catalog.models import ProductVariant, VariantImage
 from orders.models import DailyOrderCounter, Order, OrderLine
 from orders.services.checkout_pricing import compute_checkout_totals
 from orders.services.order_status import persist_derived_order_status
@@ -31,13 +25,14 @@ def _allocate_order_number():
 
             with transaction.atomic():
 
-                counter, _ = (
-                    DailyOrderCounter.objects.select_for_update().get_or_create(
-                        date=today,
-                        defaults={
-                            "last_number": 0,
-                        },
-                    )
+                (
+                    counter,
+                    _,
+                ) = DailyOrderCounter.objects.select_for_update().get_or_create(
+                    date=today,
+                    defaults={
+                        "last_number": 0,
+                    },
                 )
 
                 counter.last_number += 1
@@ -79,8 +74,6 @@ def create_order_from_cart(
     razorpay_order_id=None,
     razorpay_payment_id=None,
 ):
-
-    
 
     if payment_method is None:
 
@@ -161,13 +154,10 @@ def create_order_from_cart(
             "Shipping address not found.",
         )
 
-    cart = (
-        Cart.objects.select_for_update()
-        .get(
-            pk=get_or_create_cart(
-                user,
-            ).pk,
-        )
+    cart = Cart.objects.select_for_update().get(
+        pk=get_or_create_cart(
+            user,
+        ).pk,
     )
 
     items = list(
@@ -187,20 +177,20 @@ def create_order_from_cart(
         )
 
     variant_ids = sorted(
-        {
-            item.variant_id
-            for item in items
-        },
+        {item.variant_id for item in items},
     )
 
     locked_variants = {
         v.pk: v
-        for v in ProductVariant.objects.select_for_update().filter(
+        for v in ProductVariant.objects.select_for_update()
+        .filter(
             pk__in=variant_ids,
-        ).select_related(
+        )
+        .select_related(
             "product",
             "product__category",
-        ).prefetch_related(
+        )
+        .prefetch_related(
             Prefetch(
                 "images",
                 queryset=VariantImage.objects.order_by(
@@ -216,10 +206,8 @@ def create_order_from_cart(
 
     line_specs = []
 
-    from promotions.services.offer_pricing import (
-        OfferResolver,
-        line_gross_subtotal,
-    )
+    from promotions.services.offer_pricing import (OfferResolver,
+                                                   line_gross_subtotal)
 
     resolver = OfferResolver()
 
@@ -276,9 +264,7 @@ def create_order_from_cart(
             item.quantity,
         )
 
-        line_sub = (
-            line_gross - line_offer_disc
-        ).quantize(
+        line_sub = (line_gross - line_offer_disc).quantize(
             Decimal("0.01"),
         )
 
@@ -296,9 +282,7 @@ def create_order_from_cart(
         )
 
     from promotions.services.coupon_cart_services import (
-        record_coupon_redemption,
-        resolve_applied_coupon_for_cart,
-    )
+        record_coupon_redemption, resolve_applied_coupon_for_cart)
 
     coupon = resolve_applied_coupon_for_cart(
         cart,
@@ -339,11 +323,7 @@ def create_order_from_cart(
         gateway_payment_id=gateway_payment_id,
         paid_at=paid_at,
         applied_coupon=coupon,
-        coupon_code=(
-            coupon.code
-            if coupon
-            else ""
-        ),
+        coupon_code=(coupon.code if coupon else ""),
         subtotal=subtotal.quantize(
             Decimal("0.01"),
         ),
@@ -434,16 +414,13 @@ def create_order_from_cart(
             grand_total,
             reason=WalletTransaction.Reason.ORDER_PAYMENT,
             order=order,
-            reference_note=(
-                f"Payment for order {order_number}"
-            ),
+            reference_note=(f"Payment for order {order_number}"),
         )
 
     if payment_status == Order.PaymentStatus.PAID:
 
-        from promotions.services.referral_services import (
-            process_referral_referrer_reward,
-        )
+        from promotions.services.referral_services import \
+            process_referral_referrer_reward
 
         process_referral_referrer_reward(
             order,
@@ -457,21 +434,19 @@ def get_order_for_user(
     order_number,
 ):
 
-    return (
-        Order.objects.prefetch_related(
-            Prefetch(
-                "lines",
-                queryset=OrderLine.objects.select_related(
-                    "variant",
-                    "variant__product",
-                ).order_by(
-                    "id",
-                ),
+    return Order.objects.prefetch_related(
+        Prefetch(
+            "lines",
+            queryset=OrderLine.objects.select_related(
+                "variant",
+                "variant__product",
+            ).order_by(
+                "id",
             ),
-        ).get(
-            user=user,
-            order_number=order_number,
-        )
+        ),
+    ).get(
+        user=user,
+        order_number=order_number,
     )
 
 
@@ -485,9 +460,7 @@ def _normalize_cancel_reason(
 
     return str(
         reason,
-    ).strip()[
-        :500
-    ]
+    ).strip()[:500]
 
 
 def _set_order_financials_zero(
@@ -513,9 +486,8 @@ def _finalize_full_order_cancellation(
     order,
 ):
 
-    from orders.services.order_wallet_services import (
-        wallet_refund_on_full_cancel,
-    )
+    from orders.services.order_wallet_services import \
+        wallet_refund_on_full_cancel
 
     wallet_refund_on_full_cancel(
         order,
@@ -542,16 +514,14 @@ def _recalculate_order_financials_from_active_lines(
         "s",
     )
 
-    subtotal = (
+    subtotal = Decimal(
+        str(
+            raw or "0.00",
+        ),
+    ).quantize(
         Decimal(
-            str(
-                raw or "0.00",
-            ),
-        ).quantize(
-            Decimal(
-                "0.01",
-            ),
-        )
+            "0.01",
+        ),
     )
 
     pricing = compute_checkout_totals(
@@ -560,33 +530,25 @@ def _recalculate_order_financials_from_active_lines(
 
     order.subtotal = subtotal
 
-    order.tax_total = pricing[
-        "tax_total"
-    ].quantize(
+    order.tax_total = pricing["tax_total"].quantize(
         Decimal(
             "0.01",
         ),
     )
 
-    order.discount_total = pricing[
-        "discount_total"
-    ].quantize(
+    order.discount_total = pricing["discount_total"].quantize(
         Decimal(
             "0.01",
         ),
     )
 
-    order.shipping_total = pricing[
-        "shipping_total"
-    ].quantize(
+    order.shipping_total = pricing["shipping_total"].quantize(
         Decimal(
             "0.01",
         ),
     )
 
-    order.grand_total = pricing[
-        "grand_total"
-    ]
+    order.grand_total = pricing["grand_total"]
 
 
 @transaction.atomic
@@ -602,9 +564,11 @@ def cancel_entire_order_for_user(
     )
 
     order = (
-        Order.objects.select_for_update().prefetch_related(
+        Order.objects.select_for_update()
+        .prefetch_related(
             "lines",
-        ).get(
+        )
+        .get(
             user=user,
             order_number=order_number,
         )
@@ -622,11 +586,7 @@ def cancel_entire_order_for_user(
         ).all(),
     )
 
-    active = [
-        ln
-        for ln in lines
-        if ln.status == OrderLine.LineStatus.ACTIVE
-    ]
+    active = [ln for ln in lines if ln.status == OrderLine.LineStatus.ACTIVE]
 
     if not active:
 
@@ -645,10 +605,8 @@ def cancel_entire_order_for_user(
 
     for line in active:
 
-        variant = (
-            ProductVariant.objects.select_for_update().get(
-                pk=line.variant_id,
-            )
+        variant = ProductVariant.objects.select_for_update().get(
+            pk=line.variant_id,
         )
 
         variant.stock += line.quantity
@@ -726,7 +684,9 @@ def cancel_order_line_for_user(
     line = (
         OrderLine.objects.select_related(
             "variant",
-        ).select_for_update().get(
+        )
+        .select_for_update()
+        .get(
             pk=line_id,
             order=order,
         )
@@ -816,9 +776,8 @@ def cancel_order_line_for_user(
             order,
         )
 
-        from orders.services.order_wallet_services import (
-            wallet_refund_delta_on_partial_cancel,
-        )
+        from orders.services.order_wallet_services import \
+            wallet_refund_delta_on_partial_cancel
 
         wallet_refund_delta_on_partial_cancel(
             order,
@@ -853,7 +812,6 @@ def cancel_entire_order_for_admin(
     *,
     reason=None,
 ):
-
     """
     Cancel every active line on an order and restore stock.
     Same rules as customer cancel: only lines still in ``pending`` fulfillment.
@@ -864,9 +822,11 @@ def cancel_entire_order_for_admin(
     )
 
     order = (
-        Order.objects.select_for_update().prefetch_related(
+        Order.objects.select_for_update()
+        .prefetch_related(
             "lines",
-        ).get(
+        )
+        .get(
             order_number=order_number,
         )
     )
@@ -883,11 +843,7 @@ def cancel_entire_order_for_admin(
         ).all(),
     )
 
-    active = [
-        ln
-        for ln in lines
-        if ln.status == OrderLine.LineStatus.ACTIVE
-    ]
+    active = [ln for ln in lines if ln.status == OrderLine.LineStatus.ACTIVE]
 
     if not active:
 
@@ -906,10 +862,8 @@ def cancel_entire_order_for_admin(
 
     for line in active:
 
-        variant = (
-            ProductVariant.objects.select_for_update().get(
-                pk=line.variant_id,
-            )
+        variant = ProductVariant.objects.select_for_update().get(
+            pk=line.variant_id,
         )
 
         variant.stock += line.quantity

@@ -1,5 +1,4 @@
 from django.db.models import Count, Prefetch, Q
-
 from rest_framework import status
 from rest_framework.exceptions import NotFound, ValidationError
 from rest_framework.permissions import IsAuthenticated
@@ -8,17 +7,15 @@ from rest_framework.views import APIView
 
 from core.pagination import CustomPagination
 from core.utils.permissions import IsAdminUserCustom
-
 from orders.models import Order, OrderLine, ReturnRequest
-from orders.serializers import (
-    AdminFulfillmentUpdateSerializer,
-    AdminOrderDetailSerializer,
-    AdminOrderListSerializer,
-    AdminReturnListSerializer,
-    AdminReturnStatusSerializer,
-    OrderCancelRequestSerializer,
-)
-from orders.services.admin_order_services import admin_set_order_line_fulfillment
+from orders.serializers import (AdminFulfillmentUpdateSerializer,
+                                AdminOrderDetailSerializer,
+                                AdminOrderListSerializer,
+                                AdminReturnListSerializer,
+                                AdminReturnStatusSerializer,
+                                OrderCancelRequestSerializer)
+from orders.services.admin_order_services import \
+    admin_set_order_line_fulfillment
 from orders.services.order_services import cancel_entire_order_for_admin
 from orders.services.return_services import admin_set_return_request_status
 
@@ -302,9 +299,7 @@ class AdminOrderLineFulfillmentView(APIView):
             admin_set_order_line_fulfillment(
                 order_number=order_number,
                 line_id=line_id,
-                fulfillment_status=ser.validated_data[
-                    "fulfillment_status"
-                ],
+                fulfillment_status=ser.validated_data["fulfillment_status"],
             )
 
         except OrderLine.DoesNotExist:
@@ -475,9 +470,7 @@ class AdminReturnDetailView(APIView):
 
             admin_set_return_request_status(
                 return_id=pk,
-                new_status=ser.validated_data[
-                    "status"
-                ],
+                new_status=ser.validated_data["status"],
                 admin_note=ser.validated_data.get(
                     "admin_note",
                     "",

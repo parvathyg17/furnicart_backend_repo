@@ -1,13 +1,11 @@
-from rest_framework import serializers
 from PIL import Image
+from rest_framework import serializers
 
 from catalog.models import VariantImage
 from core.utils.media import resolve_media_url
 
 
-class VariantImageUploadSerializer(
-    serializers.ModelSerializer
-):
+class VariantImageUploadSerializer(serializers.ModelSerializer):
 
     image_url = serializers.SerializerMethodField()
 
@@ -28,16 +26,11 @@ class VariantImageUploadSerializer(
             "created_at",
         ]
 
-        read_only_fields = [
-            "id",
-            "created_at"
-        ]
+        read_only_fields = ["id", "created_at"]
 
     def get_image_url(self, obj):
 
-        request = self.context.get(
-            "request"
-        )
+        request = self.context.get("request")
 
         return resolve_media_url(
             obj.image,
@@ -46,18 +39,11 @@ class VariantImageUploadSerializer(
 
     def validate_image(self, value):
 
-        
-
         if value.size > 5 * 1024 * 1024:
 
-            raise serializers.ValidationError(
-                "Image size must be below 5MB"
-            )
-
-      
+            raise serializers.ValidationError("Image size must be below 5MB")
 
         valid_mime_types = [
-
             "image/jpeg",
             "image/jpg",
             "image/png",
@@ -66,11 +52,7 @@ class VariantImageUploadSerializer(
 
         if value.content_type not in valid_mime_types:
 
-            raise serializers.ValidationError(
-                "Only JPG, JPEG, PNG, WEBP allowed"
-            )
-
-        
+            raise serializers.ValidationError("Only JPG, JPEG, PNG, WEBP allowed")
 
         try:
 
@@ -86,11 +68,8 @@ class VariantImageUploadSerializer(
 
         except Exception:
 
-            raise serializers.ValidationError(
-                "Invalid image file"
-            )
+            raise serializers.ValidationError("Invalid image file")
 
-       
         try:
 
             value.seek(0)

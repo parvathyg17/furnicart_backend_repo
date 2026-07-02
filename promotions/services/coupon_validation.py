@@ -1,8 +1,7 @@
-from decimal import Decimal, ROUND_HALF_UP
+from decimal import ROUND_HALF_UP, Decimal
 
 from django.db.models import Q
 from django.utils import timezone
-
 from rest_framework.exceptions import ValidationError
 
 from orders.models import Order
@@ -12,7 +11,6 @@ from promotions.models import Coupon
 def normalise_redemption_limit(
     value,
 ):
-    
 
     if value is None:
 
@@ -67,16 +65,13 @@ def compute_coupon_discount_amount(
     coupon,
     subtotal,
 ):
-    
 
-    subtotal = (
+    subtotal = Decimal(
+        subtotal,
+    ).quantize(
         Decimal(
-            subtotal,
-        ).quantize(
-            Decimal(
-                "0.01",
-            ),
-        )
+            "0.01",
+        ),
     )
 
     if subtotal <= Decimal(
@@ -137,7 +132,6 @@ def validate_coupon_for_checkout(
     coupon,
     subtotal,
 ):
-    
 
     if coupon is None:
 
@@ -155,10 +149,7 @@ def validate_coupon_for_checkout(
             },
         )
 
-    if (
-        coupon.assigned_user_id is not None
-        and coupon.assigned_user_id != user.id
-    ):
+    if coupon.assigned_user_id is not None and coupon.assigned_user_id != user.id:
 
         raise ValidationError(
             {
@@ -184,14 +175,12 @@ def validate_coupon_for_checkout(
             },
         )
 
-    subtotal = (
+    subtotal = Decimal(
+        subtotal,
+    ).quantize(
         Decimal(
-            subtotal,
-        ).quantize(
-            Decimal(
-                "0.01",
-            ),
-        )
+            "0.01",
+        ),
     )
 
     if subtotal < coupon.min_order_subtotal:
@@ -209,10 +198,7 @@ def validate_coupon_for_checkout(
         coupon.max_redemptions_total,
     )
 
-    if (
-        max_total is not None
-        and coupon.times_used >= max_total
-    ):
+    if max_total is not None and coupon.times_used >= max_total:
 
         raise ValidationError(
             {

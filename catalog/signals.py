@@ -3,9 +3,8 @@ from django.dispatch import receiver
 
 from catalog.models import VariantImage
 from catalog.models.product_variant import ProductVariant
-from catalog.product_activation import (
-    sync_product_active_if_no_variants_remain,
-)
+from catalog.product_activation import \
+    sync_product_active_if_no_variants_remain
 
 
 @receiver(post_delete, sender=VariantImage)

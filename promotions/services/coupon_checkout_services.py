@@ -6,9 +6,8 @@ from rest_framework.exceptions import ValidationError
 
 from promotions.models import Coupon
 from promotions.services.coupon_validation import (
-    normalise_redemption_limit,
-    validate_coupon_for_checkout,
-)
+    normalise_redemption_limit, validate_coupon_for_checkout)
+
 
 def _coupon_ineligible_message(
     exc,
@@ -23,13 +22,16 @@ def _coupon_ineligible_message(
 
         for value in detail.values():
 
-            if isinstance(
-                value,
-                (
-                    list,
-                    tuple,
-                ),
-            ) and value:
+            if (
+                isinstance(
+                    value,
+                    (
+                        list,
+                        tuple,
+                    ),
+                )
+                and value
+            ):
 
                 return str(
                     value[0],
@@ -42,13 +44,16 @@ def _coupon_ineligible_message(
 
                 return value
 
-    if isinstance(
-        detail,
-        (
-            list,
-            tuple,
-        ),
-    ) and detail:
+    if (
+        isinstance(
+            detail,
+            (
+                list,
+                tuple,
+            ),
+        )
+        and detail
+    ):
 
         return str(
             detail[0],
@@ -100,18 +105,15 @@ def list_active_coupons_for_checkout(
     *,
     exclude_code=None,
 ):
-    
 
     now = timezone.now()
 
-    subtotal = (
+    subtotal = Decimal(
+        subtotal,
+    ).quantize(
         Decimal(
-            subtotal,
-        ).quantize(
-            Decimal(
-                "0.01",
-            ),
-        )
+            "0.01",
+        ),
     )
 
     qs = (
@@ -161,10 +163,7 @@ def list_active_coupons_for_checkout(
             coupon.max_redemptions_total,
         )
 
-        if (
-            max_total is not None
-            and coupon.times_used >= max_total
-        ):
+        if max_total is not None and coupon.times_used >= max_total:
 
             continue
 

@@ -1,17 +1,11 @@
 from django.db import transaction
 from django.db.models import F
-
 from rest_framework.exceptions import ValidationError
 
 from cart.models import Cart
-from cart.services import (
-    get_cart_payload,
-    get_or_create_cart,
-)
+from cart.services import get_cart_payload, get_or_create_cart
 from promotions.models import Coupon
-from promotions.services.coupon_validation import (
-    validate_coupon_for_checkout,
-)
+from promotions.services.coupon_validation import validate_coupon_for_checkout
 
 
 @transaction.atomic
@@ -19,13 +13,10 @@ def apply_coupon_to_cart(
     user,
     code,
 ):
-    cart = (
-        Cart.objects.select_for_update()
-        .get(
-            pk=get_or_create_cart(
-                user,
-            ).pk,
-        )
+    cart = Cart.objects.select_for_update().get(
+        pk=get_or_create_cart(
+            user,
+        ).pk,
     )
 
     if cart.applied_coupon_id:
@@ -33,8 +24,7 @@ def apply_coupon_to_cart(
         raise ValidationError(
             {
                 "code": (
-                    "A coupon is already applied. "
-                    "Remove it before applying another."
+                    "A coupon is already applied. " "Remove it before applying another."
                 ),
             },
         )
@@ -105,13 +95,10 @@ def apply_coupon_to_cart(
 def remove_coupon_from_cart(
     user,
 ):
-    cart = (
-        Cart.objects.select_for_update()
-        .get(
-            pk=get_or_create_cart(
-                user,
-            ).pk,
-        )
+    cart = Cart.objects.select_for_update().get(
+        pk=get_or_create_cart(
+            user,
+        ).pk,
     )
 
     if not cart.applied_coupon_id:
@@ -139,7 +126,6 @@ def resolve_applied_coupon_for_cart(
     user,
     subtotal,
 ):
-    
 
     coupon = cart.applied_coupon
 

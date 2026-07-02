@@ -9,8 +9,6 @@ from catalog.models import ProductVariant
 
 class DailyOrderCounter(models.Model):
 
-    
-
     date = models.DateField(
         primary_key=True,
     )
@@ -33,7 +31,6 @@ class Order(models.Model):
         PARTIALLY_DELIVERED = "partially_delivered", "Partially delivered"
 
     class PaymentMethod(models.TextChoices):
-       
 
         COD = "cod", "Cash on delivery"
         RAZORPAY = "razorpay", "Razorpay"
@@ -41,7 +38,6 @@ class Order(models.Model):
         OTHER = "other", "Other / custom"
 
     class PaymentStatus(models.TextChoices):
-       
 
         PENDING = "pending", "Pending"
         PROCESSING = "processing", "Processing"

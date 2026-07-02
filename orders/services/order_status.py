@@ -1,5 +1,3 @@
-
-
 from django.db import transaction
 from django.utils import timezone
 
@@ -9,7 +7,6 @@ from orders.models import Order, OrderLine
 def _rollup_bucket(
     line,
 ):
-   
 
     if line.status == OrderLine.LineStatus.CANCELLED:
 
@@ -46,11 +43,7 @@ def compute_derived_order_status(
         order.lines.all(),
     )
 
-    active = [
-        ln
-        for ln in lines
-        if ln.status == OrderLine.LineStatus.ACTIVE
-    ]
+    active = [ln for ln in lines if ln.status == OrderLine.LineStatus.ACTIVE]
 
     if not active:
 
@@ -64,35 +57,22 @@ def compute_derived_order_status(
     ]
 
     has_cancelled_line = any(
-        ln.status == OrderLine.LineStatus.CANCELLED
-        for ln in lines
+        ln.status == OrderLine.LineStatus.CANCELLED for ln in lines
     )
 
-    if all(
-        b == "done"
-        for b in buckets
-    ):
+    if all(b == "done" for b in buckets):
 
         return Order.Status.DELIVERED
 
-    if all(
-        b == "ofd"
-        for b in buckets
-    ):
+    if all(b == "ofd" for b in buckets):
 
         return Order.Status.OUT_FOR_DELIVERY
 
-    if all(
-        b == "shipped"
-        for b in buckets
-    ):
+    if all(b == "shipped" for b in buckets):
 
         return Order.Status.SHIPPED
 
-    if all(
-        b == "pending"
-        for b in buckets
-    ):
+    if all(b == "pending" for b in buckets):
 
         if has_cancelled_line:
 
@@ -100,15 +80,13 @@ def compute_derived_order_status(
 
         return Order.Status.PENDING
 
-    if any(
-        b == "done"
-        for b in buckets
-    ):
+    if any(b == "done" for b in buckets):
 
         return Order.Status.PARTIALLY_DELIVERED
 
     if any(
-        b in (
+        b
+        in (
             "ofd",
             "shipped",
         )
@@ -124,7 +102,6 @@ def compute_derived_order_status(
 def persist_derived_order_status(
     order_id,
 ):
-    
 
     order = (
         Order.objects.select_for_update()

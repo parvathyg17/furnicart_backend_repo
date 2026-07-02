@@ -1,13 +1,7 @@
 from decimal import Decimal
 
-from django.db.models import (
-    ExpressionWrapper,
-    F,
-    Q,
-    Sum,
-)
+from django.db.models import ExpressionWrapper, F, Q, Sum
 from django.db.models.fields import DecimalField
-
 from rest_framework import serializers
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
@@ -85,9 +79,7 @@ class AdminVariantStockListView(
             ),
         )
 
-        total_val = agg[
-            "inventory_value"
-        ]
+        total_val = agg["inventory_value"]
 
         if total_val is None:
 
@@ -208,9 +200,7 @@ class AdminVariantStockListView(
                 serializer.data,
             )
 
-            response.data[
-                "summary"
-            ] = summary
+            response.data["summary"] = summary
 
             return response
 

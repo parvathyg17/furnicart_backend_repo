@@ -1,19 +1,10 @@
 from decimal import Decimal
 
 from django.db import transaction
+from rest_framework.exceptions import ValidationError
 
-from rest_framework.exceptions import (
-    ValidationError,
-)
-
+from cart.models import Cart, CartItem
 from catalog.models import ProductVariant
-
-from cart.models import (
-    Cart,
-    CartItem,
-)
-
-
 
 MAX_CART_QTY = 10
 
@@ -190,11 +181,7 @@ def add_to_cart(
         },
     )
 
-    new_qty = (
-        quantity
-        if created
-        else item.quantity + quantity
-    )
+    new_qty = quantity if created else item.quantity + quantity
 
     if new_qty > variant.stock:
 
@@ -321,9 +308,7 @@ def cart_line_gross_subtotal(
     item,
 ):
 
-    from promotions.services.offer_pricing import (
-        line_gross_subtotal,
-    )
+    from promotions.services.offer_pricing import line_gross_subtotal
 
     return line_gross_subtotal(
         item.variant,
@@ -337,9 +322,7 @@ def cart_line_offer_discount(
     resolver=None,
 ):
 
-    from promotions.services.offer_pricing import (
-        OfferResolver,
-    )
+    from promotions.services.offer_pricing import OfferResolver
 
     if resolver is None:
 
@@ -363,9 +346,7 @@ def cart_line_subtotal(
     resolver=None,
 ):
 
-    from promotions.services.offer_pricing import (
-        OfferResolver,
-    )
+    from promotions.services.offer_pricing import OfferResolver
 
     if resolver is None:
 
@@ -408,9 +389,7 @@ def get_cart_payload(user):
         items,
     )
 
-    from promotions.services.offer_pricing import (
-        cart_offer_totals,
-    )
+    from promotions.services.offer_pricing import cart_offer_totals
 
     totals = cart_offer_totals(
         items,
@@ -512,14 +491,12 @@ def build_checkout_preview(
     user,
 ):
 
-    cart = (
-        Cart.objects.select_related(
-            "applied_coupon",
-        ).get(
-            pk=get_or_create_cart(
-                user,
-            ).pk,
-        )
+    cart = Cart.objects.select_related(
+        "applied_coupon",
+    ).get(
+        pk=get_or_create_cart(
+            user,
+        ).pk,
     )
 
     payload = get_cart_payload(
@@ -536,18 +513,12 @@ def build_checkout_preview(
 
     offer_discount_total = payload["offer_discount_total"]
 
-    from promotions.services.coupon_cart_services import (
-        resolve_applied_coupon_for_cart,
-    )
-
-    from promotions.services.coupon_checkout_services import (
-        list_active_coupons_for_checkout,
-    )
-
-    from orders.services.checkout_pricing import (
-        compute_checkout_totals,
-        totals_as_response_dict,
-    )
+    from orders.services.checkout_pricing import (compute_checkout_totals,
+                                                  totals_as_response_dict)
+    from promotions.services.coupon_cart_services import \
+        resolve_applied_coupon_for_cart
+    from promotions.services.coupon_checkout_services import \
+        list_active_coupons_for_checkout
 
     coupon = resolve_applied_coupon_for_cart(
         cart,
@@ -573,11 +544,7 @@ def build_checkout_preview(
     body["active_coupons"] = list_active_coupons_for_checkout(
         user,
         subtotal,
-        exclude_code=(
-            coupon.code
-            if coupon
-            else None
-        ),
+        exclude_code=(coupon.code if coupon else None),
     )
 
     return body
@@ -587,11 +554,9 @@ def get_available_coupons_payload(
     user,
 ):
 
-    from promotions.services.coupon_checkout_services import (
-        list_active_coupons_for_checkout,
-    )
-
     from promotions.models import Coupon
+    from promotions.services.coupon_checkout_services import \
+        list_active_coupons_for_checkout
 
     cart = get_or_create_cart(
         user,
@@ -631,4 +596,3 @@ def get_available_coupons_payload(
             exclude_code=applied_code,
         ),
     }
-
