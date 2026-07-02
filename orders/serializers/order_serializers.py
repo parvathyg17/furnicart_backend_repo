@@ -27,6 +27,18 @@ class OrderOfferPricingMixin(
             obj,
         )
 
+    def get_refunded_total(
+        self,
+        obj,
+    ):
+
+        from orders.services.order_wallet_services import \
+            total_refunded_for_order
+
+        return total_refunded_for_order(
+            obj,
+        )
+
 
 class ReturnRequestSerializer(
     serializers.ModelSerializer,
@@ -294,6 +306,8 @@ class OrderDetailSerializer(
 
     subtotal_gross = serializers.SerializerMethodField()
 
+    refunded_total = serializers.SerializerMethodField()
+
     class Meta:
 
         model = Order
@@ -317,6 +331,7 @@ class OrderDetailSerializer(
             "coupon_code",
             "shipping_total",
             "grand_total",
+            "refunded_total",
             "shipping_name",
             "shipping_phone",
             "shipping_address_line",
@@ -429,6 +444,7 @@ class AdminOrderLineSerializer(
             "sku",
             "unit_price",
             "quantity",
+            "discount_amount",
             "line_total",
             "image_url",
             "status",
@@ -518,6 +534,8 @@ class AdminOrderDetailSerializer(
 
     subtotal_gross = serializers.SerializerMethodField()
 
+    refunded_total = serializers.SerializerMethodField()
+
     class Meta:
 
         model = Order
@@ -535,8 +553,10 @@ class AdminOrderDetailSerializer(
             "subtotal",
             "tax_total",
             "discount_total",
+            "coupon_code",
             "shipping_total",
             "grand_total",
+            "refunded_total",
             "shipping_name",
             "shipping_phone",
             "shipping_address_line",

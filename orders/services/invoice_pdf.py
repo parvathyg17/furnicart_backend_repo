@@ -439,38 +439,95 @@ def build_order_invoice_pdf(
         ),
     )
 
-    totals = [
+    from orders.services.checkout_pricing import (order_subtotal_gross,
+                                                  sum_order_line_offer_discount)
+
+    offer_discount = sum_order_line_offer_discount(
+        order,
+    )
+
+    coupon_discount = Decimal(
+        str(
+            order.discount_total,
+        ),
+    ).quantize(
+        Decimal(
+            "0.01",
+        ),
+    )
+
+    totals = []
+
+    if offer_discount > Decimal("0.00"):
+
+        totals.append(
+            [
+                "Items (MRP)",
+                _money_str(
+                    order_subtotal_gross(
+                        order,
+                    ),
+                ),
+            ],
+        )
+
+        totals.append(
+            [
+                "Offer savings",
+                f"- {_money_str(offer_discount)}",
+            ],
+        )
+
+    totals.append(
         [
             "Subtotal",
             _money_str(
                 order.subtotal,
             ),
         ],
+    )
+
+    totals.append(
         [
             "Tax (GST)",
             _money_str(
                 order.tax_total,
             ),
         ],
+    )
+
+    totals.append(
         [
             "Shipping",
             _money_str(
                 order.shipping_total,
             ),
         ],
-        [
-            "Discounts",
-            _money_str(
-                order.discount_total,
-            ),
-        ],
+    )
+
+    if coupon_discount > Decimal("0.00"):
+
+        coupon_label = (
+            f"Coupon ({order.coupon_code})"
+            if order.coupon_code
+            else "Coupon discount"
+        )
+
+        totals.append(
+            [
+                coupon_label,
+                f"- {_money_str(coupon_discount)}",
+            ],
+        )
+
+    totals.append(
         [
             "Grand total",
             _money_str(
                 order.grand_total,
             ),
         ],
-    ]
+    )
 
     totals_table = Table(
         totals,

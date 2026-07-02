@@ -524,8 +524,13 @@ def _recalculate_order_financials_from_active_lines(
         ),
     )
 
+    # Keep the coupon applied to the remaining items. Without this the coupon
+    # discount silently disappears on a partial cancellation, which both hides
+    # the discount on the order detail page and inflates/deflates the refund
+    # (the refund is computed as old grand_total minus this new grand_total).
     pricing = compute_checkout_totals(
         subtotal,
+        coupon=order.applied_coupon,
     )
 
     order.subtotal = subtotal
