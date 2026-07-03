@@ -344,6 +344,49 @@ class OrderDetailSerializer(
             "lines",
         ]
 
+    def to_representation(
+        self,
+        instance,
+    ):
+
+        data = super().to_representation(
+            instance,
+        )
+
+        from orders.services.refund_reporting import order_refund_report
+
+        report = order_refund_report(
+            instance,
+        )
+
+        line_financials = report["lines"]
+
+        for line in data.get(
+            "lines",
+            [],
+        ):
+
+            fin = line_financials.get(
+                line["id"],
+                {},
+            )
+
+            line["refund_amount"] = fin.get(
+                "refund_amount",
+            )
+
+        data["original_paid"] = report["original_paid"]
+
+        data["remaining_value"] = report["remaining_value"]
+
+        data["cancel_refund_total"] = report["cancel_refund_total"]
+
+        data["return_refund_total"] = report["return_refund_total"]
+
+        data["refund_transactions"] = report["refund_transactions"]
+
+        return data
+
 
 class PurchaseLineSerializer(
     OrderLineReturnSummaryMixin,
@@ -568,6 +611,59 @@ class AdminOrderDetailSerializer(
             "cancellation_reason",
             "lines",
         ]
+
+    def to_representation(
+        self,
+        instance,
+    ):
+
+        data = super().to_representation(
+            instance,
+        )
+
+        from orders.services.refund_reporting import order_refund_report
+
+        report = order_refund_report(
+            instance,
+        )
+
+        line_financials = report["lines"]
+
+        for line in data.get(
+            "lines",
+            [],
+        ):
+
+            fin = line_financials.get(
+                line["id"],
+                {},
+            )
+
+            line["coupon_share"] = fin.get(
+                "coupon_share",
+                "0.00",
+            )
+
+            line["tax_share"] = fin.get(
+                "tax_share",
+                "0.00",
+            )
+
+            line["refund_amount"] = fin.get(
+                "refund_amount",
+            )
+
+        data["original_paid"] = report["original_paid"]
+
+        data["remaining_value"] = report["remaining_value"]
+
+        data["cancel_refund_total"] = report["cancel_refund_total"]
+
+        data["return_refund_total"] = report["return_refund_total"]
+
+        data["refund_transactions"] = report["refund_transactions"]
+
+        return data
 
 
 class AdminFulfillmentUpdateSerializer(

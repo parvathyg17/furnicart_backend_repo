@@ -228,10 +228,14 @@ def admin_set_return_request_status(
         from orders.services.order_wallet_services import (
             credit_wallet_for_return_completion,
             update_payment_status_after_return_completion)
+        from orders.services.refund_reporting import line_paid_amount
 
         credit_wallet_for_return_completion(
             req,
-            line.line_total,
+            line_paid_amount(
+                line.order,
+                line,
+            ),
         )
 
         order = (

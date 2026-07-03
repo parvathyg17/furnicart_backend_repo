@@ -1,4 +1,4 @@
-from decimal import Decimal
+from decimal import ROUND_HALF_UP, Decimal
 
 from django.db import IntegrityError, transaction
 from django.db.models import Prefetch, Sum
@@ -502,58 +502,87 @@ def _recalculate_order_financials_from_active_lines(
     order,
 ):
 
-    agg = order.lines.filter(
-        status=OrderLine.LineStatus.ACTIVE,
-    ).aggregate(
-        s=Sum(
-            "line_total",
+    from orders.services.refund_reporting import (
+        _gst_rate,
+        proportional_coupon_for_subtotal,
+    )
+
+    all_lines = list(
+        order.lines.all(),
+    )
+
+    active_subtotal = Decimal(
+        "0.00",
+    )
+
+    for ln in all_lines:
+
+        if ln.status == OrderLine.LineStatus.ACTIVE:
+
+            active_subtotal += ln.line_total.quantize(
+                Decimal(
+                    "0.01",
+                ),
+            )
+
+    active_subtotal = active_subtotal.quantize(
+        Decimal(
+            "0.01",
         ),
     )
 
-    raw = agg.get(
-        "s",
+    gst = _gst_rate()
+
+    tax_total = (active_subtotal * gst).quantize(
+        Decimal(
+            "0.01",
+        ),
+        rounding=ROUND_HALF_UP,
     )
 
-    subtotal = Decimal(
-        str(
-            raw or "0.00",
+    # Policy B: remaining order keeps a proportional coupon share (flat/capped
+    # coupons shrink with the subtotal). Refund = old grand_total − new
+    # grand_total then equals line price + GST − that line's coupon share.
+    discount_total = proportional_coupon_for_subtotal(
+        order,
+        active_subtotal,
+        lines=all_lines,
+    )
+
+    order.subtotal = active_subtotal
+
+    order.tax_total = tax_total
+
+    order.discount_total = discount_total
+
+    # Preserve the shipping the customer originally paid. Re-deriving shipping
+    # from the reduced subtotal could re-introduce a charge (e.g. the remaining
+    # items fall below the free-shipping threshold), which would unfairly shrink
+    # the cancellation refund for something the customer already earned.
+    shipping_total = order.shipping_total.quantize(
+        Decimal(
+            "0.01",
         ),
+    )
+
+    order.grand_total = (
+        active_subtotal
+        + tax_total
+        + shipping_total
+        - discount_total
     ).quantize(
         Decimal(
             "0.01",
         ),
     )
 
-    # Keep the coupon applied to the remaining items. Without this the coupon
-    # discount silently disappears on a partial cancellation, which both hides
-    # the discount on the order detail page and inflates/deflates the refund
-    # (the refund is computed as old grand_total minus this new grand_total).
-    pricing = compute_checkout_totals(
-        subtotal,
-        coupon=order.applied_coupon,
-    )
+    if order.grand_total < Decimal(
+        "0.00",
+    ):
 
-    order.subtotal = subtotal
-
-    order.tax_total = pricing["tax_total"].quantize(
-        Decimal(
-            "0.01",
-        ),
-    )
-
-    order.discount_total = pricing["discount_total"].quantize(
-        Decimal(
-            "0.01",
-        ),
-    )
-
-    order.shipping_total = pricing["shipping_total"].quantize(
-        Decimal(
-            "0.01",
-        ),
-    )
-
-    order.grand_total = pricing["grand_total"]
+        order.grand_total = Decimal(
+            "0.00",
+        )
 
 
 @transaction.atomic
