@@ -52,10 +52,57 @@ class ReturnRequestSerializer(
             "id",
             "status",
             "reason",
+            "quantity",
             "admin_note",
             "created_at",
             "resolved_at",
         ]
+
+
+class OrderLineQuantityMixin(
+    serializers.Serializer,
+):
+
+    active_quantity = serializers.SerializerMethodField()
+
+    cancellable_quantity = serializers.SerializerMethodField()
+
+    returnable_quantity = serializers.SerializerMethodField()
+
+    def get_active_quantity(
+        self,
+        obj,
+    ):
+
+        from orders.services.line_quantity_services import active_quantity
+
+        return active_quantity(
+            obj,
+        )
+
+    def get_cancellable_quantity(
+        self,
+        obj,
+    ):
+
+        from orders.services.line_quantity_services import \
+            cancellable_quantity
+
+        return cancellable_quantity(
+            obj,
+        )
+
+    def get_returnable_quantity(
+        self,
+        obj,
+    ):
+
+        from orders.services.line_quantity_services import \
+            returnable_quantity
+
+        return returnable_quantity(
+            obj,
+        )
 
 
 class OrderLineReturnSummaryMixin(
@@ -124,6 +171,7 @@ class OrderLineReturnSummaryMixin(
 
 
 class OrderLineSerializer(
+    OrderLineQuantityMixin,
     OrderLineReturnSummaryMixin,
     serializers.ModelSerializer,
 ):
@@ -162,6 +210,11 @@ class OrderLineSerializer(
             "sku",
             "unit_price",
             "quantity",
+            "cancelled_quantity",
+            "returned_quantity",
+            "active_quantity",
+            "cancellable_quantity",
+            "returnable_quantity",
             "tax_amount",
             "discount_amount",
             "line_total",
@@ -176,6 +229,7 @@ class OrderLineSerializer(
 
 
 class OrderLineCardSerializer(
+    OrderLineQuantityMixin,
     OrderLineReturnSummaryMixin,
     serializers.ModelSerializer,
 ):
@@ -213,6 +267,11 @@ class OrderLineCardSerializer(
             "variant_name",
             "image_url",
             "quantity",
+            "cancelled_quantity",
+            "returned_quantity",
+            "active_quantity",
+            "cancellable_quantity",
+            "returnable_quantity",
             "unit_price",
             "line_total",
             "status",
@@ -252,6 +311,11 @@ class OrderCancelRequestSerializer(
         default="",
     )
 
+    quantity = serializers.IntegerField(
+        required=False,
+        min_value=1,
+    )
+
 
 class ReturnCreateSerializer(
     serializers.Serializer,
@@ -261,6 +325,11 @@ class ReturnCreateSerializer(
         required=True,
         allow_blank=False,
         max_length=2000,
+    )
+
+    quantity = serializers.IntegerField(
+        required=False,
+        min_value=1,
     )
 
 
@@ -371,6 +440,16 @@ class OrderDetailSerializer(
                 {},
             )
 
+            line["coupon_share"] = fin.get(
+                "coupon_share",
+                "0.00",
+            )
+
+            line["tax_share"] = fin.get(
+                "tax_share",
+                "0.00",
+            )
+
             line["refund_amount"] = fin.get(
                 "refund_amount",
             )
@@ -378,6 +457,8 @@ class OrderDetailSerializer(
         data["original_paid"] = report["original_paid"]
 
         data["remaining_value"] = report["remaining_value"]
+
+        data["refunded_total"] = report["total_refunded"]
 
         data["cancel_refund_total"] = report["cancel_refund_total"]
 
@@ -462,6 +543,7 @@ class PurchaseLineSerializer(
 
 
 class AdminOrderLineSerializer(
+    OrderLineQuantityMixin,
     serializers.ModelSerializer,
 ):
 
@@ -473,6 +555,12 @@ class AdminOrderLineSerializer(
         source="variant.product_id",
         read_only=True,
     )
+
+    active_quantity = serializers.SerializerMethodField()
+
+    cancellable_quantity = serializers.SerializerMethodField()
+
+    returnable_quantity = serializers.SerializerMethodField()
 
     class Meta:
 
@@ -487,6 +575,11 @@ class AdminOrderLineSerializer(
             "sku",
             "unit_price",
             "quantity",
+            "cancelled_quantity",
+            "returned_quantity",
+            "active_quantity",
+            "cancellable_quantity",
+            "returnable_quantity",
             "discount_amount",
             "line_total",
             "image_url",
@@ -525,11 +618,67 @@ class AdminOrderListSerializer(
             "status",
             "placed_at",
             "grand_total",
+            "original_paid",
+            "remaining_value",
+            "refunded_total",
             "line_count",
             "user_id",
             "user_email",
             "line_items",
         ]
+
+    original_paid = serializers.SerializerMethodField()
+
+    remaining_value = serializers.SerializerMethodField()
+
+    refunded_total = serializers.SerializerMethodField()
+
+    def get_original_paid(
+        self,
+        obj,
+    ):
+
+        return self._refund_report(
+            obj,
+        )["original_paid"]
+
+    def get_remaining_value(
+        self,
+        obj,
+    ):
+
+        return self._refund_report(
+            obj,
+        )["remaining_value"]
+
+    def get_refunded_total(
+        self,
+        obj,
+    ):
+
+        return self._refund_report(
+            obj,
+        )["total_refunded"]
+
+    def _refund_report(
+        self,
+        obj,
+    ):
+
+        cache = self.context.setdefault(
+            "_admin_list_refund_reports",
+            {},
+        )
+
+        if obj.pk not in cache:
+
+            from orders.services.refund_reporting import order_refund_report
+
+            cache[obj.pk] = order_refund_report(
+                obj,
+            )
+
+        return cache[obj.pk]
 
     def get_line_items(
         self,
@@ -657,6 +806,8 @@ class AdminOrderDetailSerializer(
 
         data["remaining_value"] = report["remaining_value"]
 
+        data["refunded_total"] = report["total_refunded"]
+
         data["cancel_refund_total"] = report["cancel_refund_total"]
 
         data["return_refund_total"] = report["return_refund_total"]
@@ -746,6 +897,7 @@ class AdminReturnListSerializer(
             "id",
             "status",
             "reason",
+            "quantity",
             "admin_note",
             "created_at",
             "resolved_at",

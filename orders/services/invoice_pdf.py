@@ -10,6 +10,36 @@ from reportlab.lib.units import cm
 from reportlab.platypus import (Paragraph, SimpleDocTemplate, Spacer, Table,
                                 TableStyle)
 
+from orders.models import Order, OrderLine
+
+
+def order_invoice_download_allowed(
+    order,
+):
+    """User invoice PDF is withheld after any cancellation or return."""
+
+    if order.status in (
+        Order.Status.CANCELLED,
+        Order.Status.PARTIALLY_CANCELLED,
+    ):
+
+        return False
+
+    for line in order.lines.all():
+
+        if line.status == OrderLine.LineStatus.CANCELLED:
+
+            return False
+
+        if (
+            line.fulfillment_status
+            == OrderLine.FulfillmentStatus.RETURNED
+        ):
+
+            return False
+
+    return True
+
 
 def _money_str(
     value,

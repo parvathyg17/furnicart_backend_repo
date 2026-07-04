@@ -1,7 +1,7 @@
 from django.db.models import Count, Prefetch, Q
 from django.http import HttpResponse
 from rest_framework import status
-from rest_framework.exceptions import NotFound, ValidationError
+from rest_framework.exceptions import NotFound, PermissionDenied, ValidationError
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
 from rest_framework.views import APIView
@@ -12,7 +12,8 @@ from orders.serializers import (OrderCancelRequestSerializer,
                                 OrderCreateSerializer, OrderDetailSerializer,
                                 OrderListSerializer, PurchaseLineSerializer,
                                 ReturnCreateSerializer)
-from orders.services.invoice_pdf import build_order_invoice_pdf
+from orders.services.invoice_pdf import (build_order_invoice_pdf,
+                                        order_invoice_download_allowed)
 from orders.services.order_services import (cancel_entire_order_for_user,
                                             cancel_order_line_for_user,
                                             create_order_from_cart,
@@ -271,6 +272,9 @@ class OrderLineCancelView(APIView):
                 reason=serializer.validated_data.get(
                     "reason",
                 ),
+                quantity=serializer.validated_data.get(
+                    "quantity",
+                ),
             )
 
         except Order.DoesNotExist:
@@ -323,6 +327,17 @@ class OrderInvoicePdfView(APIView):
         except Order.DoesNotExist:
 
             raise NotFound(detail="Order not found.")
+
+        if not order_invoice_download_allowed(
+            order,
+        ):
+
+            raise PermissionDenied(
+                detail=(
+                    "Invoice is not available for cancelled or returned "
+                    "orders."
+                ),
+            )
 
         pdf_bytes = build_order_invoice_pdf(
             order,
@@ -473,6 +488,9 @@ class OrderLineReturnCreateView(APIView):
                 order_number,
                 line_id,
                 reason=serializer.validated_data["reason"],
+                quantity=serializer.validated_data.get(
+                    "quantity",
+                ),
             )
 
         except Order.DoesNotExist:

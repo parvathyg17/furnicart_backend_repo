@@ -4,7 +4,7 @@ from decimal import ROUND_HALF_UP, Decimal
 from django.conf import settings
 
 from accounts.models.wallet import WalletTransaction
-from orders.models import OrderLine
+from orders.models import Order, OrderLine, ReturnRequest
 
 CENTS = Decimal(
     "0.01",
@@ -314,6 +314,99 @@ def _distribute_unattributed_cancel(
     return result
 
 
+def _apply_cod_return_pickup_refunds(
+    order,
+    lines,
+    line_refund,
+    return_total,
+    txn_rows,
+):
+    """Attribute return refund amounts for COD orders at return pickup.
+
+    Online refunds are recorded as wallet credits; COD returns are settled in
+    cash when the item is picked up, so we derive display amounts from returned
+    lines instead.
+    """
+
+    if order.payment_method != Order.PaymentMethod.COD:
+
+        return return_total, txn_rows
+
+    from orders.services.line_quantity_services import \
+        line_paid_amount_for_qty
+
+    completed_returns = ReturnRequest.objects.filter(
+        order_line__order=order,
+        status=ReturnRequest.Status.COMPLETED,
+    ).select_related(
+        "order_line",
+    )
+
+    cod_return_delta = Decimal(
+        "0.00",
+    )
+
+    for rr in completed_returns:
+
+        ln = rr.order_line
+
+        return_qty = int(
+            rr.quantity,
+        )
+
+        amt = line_paid_amount_for_qty(
+            order,
+            ln,
+            return_qty,
+        )
+
+        if amt <= Decimal(
+            "0.00",
+        ):
+
+            continue
+
+        existing = line_refund.get(
+            ln.id,
+            Decimal(
+                "0.00",
+            ),
+        )
+
+        line_refund[ln.id] = _q(
+            existing + amt,
+        )
+
+        cod_return_delta += amt
+
+        resolved_at = (
+            rr.resolved_at
+            if rr.resolved_at
+            else order.updated_at
+        )
+
+        txn_rows.append(
+            {
+                "id": -rr.id,
+                "amount": str(
+                    amt,
+                ),
+                "reason": WalletTransaction.Reason.RETURN_REFUND,
+                "reason_label": "Return refund (COD)",
+                "line_id": ln.id,
+                "reference_note": (
+                    f"Cash refunded on return pickup — {ln.sku} "
+                    f"×{return_qty} (order {order.order_number})"
+                ),
+                "created_at": resolved_at.isoformat(),
+            },
+        )
+
+    return _q(
+        return_total + cod_return_delta,
+    ), txn_rows
+
+
 def order_refund_report(
     order,
 ):
@@ -427,6 +520,14 @@ def order_refund_report(
                 "created_at": t.created_at.isoformat(),
             },
         )
+
+    return_total, txn_rows = _apply_cod_return_pickup_refunds(
+        order,
+        lines,
+        line_refund,
+        return_total,
+        txn_rows,
+    )
 
     total_refunded = _q(
         cancel_total + return_total,

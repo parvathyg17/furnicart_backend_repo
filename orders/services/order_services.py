@@ -519,7 +519,12 @@ def _recalculate_order_financials_from_active_lines(
 
         if ln.status == OrderLine.LineStatus.ACTIVE:
 
-            active_subtotal += ln.line_total.quantize(
+            from orders.services.line_quantity_services import \
+                active_line_subtotal
+
+            active_subtotal += active_line_subtotal(
+                ln,
+            ).quantize(
                 Decimal(
                     "0.01",
                 ),
@@ -637,13 +642,24 @@ def cancel_entire_order_for_user(
                 "items have already shipped.",
             )
 
+    from orders.services.line_quantity_services import \
+        cancellable_quantity
+
     for line in active:
 
         variant = ProductVariant.objects.select_for_update().get(
             pk=line.variant_id,
         )
 
-        variant.stock += line.quantity
+        qty = cancellable_quantity(
+            line,
+        )
+
+        if qty <= 0:
+
+            continue
+
+        variant.stock += qty
 
         variant.save(
             update_fields=[
@@ -652,10 +668,13 @@ def cancel_entire_order_for_user(
             ],
         )
 
+        line.cancelled_quantity = line.quantity
+
         line.status = OrderLine.LineStatus.CANCELLED
 
         line.save(
             update_fields=[
+                "cancelled_quantity",
                 "status",
             ],
         )
@@ -698,6 +717,7 @@ def cancel_order_line_for_user(
     line_id,
     *,
     reason=None,
+    quantity=None,
 ):
 
     reason_clean = _normalize_cancel_reason(
@@ -739,11 +759,39 @@ def cancel_order_line_for_user(
             "entered fulfillment.",
         )
 
+    from orders.services.line_quantity_services import (
+        cancellable_quantity,
+        validate_cancel_quantity,
+    )
+
+    try:
+
+        cancel_qty = validate_cancel_quantity(
+            line,
+            quantity,
+        )
+
+    except ValueError as exc:
+
+        raise ValidationError(
+            str(
+                exc,
+            ),
+        )
+
+    if cancellable_quantity(
+        line,
+    ) <= 0:
+
+        raise ValidationError(
+            "This line has no units left to cancel.",
+        )
+
     variant = ProductVariant.objects.select_for_update().get(
         pk=line.variant_id,
     )
 
-    variant.stock += line.quantity
+    variant.stock += cancel_qty
 
     variant.save(
         update_fields=[
@@ -752,11 +800,19 @@ def cancel_order_line_for_user(
         ],
     )
 
-    line.status = OrderLine.LineStatus.CANCELLED
+    line.cancelled_quantity += cancel_qty
 
     update_line = [
-        "status",
+        "cancelled_quantity",
     ]
+
+    if line.cancelled_quantity >= line.quantity:
+
+        line.status = OrderLine.LineStatus.CANCELLED
+
+        update_line.append(
+            "status",
+        )
 
     if reason_clean:
 
@@ -770,11 +826,11 @@ def cancel_order_line_for_user(
         update_fields=update_line,
     )
 
-    remaining_active = order.lines.filter(
+    all_units_cancelled = not order.lines.filter(
         status=OrderLine.LineStatus.ACTIVE,
-    ).count()
+    ).exists()
 
-    if remaining_active == 0:
+    if all_units_cancelled:
 
         order.cancelled_at = timezone.now()
 
@@ -894,13 +950,24 @@ def cancel_entire_order_for_admin(
                 "items have already shipped.",
             )
 
+    from orders.services.line_quantity_services import \
+        cancellable_quantity
+
     for line in active:
 
         variant = ProductVariant.objects.select_for_update().get(
             pk=line.variant_id,
         )
 
-        variant.stock += line.quantity
+        qty = cancellable_quantity(
+            line,
+        )
+
+        if qty <= 0:
+
+            continue
+
+        variant.stock += qty
 
         variant.save(
             update_fields=[
@@ -909,10 +976,13 @@ def cancel_entire_order_for_admin(
             ],
         )
 
+        line.cancelled_quantity = line.quantity
+
         line.status = OrderLine.LineStatus.CANCELLED
 
         line.save(
             update_fields=[
+                "cancelled_quantity",
                 "status",
             ],
         )

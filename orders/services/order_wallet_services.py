@@ -139,7 +139,9 @@ def credit_wallet_for_return_completion(
         order=order,
         return_request=return_request,
         reference_note=(
-            f"Return refund for {line.sku} " f"(order {order.order_number})"
+            f"Return refund for {line.sku} "
+            f"×{return_request.quantity} "
+            f"(order {order.order_number})"
         ),
     )
 
