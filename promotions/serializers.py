@@ -8,6 +8,27 @@ from promotions.services.admin_coupon_services import (create_coupon,
 from promotions.services.admin_offer_services import create_offer, update_offer
 
 
+class PublicOfferSerializer(serializers.ModelSerializer):
+    category_slug = serializers.CharField(source="category.slug", read_only=True)
+    product_slug = serializers.CharField(source="product.slug", read_only=True)
+
+    class Meta:
+        model = Offer
+        fields = [
+            "id",
+            "title",
+            "description",
+            "image",
+            "offer_type",
+            "discount_type",
+            "discount_value",
+            "product",
+            "product_slug",
+            "category",
+            "category_slug",
+        ]
+
+
 class AdminCouponSerializer(
     serializers.ModelSerializer,
 ):
@@ -196,6 +217,7 @@ class AdminOfferSerializer(
             "id",
             "title",
             "description",
+            "image",
             "offer_type",
             "product",
             "product_name",
