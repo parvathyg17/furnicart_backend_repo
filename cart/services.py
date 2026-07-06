@@ -168,7 +168,7 @@ def add_to_cart(
     if quantity > variant.stock:
 
         raise ValidationError(
-            f"Only {variant.stock} available.",
+            f"Only {variant.stock} units are available in the stock.",
         )
 
     cart = get_or_create_cart(user)
@@ -192,7 +192,7 @@ def add_to_cart(
             )
 
         raise ValidationError(
-            f"Only {variant.stock} available.",
+            f"Only {variant.stock} units are available in the stock.",
         )
 
     if new_qty > MAX_CART_QTY:

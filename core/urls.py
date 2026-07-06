@@ -154,6 +154,9 @@ urlpatterns = [
         ),
     ),
 
+    path('api/contact/', include('accounts.urls.contact_urls')),
+    path('api/admin/contact/', include('accounts.urls.admin_contact_urls')),
+
     path(
         "api/admin/",
         include(
