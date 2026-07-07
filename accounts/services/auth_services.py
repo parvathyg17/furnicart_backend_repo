@@ -81,7 +81,7 @@ def verify_otp_service(user, otp_input, purpose):
         # user.is_active = True
         user.save()
 
-        # delete signup OTP after verification
+        
         otp_obj.delete()
 
     return True, None

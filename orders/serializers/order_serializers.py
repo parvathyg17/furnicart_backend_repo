@@ -74,7 +74,7 @@ class OrderLineQuantityMixin(
         obj,
     ):
 
-        from orders.services.line_quantity_services import active_quantity
+        from orders.services.order_services import active_quantity
 
         return active_quantity(
             obj,
@@ -85,7 +85,7 @@ class OrderLineQuantityMixin(
         obj,
     ):
 
-        from orders.services.line_quantity_services import \
+        from orders.services.order_services import \
             cancellable_quantity
 
         return cancellable_quantity(
@@ -97,7 +97,7 @@ class OrderLineQuantityMixin(
         obj,
     ):
 
-        from orders.services.line_quantity_services import \
+        from orders.services.order_services import \
             returnable_quantity
 
         return returnable_quantity(

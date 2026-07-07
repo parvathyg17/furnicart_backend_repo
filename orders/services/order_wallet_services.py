@@ -20,12 +20,7 @@ def order_eligible_for_wallet_refund(
 def total_refunded_for_order(
     order,
 ):
-    """Actual amount credited back for an order, from wallet transactions.
-
-    Refunds (cancellations and return refunds) are only ever recorded as
-    wallet credits, so those rows are the single source of truth for how
-    much the customer was actually refunded.
-    """
+    
 
     agg = WalletTransaction.objects.filter(
         order=order,

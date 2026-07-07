@@ -105,7 +105,7 @@ def line_coupon_share(
     original_subtotal=None,
     original_coupon=None,
 ):
-    """Proportional coupon amount allocated to a single line."""
+    
 
     if original_subtotal is None:
 
@@ -149,13 +149,7 @@ def proportional_coupon_for_subtotal(
     *,
     lines=None,
 ):
-    """Coupon discount on *active_subtotal* using proportional allocation.
-
-    Flat and capped-percent coupons keep the same total discount only when every
-    line is still active. After a partial cancel the remaining order keeps its
-    proportional share (policy B), so refund deltas subtract each line's coupon
-    share and match the admin breakdown columns.
-    """
+    
 
     active_subtotal = _q(
         active_subtotal,
@@ -200,13 +194,7 @@ def line_paid_amount(
     order,
     line,
 ):
-    """What the customer actually paid for a single line.
-
-    ``line_total`` (net of product offers) plus that line's GST minus its
-    proportional coupon share. Shipping is intentionally excluded — it is not
-    refunded on a return since the goods were delivered. This mirrors what a
-    cancellation of the same line refunds, keeping the two paths consistent.
-    """
+    
 
     line_total = _q(
         line.line_total,
@@ -242,13 +230,7 @@ def _distribute_unattributed_cancel(
     unattributed_cancel,
     line_refund,
 ):
-    """Spread a lump full-cancel refund across cancelled lines for display.
-
-    Full-order cancellations record one wallet credit with no line reference.
-    To populate the per-line Refund column we allocate that lump across the
-    cancelled lines that do not already have an attributed refund, weighted by
-    ``line_total``. Display only — does not affect the money actually credited.
-    """
+    
 
     result = {}
 
@@ -321,18 +303,13 @@ def _apply_cod_return_pickup_refunds(
     return_total,
     txn_rows,
 ):
-    """Attribute return refund amounts for COD orders at return pickup.
-
-    Online refunds are recorded as wallet credits; COD returns are settled in
-    cash when the item is picked up, so we derive display amounts from returned
-    lines instead.
-    """
+    
 
     if order.payment_method != Order.PaymentMethod.COD:
 
         return return_total, txn_rows
 
-    from orders.services.line_quantity_services import \
+    from orders.services.order_services import \
         line_paid_amount_for_qty
 
     completed_returns = ReturnRequest.objects.filter(
@@ -410,14 +387,7 @@ def _apply_cod_return_pickup_refunds(
 def order_refund_report(
     order,
 ):
-    """Build an admin-facing money breakdown for an order.
-
-    Returns per-line coupon/tax allocation and the actual refund amounts
-    (sourced from wallet transactions, which are the only place refunds are
-    recorded). Per-line coupon/tax figures represent each item's *original*
-    contribution to the order, so they stay stable even after the order totals
-    are recalculated on cancellation.
-    """
+    
 
     lines = list(
         order.lines.all(),
@@ -491,8 +461,7 @@ def order_refund_report(
 
             else:
 
-                # Full-order cancellations refund a single lump with no line
-                # reference; spread it across the cancelled lines for display.
+                
                 unattributed_cancel += amt
 
         if line_id is not None:

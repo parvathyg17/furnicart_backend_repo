@@ -110,7 +110,7 @@ class UserListView(APIView):
                 Q(email__icontains=search) | Q(username__icontains=search)
             )
 
-        paginator = Paginator(users, 5)
+        paginator = Paginator(users, 10)
 
         page_obj = paginator.get_page(page)
 
