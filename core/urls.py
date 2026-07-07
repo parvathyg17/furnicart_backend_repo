@@ -147,6 +147,15 @@ urlpatterns = [
             "promotions.referral_urls",
         ),
     ),
+    path(
+        "api/promotions/offers/",
+        include(
+            "promotions.public_offer_urls",
+        ),
+    ),
+
+    path('api/contact/', include('accounts.urls.contact_urls')),
+    path('api/admin/contact/', include('accounts.urls.admin_contact_urls')),
 
     path(
         "api/admin/",

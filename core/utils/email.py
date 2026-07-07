@@ -76,11 +76,42 @@ Curated furniture for calm, considered spaces.
 Your online furniture & home décor store.
 """
 
-    return subject, message
+    html_message = f"""
+    <div style="font-family: 'Helvetica Neue', Arial, sans-serif; max-width: 600px; margin: 0 auto; color: #333; line-height: 1.6; border: 1px solid #eaeaea; border-radius: 8px;">
+        <div style="text-align: center; padding: 20px 0; border-bottom: 1px solid #eaeaea; background-color: #fafafa; border-top-left-radius: 8px; border-top-right-radius: 8px;">
+            <h2 style="margin: 0; color: #2c3e50; font-size: 24px; letter-spacing: 1px;">FurniCart</h2>
+        </div>
+        <div style="padding: 30px 20px;">
+            <h3 style="color: #2c3e50; font-size: 20px; margin-top: 0;">{copy['headline']}</h3>
+            <p style="font-size: 16px; color: #555;">
+                {copy['intro']}
+            </p>
+            <div style="margin: 30px 0; padding: 25px; background-color: #f8f9fa; border-radius: 8px; text-align: center; border: 1px dashed #ced4da;">
+                <p style="margin: 0 0 10px 0; font-size: 14px; text-transform: uppercase; color: #6c757d; font-weight: bold;">Your one-time password (OTP)</p>
+                <div style="font-size: 36px; letter-spacing: 8px; color: #000; font-weight: bold; margin: 10px 0;">{otp}</div>
+            </div>
+            <p style="font-size: 14px; color: #6c757d;">
+                This code expires in <strong>{OTP_EXPIRY_MINUTES} minutes</strong>.
+            </p>
+            <p style="font-size: 14px; color: #6c757d; margin-top: 30px; border-top: 1px solid #eaeaea; padding-top: 20px;">
+                If you did not request this email, you can safely ignore it. Your FurniCart
+                account will not be changed unless you enter this code.<br><br>
+                Need help? Contact our support team through your account profile after signing in.
+            </p>
+        </div>
+        <div style="background-color: #f8f9fa; padding: 20px; text-align: center; font-size: 12px; color: #999; border-bottom-left-radius: 8px; border-bottom-right-radius: 8px;">
+            <strong style="color: #555;">FurniCart</strong><br>
+            Curated furniture for calm, considered spaces.<br>
+            Your online furniture &amp; home décor store.
+        </div>
+    </div>
+    """
+
+    return subject, message, html_message
 
 
 def send_otp_email(email, otp, purpose="signup"):
-    subject, message = build_otp_email_content(
+    subject, message, html_message = build_otp_email_content(
         otp,
         purpose=purpose,
     )
@@ -91,4 +122,5 @@ def send_otp_email(email, otp, purpose="signup"):
         settings.EMAIL_HOST_USER,
         [email],
         fail_silently=False,
+        html_message=html_message,
     )

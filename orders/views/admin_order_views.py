@@ -14,8 +14,10 @@ from orders.serializers import (AdminFulfillmentUpdateSerializer,
                                 AdminReturnListSerializer,
                                 AdminReturnStatusSerializer,
                                 OrderCancelRequestSerializer)
-from orders.services.admin_order_services import \
-    admin_set_order_line_fulfillment
+from orders.services.admin_order_services import (
+    admin_set_order_fulfillment_bulk,
+    admin_set_order_line_fulfillment,
+)
 from orders.services.order_services import cancel_entire_order_for_admin
 from orders.services.return_services import admin_set_return_request_status
 
@@ -306,6 +308,66 @@ class AdminOrderLineFulfillmentView(APIView):
 
             raise NotFound(
                 detail="Order line not found.",
+            )
+
+        except ValidationError as exc:
+
+            return _validation_error_response(
+                exc,
+            )
+
+        order = Order.objects.prefetch_related(
+            Prefetch(
+                "lines",
+                queryset=OrderLine.objects.select_related(
+                    "variant",
+                ).order_by(
+                    "id",
+                ),
+            ),
+        ).get(
+            order_number=order_number,
+        )
+
+        return Response(
+            AdminOrderDetailSerializer(
+                order,
+            ).data,
+        )
+
+
+class AdminOrderFulfillmentBulkView(APIView):
+
+    permission_classes = [
+        IsAuthenticated,
+        IsAdminUserCustom,
+    ]
+
+    def patch(
+        self,
+        request,
+        order_number,
+    ):
+
+        ser = AdminFulfillmentUpdateSerializer(
+            data=request.data,
+        )
+
+        ser.is_valid(
+            raise_exception=True,
+        )
+
+        try:
+
+            admin_set_order_fulfillment_bulk(
+                order_number=order_number,
+                fulfillment_status=ser.validated_data["fulfillment_status"],
+            )
+
+        except Order.DoesNotExist:
+
+            raise NotFound(
+                detail="Order not found.",
             )
 
         except ValidationError as exc:

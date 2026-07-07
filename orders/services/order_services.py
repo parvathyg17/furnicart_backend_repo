@@ -1,4 +1,4 @@
-from decimal import Decimal
+from decimal import ROUND_HALF_UP, Decimal
 
 from django.db import IntegrityError, transaction
 from django.db.models import Prefetch, Sum
@@ -9,9 +9,279 @@ from accounts.models.address import Address
 from cart.models import Cart, CartItem
 from cart.services import get_or_create_cart, validate_cart_for_checkout
 from catalog.models import ProductVariant, VariantImage
-from orders.models import DailyOrderCounter, Order, OrderLine
+from orders.models import DailyOrderCounter, Order, OrderLine, ReturnRequest
 from orders.services.checkout_pricing import compute_checkout_totals
 from orders.services.order_status import persist_derived_order_status
+
+CENTS = Decimal(
+    "0.01",
+)
+
+
+def _q(
+    value,
+):
+
+    return Decimal(
+        str(
+            value or "0",
+        ),
+    ).quantize(
+        CENTS,
+    )
+
+
+def active_quantity(
+    line,
+):
+    
+
+    return max(
+        0,
+        int(
+            line.quantity,
+        )
+        - int(
+            line.cancelled_quantity,
+        )
+        - int(
+            line.returned_quantity,
+        ),
+    )
+
+
+def cancellable_quantity(
+    line,
+):
+    
+
+    return max(
+        0,
+        int(
+            line.quantity,
+        )
+        - int(
+            line.cancelled_quantity,
+        ),
+    )
+
+
+def deliverable_quantity(
+    line,
+):
+    
+
+    return max(
+        0,
+        int(
+            line.quantity,
+        )
+        - int(
+            line.cancelled_quantity,
+        ),
+    )
+
+
+def _in_flight_return_quantity(
+    line,
+):
+
+    agg = ReturnRequest.objects.filter(
+        order_line=line,
+        status__in=(
+            ReturnRequest.Status.PENDING,
+            ReturnRequest.Status.APPROVED,
+        ),
+    ).aggregate(
+        s=Sum(
+            "quantity",
+        ),
+    )
+
+    return int(
+        agg.get(
+            "s",
+        )
+        or 0,
+    )
+
+
+def returnable_quantity(
+    line,
+):
+    
+
+    if _in_flight_return_quantity(
+        line,
+    ) > 0:
+
+        return 0
+
+    remaining = (
+        deliverable_quantity(
+            line,
+        )
+        - int(
+            line.returned_quantity,
+        )
+    )
+
+    return max(
+        0,
+        remaining,
+    )
+
+
+def proportional_amount(
+    total,
+    qty,
+    line_quantity,
+):
+    
+
+    total = _q(
+        total,
+    )
+
+    line_quantity = int(
+        line_quantity,
+    )
+
+    qty = int(
+        qty,
+    )
+
+    if (
+        qty <= 0
+        or line_quantity <= 0
+    ):
+
+        return Decimal(
+            "0.00",
+        )
+
+    if qty >= line_quantity:
+
+        return total
+
+    return _q(
+        total * Decimal(
+            qty,
+        ) / Decimal(
+            line_quantity,
+        ),
+    )
+
+
+def active_line_subtotal(
+    line,
+):
+    """Remaining merchandise value for non-cancelled units on a line."""
+
+    active_qty = int(
+        line.quantity,
+    ) - int(
+        line.cancelled_quantity,
+    )
+
+    if active_qty <= 0:
+
+        return Decimal(
+            "0.00",
+        )
+
+    return proportional_amount(
+        line.line_total,
+        active_qty,
+        line.quantity,
+    )
+
+
+def line_paid_amount_for_qty(
+    order,
+    line,
+    qty,
+):
+    from orders.services.refund_reporting import line_paid_amount
+
+    full = line_paid_amount(
+        order,
+        line,
+    )
+
+    return proportional_amount(
+        full,
+        qty,
+        line.quantity,
+    )
+
+
+def validate_cancel_quantity(
+    line,
+    quantity,
+):
+
+    if quantity is None:
+
+        quantity = cancellable_quantity(
+            line,
+        )
+
+    quantity = int(
+        quantity,
+    )
+
+    max_qty = cancellable_quantity(
+        line,
+    )
+
+    if quantity < 1:
+
+        raise ValueError(
+            "Quantity must be at least 1.",
+        )
+
+    if quantity > max_qty:
+
+        raise ValueError(
+            f"You can cancel at most {max_qty} unit(s) for this item.",
+        )
+
+    return quantity
+
+
+def validate_return_quantity(
+    line,
+    quantity,
+):
+
+    if quantity is None:
+
+        quantity = returnable_quantity(
+            line,
+        )
+
+    quantity = int(
+        quantity,
+    )
+
+    max_qty = returnable_quantity(
+        line,
+    )
+
+    if quantity < 1:
+
+        raise ValueError(
+            "Quantity must be at least 1.",
+        )
+
+    if quantity > max_qty:
+
+        raise ValueError(
+            f"You can return at most {max_qty} unit(s) for this item.",
+        )
+
+    return quantity
 
 
 def _allocate_order_number():
@@ -502,53 +772,85 @@ def _recalculate_order_financials_from_active_lines(
     order,
 ):
 
-    agg = order.lines.filter(
-        status=OrderLine.LineStatus.ACTIVE,
-    ).aggregate(
-        s=Sum(
-            "line_total",
+    from orders.services.refund_reporting import (
+        _gst_rate,
+        proportional_coupon_for_subtotal,
+    )
+
+    all_lines = list(
+        order.lines.all(),
+    )
+
+    active_subtotal = Decimal(
+        "0.00",
+    )
+
+    for ln in all_lines:
+
+        if ln.status == OrderLine.LineStatus.ACTIVE:
+
+
+            active_subtotal += active_line_subtotal(
+                ln,
+            ).quantize(
+                Decimal(
+                    "0.01",
+                ),
+            )
+
+    active_subtotal = active_subtotal.quantize(
+        Decimal(
+            "0.01",
         ),
     )
 
-    raw = agg.get(
-        "s",
+    gst = _gst_rate()
+
+    tax_total = (active_subtotal * gst).quantize(
+        Decimal(
+            "0.01",
+        ),
+        rounding=ROUND_HALF_UP,
     )
 
-    subtotal = Decimal(
-        str(
-            raw or "0.00",
+    
+    discount_total = proportional_coupon_for_subtotal(
+        order,
+        active_subtotal,
+        lines=all_lines,
+    )
+
+    order.subtotal = active_subtotal
+
+    order.tax_total = tax_total
+
+    order.discount_total = discount_total
+
+    
+    shipping_total = order.shipping_total.quantize(
+        Decimal(
+            "0.01",
         ),
+    )
+
+    order.grand_total = (
+        active_subtotal
+        + tax_total
+        + shipping_total
+        - discount_total
     ).quantize(
         Decimal(
             "0.01",
         ),
     )
 
-    pricing = compute_checkout_totals(
-        subtotal,
-    )
+    if order.grand_total < Decimal(
+        "0.00",
+    ):
 
-    order.subtotal = subtotal
-
-    order.tax_total = pricing["tax_total"].quantize(
-        Decimal(
-            "0.01",
-        ),
-    )
-
-    order.discount_total = pricing["discount_total"].quantize(
-        Decimal(
-            "0.01",
-        ),
-    )
-
-    order.shipping_total = pricing["shipping_total"].quantize(
-        Decimal(
-            "0.01",
-        ),
-    )
-
-    order.grand_total = pricing["grand_total"]
+        order.grand_total = Decimal(
+            "0.00",
+        )
 
 
 @transaction.atomic
@@ -609,7 +911,15 @@ def cancel_entire_order_for_user(
             pk=line.variant_id,
         )
 
-        variant.stock += line.quantity
+        qty = cancellable_quantity(
+            line,
+        )
+
+        if qty <= 0:
+
+            continue
+
+        variant.stock += qty
 
         variant.save(
             update_fields=[
@@ -618,10 +928,13 @@ def cancel_entire_order_for_user(
             ],
         )
 
+        line.cancelled_quantity = line.quantity
+
         line.status = OrderLine.LineStatus.CANCELLED
 
         line.save(
             update_fields=[
+                "cancelled_quantity",
                 "status",
             ],
         )
@@ -664,6 +977,7 @@ def cancel_order_line_for_user(
     line_id,
     *,
     reason=None,
+    quantity=None,
 ):
 
     reason_clean = _normalize_cancel_reason(
@@ -705,11 +1019,35 @@ def cancel_order_line_for_user(
             "entered fulfillment.",
         )
 
+
+    try:
+
+        cancel_qty = validate_cancel_quantity(
+            line,
+            quantity,
+        )
+
+    except ValueError as exc:
+
+        raise ValidationError(
+            str(
+                exc,
+            ),
+        )
+
+    if cancellable_quantity(
+        line,
+    ) <= 0:
+
+        raise ValidationError(
+            "This line has no units left to cancel.",
+        )
+
     variant = ProductVariant.objects.select_for_update().get(
         pk=line.variant_id,
     )
 
-    variant.stock += line.quantity
+    variant.stock += cancel_qty
 
     variant.save(
         update_fields=[
@@ -718,11 +1056,19 @@ def cancel_order_line_for_user(
         ],
     )
 
-    line.status = OrderLine.LineStatus.CANCELLED
+    line.cancelled_quantity += cancel_qty
 
     update_line = [
-        "status",
+        "cancelled_quantity",
     ]
+
+    if line.cancelled_quantity >= line.quantity:
+
+        line.status = OrderLine.LineStatus.CANCELLED
+
+        update_line.append(
+            "status",
+        )
 
     if reason_clean:
 
@@ -736,11 +1082,11 @@ def cancel_order_line_for_user(
         update_fields=update_line,
     )
 
-    remaining_active = order.lines.filter(
+    all_units_cancelled = not order.lines.filter(
         status=OrderLine.LineStatus.ACTIVE,
-    ).count()
+    ).exists()
 
-    if remaining_active == 0:
+    if all_units_cancelled:
 
         order.cancelled_at = timezone.now()
 
@@ -812,10 +1158,7 @@ def cancel_entire_order_for_admin(
     *,
     reason=None,
 ):
-    """
-    Cancel every active line on an order and restore stock.
-    Same rules as customer cancel: only lines still in ``pending`` fulfillment.
-    """
+    
 
     reason_clean = _normalize_cancel_reason(
         reason,
@@ -866,7 +1209,15 @@ def cancel_entire_order_for_admin(
             pk=line.variant_id,
         )
 
-        variant.stock += line.quantity
+        qty = cancellable_quantity(
+            line,
+        )
+
+        if qty <= 0:
+
+            continue
+
+        variant.stock += qty
 
         variant.save(
             update_fields=[
@@ -875,10 +1226,13 @@ def cancel_entire_order_for_admin(
             ],
         )
 
+        line.cancelled_quantity = line.quantity
+
         line.status = OrderLine.LineStatus.CANCELLED
 
         line.save(
             update_fields=[
+                "cancelled_quantity",
                 "status",
             ],
         )

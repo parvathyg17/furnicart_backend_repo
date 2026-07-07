@@ -1,5 +1,7 @@
 from decimal import Decimal
 
+from django.db.models import Sum
+
 from accounts.models.wallet import WalletTransaction
 from accounts.services.wallet_services import credit_wallet
 from orders.models import Order, OrderLine
@@ -12,6 +14,41 @@ def order_eligible_for_wallet_refund(
     return order.payment_method in (
         Order.PaymentMethod.RAZORPAY,
         Order.PaymentMethod.WALLET,
+    )
+
+
+def total_refunded_for_order(
+    order,
+):
+    
+
+    agg = WalletTransaction.objects.filter(
+        order=order,
+        type=WalletTransaction.Type.CREDIT,
+        reason__in=(
+            WalletTransaction.Reason.ORDER_CANCEL,
+            WalletTransaction.Reason.RETURN_REFUND,
+        ),
+    ).aggregate(
+        s=Sum(
+            "amount",
+        ),
+    )
+
+    total = agg.get(
+        "s",
+    ) or Decimal(
+        "0.00",
+    )
+
+    return Decimal(
+        str(
+            total,
+        ),
+    ).quantize(
+        Decimal(
+            "0.01",
+        ),
     )
 
 
@@ -97,7 +134,9 @@ def credit_wallet_for_return_completion(
         order=order,
         return_request=return_request,
         reference_note=(
-            f"Return refund for {line.sku} " f"(order {order.order_number})"
+            f"Return refund for {line.sku} "
+            f"×{return_request.quantity} "
+            f"(order {order.order_number})"
         ),
     )
 

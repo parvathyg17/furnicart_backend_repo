@@ -2,6 +2,7 @@ from django.urls import path
 
 from orders.views.admin_order_views import (AdminOrderCancelView,
                                             AdminOrderDetailView,
+                                            AdminOrderFulfillmentBulkView,
                                             AdminOrderLineFulfillmentView,
                                             AdminOrderListView,
                                             AdminReturnDetailView,
@@ -23,6 +24,10 @@ urlpatterns = [
     path(
         "<str:order_number>/cancel/",
         AdminOrderCancelView.as_view(),
+    ),
+    path(
+        "<str:order_number>/fulfillment/",
+        AdminOrderFulfillmentBulkView.as_view(),
     ),
     path(
         "<str:order_number>/lines/<int:line_id>/fulfillment/",

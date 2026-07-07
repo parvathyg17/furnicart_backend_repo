@@ -262,6 +262,14 @@ class OrderLine(models.Model):
 
     quantity = models.PositiveIntegerField()
 
+    cancelled_quantity = models.PositiveIntegerField(
+        default=0,
+    )
+
+    returned_quantity = models.PositiveIntegerField(
+        default=0,
+    )
+
     tax_amount = models.DecimalField(
         max_digits=10,
         decimal_places=2,
@@ -333,6 +341,10 @@ class ReturnRequest(models.Model):
     )
 
     reason = models.TextField()
+
+    quantity = models.PositiveIntegerField(
+        default=1,
+    )
 
     admin_note = models.TextField(
         blank=True,

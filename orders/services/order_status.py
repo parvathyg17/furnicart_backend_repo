@@ -35,9 +35,7 @@ def _rollup_bucket(
 def compute_derived_order_status(
     order,
 ):
-    """
-    Pure function: inspect prefetched or queried ``order.lines``.
-    """
+    
 
     lines = list(
         order.lines.all(),

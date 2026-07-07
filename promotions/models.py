@@ -188,6 +188,12 @@ class Offer(models.Model):
         default="",
     )
 
+    image = models.ImageField(
+        upload_to="offers/banners/",
+        null=True,
+        blank=True,
+    )
+
     offer_type = models.CharField(
         max_length=16,
         choices=OfferType.choices,

@@ -4,6 +4,10 @@ from rest_framework.exceptions import ValidationError
 
 from catalog.models import ProductVariant
 from orders.models import Order, OrderLine, ReturnRequest
+from orders.services.order_services import (
+    deliverable_quantity,
+    validate_return_quantity,
+)
 from orders.services.order_status import persist_derived_order_status
 
 
@@ -41,6 +45,7 @@ def create_return_request_for_user(
     line_id,
     *,
     reason,
+    quantity=None,
 ):
 
     reason_clean = _normalize_return_reason(
@@ -77,16 +82,36 @@ def create_return_request_for_user(
 
     if ReturnRequest.objects.filter(
         order_line=line,
+        status__in=(
+            ReturnRequest.Status.PENDING,
+            ReturnRequest.Status.APPROVED,
+        ),
     ).exists():
 
         raise ValidationError(
-            "A return has already been requested for this item.",
+            "A return is already in progress for this item.",
+        )
+
+    try:
+
+        return_qty = validate_return_quantity(
+            line,
+            quantity,
+        )
+
+    except ValueError as exc:
+
+        raise ValidationError(
+            str(
+                exc,
+            ),
         )
 
     req = ReturnRequest.objects.create(
         order_line=line,
         user=user,
         reason=reason_clean,
+        quantity=return_qty,
         status=ReturnRequest.Status.PENDING,
     )
 
@@ -186,11 +211,36 @@ def admin_set_return_request_status(
 
         line = req.order_line
 
+        return_qty = int(
+            req.quantity,
+        )
+
+        if return_qty < 1:
+
+            raise ValidationError(
+                "Invalid return quantity.",
+            )
+
+        remaining = (
+            deliverable_quantity(
+                line,
+            )
+            - int(
+                line.returned_quantity,
+            )
+        )
+
+        if return_qty > remaining:
+
+            raise ValidationError(
+                "Return quantity exceeds the remaining deliverable units.",
+            )
+
         variant = ProductVariant.objects.select_for_update().get(
             pk=line.variant_id,
         )
 
-        variant.stock += line.quantity
+        variant.stock += return_qty
 
         variant.save(
             update_fields=[
@@ -199,12 +249,24 @@ def admin_set_return_request_status(
             ],
         )
 
-        line.fulfillment_status = OrderLine.FulfillmentStatus.RETURNED
+        line.returned_quantity += return_qty
+
+        update_line_fields = [
+            "returned_quantity",
+        ]
+
+        if line.returned_quantity >= deliverable_quantity(
+            line,
+        ):
+
+            line.fulfillment_status = OrderLine.FulfillmentStatus.RETURNED
+
+            update_line_fields.append(
+                "fulfillment_status",
+            )
 
         line.save(
-            update_fields=[
-                "fulfillment_status",
-            ],
+            update_fields=update_line_fields,
         )
 
         req.status = ReturnRequest.Status.COMPLETED
@@ -225,13 +287,20 @@ def admin_set_return_request_status(
             line.order_id,
         )
 
+        from orders.services.order_services import \
+            line_paid_amount_for_qty
         from orders.services.order_wallet_services import (
             credit_wallet_for_return_completion,
-            update_payment_status_after_return_completion)
+            update_payment_status_after_return_completion,
+        )
 
         credit_wallet_for_return_completion(
             req,
-            line.line_total,
+            line_paid_amount_for_qty(
+                line.order,
+                line,
+                return_qty,
+            ),
         )
 
         order = (
