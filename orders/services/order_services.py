@@ -176,7 +176,7 @@ def proportional_amount(
 def active_line_subtotal(
     line,
 ):
-    """Remaining merchandise value for non-cancelled units on a line."""
+    
 
     active_qty = int(
         line.quantity,

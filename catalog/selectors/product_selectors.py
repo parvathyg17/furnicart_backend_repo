@@ -153,7 +153,7 @@ def get_user_filtered_products(params):
             variants__is_active=True,
         )
     )
-    #     .annotate(
+    #.annotate(
     #     active_variant_count=Count(
     #         "variants",
     #         filter=Q(variants__is_active=True),

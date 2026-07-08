@@ -174,63 +174,63 @@ def _top_selling_categories(
     ]
 
 
-def _top_selling_brands(
-    queryset,
-    *,
-    limit=10,
-):
+# def _top_selling_brands(
+#     queryset,
+#     *,
+#     limit=10,
+# ):
 
-    rows = (
-        OrderLine.objects.filter(
-            order__in=queryset,
-            status=OrderLine.LineStatus.ACTIVE,
-            variant__product__brand__isnull=False,
-        )
-        .exclude(
-            variant__product__brand="",
-        )
-        .values(
-            "variant__product__brand",
-        )
-        .annotate(
-            quantity_sold=Coalesce(
-                Sum(
-                    "quantity",
-                ),
-                Value(
-                    0,
-                ),
-            ),
-            revenue=Coalesce(
-                Sum(
-                    "line_total",
-                ),
-                _zero_decimal_value(),
-            ),
-        )
-        .order_by(
-            "-revenue",
-        )[:limit]
-    )
+#     rows = (
+#         OrderLine.objects.filter(
+#             order__in=queryset,
+#             status=OrderLine.LineStatus.ACTIVE,
+#             variant__product__brand__isnull=False,
+#         )
+#         .exclude(
+#             variant__product__brand="",
+#         )
+#         .values(
+#             "variant__product__brand",
+#         )
+#         .annotate(
+#             quantity_sold=Coalesce(
+#                 Sum(
+#                     "quantity",
+#                 ),
+#                 Value(
+#                     0,
+#                 ),
+#             ),
+#             revenue=Coalesce(
+#                 Sum(
+#                     "line_total",
+#                 ),
+#                 _zero_decimal_value(),
+#             ),
+#         )
+#         .order_by(
+#             "-revenue",
+#         )[:limit]
+#     )
 
-    return [
-        {
-            "name": row["variant__product__brand"],
-            "quantity_sold": int(
-                row["quantity_sold"] or 0,
-            ),
-            "revenue": str(
-                Decimal(
-                    row["revenue"] or "0.00",
-                ).quantize(
-                    Decimal(
-                        "0.01",
-                    ),
-                ),
-            ),
-        }
-        for row in rows
-    ]
+#     return [
+#         {
+#             "name": row["variant__product__brand"],
+#             "quantity_sold": int(
+#                 row["quantity_sold"] or 0,
+#             ),
+#             "revenue": str(
+#                 Decimal(
+#                     row["revenue"] or "0.00",
+#                 ).quantize(
+#                     Decimal(
+#                         "0.01",
+#                     ),
+#                 ),
+#             ),
+#         }
+#         for row in rows
+#     ]
 
 
 def build_dashboard_analytics(
@@ -335,9 +335,6 @@ def build_dashboard_analytics(
             queryset,
         ),
         "top_categories": _top_selling_categories(
-            queryset,
-        ),
-        "top_brands": _top_selling_brands(
             queryset,
         ),
     }

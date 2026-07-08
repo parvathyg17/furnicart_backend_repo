@@ -71,42 +71,6 @@ class ProductVariantDetailView(APIView):
 
         return Response(serializer.data)
 
-    # def delete(self, request, variant_id):
-
-    #     variant = self.get_object(
-    #         variant_id
-    #     )
-
-    #     if not variant:
-
-    #         return Response(
-    #             {
-    #                 "error": "Variant not found"
-    #             },
-    #             status=status.HTTP_404_NOT_FOUND
-    #         )
-
-    #     success, message = delete_variant(
-    #         variant
-    #     )
-
-    #     if not success:
-
-    #         return Response(
-    #             {
-    #                 "error": message
-    #             },
-    #             status=status.HTTP_400_BAD_REQUEST
-    #         )
-
-    #     return Response(
-    #         {
-    #             "message": message
-    #         },
-    #         status=status.HTTP_200_OK
-    #     )
-
-
 class VariantImageDeleteView(APIView):
 
     permission_classes = [IsAuthenticated, IsAdminUserCustom]

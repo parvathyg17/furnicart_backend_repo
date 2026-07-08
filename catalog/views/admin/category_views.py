@@ -14,7 +14,7 @@ from core.utils.permissions import IsAdminUserCustom
 
 
 class AdminCategoryViewSet(viewsets.ModelViewSet):
-    """Admin CRUD for categories; soft-delete and restore are custom actions."""
+   
 
     serializer_class = CategorySerializer
     permission_classes = [IsAuthenticated, IsAdminUserCustom]
