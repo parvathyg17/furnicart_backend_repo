@@ -3,6 +3,7 @@ from django.urls import path
 from accounts.views.profile_views import (
     EmailChangeRequestView,
     EmailChangeVerifyView,
+    # UserOfferSavingsView,
     UserProfileView,
 )
 from accounts.views.wallet_views import (
@@ -16,4 +17,5 @@ urlpatterns = [
     path('email-change/verify/', EmailChangeVerifyView.as_view()),
     path('wallet/', WalletView.as_view()),
     path('wallet/transactions/', WalletTransactionListView.as_view()),
+    # path('offer-savings/', UserOfferSavingsView.as_view()),
 ]

@@ -153,15 +153,7 @@ def get_user_filtered_products(params):
             variants__is_active=True,
         )
     )
-    #.annotate(
-    #     active_variant_count=Count(
-    #         "variants",
-    #         filter=Q(variants__is_active=True),
-    #         distinct=True,
-    #     ),
-    # ).filter(
-    #     active_variant_count__gte=2,
-    # )
+   
 
     products = annotate_catalog_prices(
         products,
@@ -250,7 +242,7 @@ def get_user_filtered_products(params):
     elif sort == "price_high":
 
         products = products.order_by(
-            "-effective_price",
+            "-effective_max_price",
         )
 
     elif sort == "a_z":
