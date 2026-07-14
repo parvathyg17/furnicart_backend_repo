@@ -422,6 +422,7 @@ def _aggregate_breakdown(
     queryset,
     *,
     granularity,
+    return_deductions_by_bucket=None,
 ):
 
     if granularity == "month":
@@ -522,6 +523,18 @@ def _aggregate_breakdown(
             ),
         )
 
+        if return_deductions_by_bucket:
+            bucket_deductions = return_deductions_by_bucket.get(
+                bucket_date.isoformat(),
+                {},
+            )
+            if bucket_deductions:
+                row["subtotal_sum"] -= bucket_deductions.get("subtotal_sum", Decimal("0.00"))
+                row["coupon_discount_sum"] -= bucket_deductions.get("coupon_discount_sum", Decimal("0.00"))
+                row["tax_sum"] -= bucket_deductions.get("tax_sum", Decimal("0.00"))
+                row["grand_total_sum"] -= bucket_deductions.get("grand_total_sum", Decimal("0.00"))
+                row["offer_discount_sum"] -= bucket_deductions.get("offer_discount_sum", Decimal("0.00"))
+
         summary = _summary_from_aggregates(
             row,
         )
@@ -539,6 +552,102 @@ def _aggregate_breakdown(
         )
 
     return breakdown
+
+
+def _calculate_returns_deductions(
+    queryset,
+    granularity,
+):
+
+    from decimal import ROUND_HALF_UP, Decimal
+    from django.utils import timezone
+    from orders.services.refund_reporting import (
+        _gst_rate,
+        _order_original_subtotal,
+        _order_original_coupon,
+        CENTS,
+    )
+
+    orders_with_returns = queryset.filter(
+        lines__returned_quantity__gt=0,
+    ).prefetch_related(
+        "lines",
+    ).distinct()
+
+    total_deductions = {
+        "subtotal_sum": Decimal("0.00"),
+        "offer_discount_sum": Decimal("0.00"),
+        "coupon_discount_sum": Decimal("0.00"),
+        "tax_sum": Decimal("0.00"),
+        "grand_total_sum": Decimal("0.00"),
+    }
+
+    by_bucket = {}
+
+    gst = _gst_rate()
+
+    for order in orders_with_returns:
+        dt = timezone.localtime(order.placed_at).date()
+        if granularity == "month":
+            dt = dt.replace(day=1)
+
+        bucket_key = dt.isoformat()
+
+        if bucket_key not in by_bucket:
+            by_bucket[bucket_key] = {
+                "subtotal_sum": Decimal("0.00"),
+                "offer_discount_sum": Decimal("0.00"),
+                "coupon_discount_sum": Decimal("0.00"),
+                "tax_sum": Decimal("0.00"),
+                "grand_total_sum": Decimal("0.00"),
+            }
+
+        lines = list(order.lines.all())
+        original_subtotal = _order_original_subtotal(order, lines)
+        original_coupon = _order_original_coupon(order, original_subtotal)
+
+        allocated_coupon = Decimal("0.00")
+        count = len(lines)
+
+        for idx, ln in enumerate(lines):
+            line_total = Decimal(str(ln.line_total)).quantize(CENTS)
+
+            if original_subtotal > Decimal("0.00") and original_coupon > Decimal("0.00"):
+                if idx == count - 1:
+                    coupon_share = (original_coupon - allocated_coupon).quantize(CENTS)
+                else:
+                    coupon_share = (original_coupon * line_total / original_subtotal).quantize(CENTS)
+                    allocated_coupon += coupon_share
+            else:
+                coupon_share = Decimal("0.00")
+
+            tax_share = (line_total * gst).quantize(CENTS, rounding=ROUND_HALF_UP)
+
+            if ln.returned_quantity > 0:
+                ratio = Decimal(ln.returned_quantity) / Decimal(ln.quantity)
+
+                ret_subtotal = (line_total * ratio).quantize(CENTS)
+                ret_offer = (Decimal(str(ln.discount_amount)) * ratio).quantize(CENTS)
+                ret_coupon = (coupon_share * ratio).quantize(CENTS)
+                ret_tax = (tax_share * ratio).quantize(CENTS, rounding=ROUND_HALF_UP)
+
+                ret_grand = ret_subtotal + ret_tax - ret_coupon
+                if ret_grand < Decimal("0.00"):
+                    ret_grand = Decimal("0.00")
+
+                total_deductions["subtotal_sum"] += ret_subtotal
+                total_deductions["offer_discount_sum"] += ret_offer
+                total_deductions["coupon_discount_sum"] += ret_coupon
+                total_deductions["tax_sum"] += ret_tax
+                total_deductions["grand_total_sum"] += ret_grand
+
+                by_bucket[bucket_key]["subtotal_sum"] += ret_subtotal
+                by_bucket[bucket_key]["offer_discount_sum"] += ret_offer
+                by_bucket[bucket_key]["coupon_discount_sum"] += ret_coupon
+                by_bucket[bucket_key]["tax_sum"] += ret_tax
+                by_bucket[bucket_key]["grand_total_sum"] += ret_grand
+
+    return total_deductions, by_bucket
 
 
 def build_sales_report_payload(
@@ -604,21 +713,33 @@ def build_sales_report_payload(
         queryset,
     )
 
-    summary = _serialize_summary(
-        _summary_from_aggregates(
-            agg,
-        ),
-    )
-
     granularity = _breakdown_granularity(
         normalized_period,
         date_from,
         date_to,
     )
 
+    total_deductions, by_bucket = _calculate_returns_deductions(
+        queryset,
+        granularity,
+    )
+
+    agg["subtotal_sum"] -= total_deductions["subtotal_sum"]
+    agg["coupon_discount_sum"] -= total_deductions["coupon_discount_sum"]
+    agg["tax_sum"] -= total_deductions["tax_sum"]
+    agg["grand_total_sum"] -= total_deductions["grand_total_sum"]
+    agg["offer_discount_sum"] -= total_deductions["offer_discount_sum"]
+
+    summary = _serialize_summary(
+        _summary_from_aggregates(
+            agg,
+        ),
+    )
+
     breakdown = _aggregate_breakdown(
         queryset,
         granularity=granularity,
+        return_deductions_by_bucket=by_bucket,
     )
 
     return {
@@ -628,7 +749,9 @@ def build_sales_report_payload(
         "breakdown_granularity": granularity,
         "summary": summary,
         "breakdown": breakdown,
-        "orders_queryset": annotated.order_by(
+        "orders_queryset": annotated.prefetch_related(
+            "lines",
+        ).order_by(
             "-placed_at",
         ),
     }
@@ -638,18 +761,75 @@ def serialize_sales_report_order(
     order,
 ):
 
-    offer_discount = _quantize_money(
-        getattr(
-            order,
-            "offer_discount_total",
-            Decimal(
-                "0.00",
-            ),
+    from decimal import ROUND_HALF_UP, Decimal
+
+    from orders.services.refund_reporting import (
+        CENTS,
+        _gst_rate,
+        _order_original_coupon,
+        _order_original_subtotal,
+    )
+
+    subtotal = order.subtotal
+    tax_total = order.tax_total
+    discount_total = order.discount_total
+    offer_discount = getattr(
+        order,
+        "offer_discount_total",
+        Decimal(
+            "0.00",
         ),
+    )
+    grand_total = order.grand_total
+
+    has_returns = any(ln.returned_quantity > 0 for ln in order.lines.all())
+
+    if has_returns:
+        lines = list(order.lines.all())
+        original_subtotal = _order_original_subtotal(order, lines)
+        original_coupon = _order_original_coupon(order, original_subtotal)
+        allocated_coupon = Decimal("0.00")
+        count = len(lines)
+        gst = _gst_rate()
+
+        for idx, ln in enumerate(lines):
+            line_total = Decimal(str(ln.line_total)).quantize(CENTS)
+
+            if original_subtotal > Decimal("0.00") and original_coupon > Decimal("0.00"):
+                if idx == count - 1:
+                    coupon_share = (original_coupon - allocated_coupon).quantize(CENTS)
+                else:
+                    coupon_share = (original_coupon * line_total / original_subtotal).quantize(CENTS)
+                    allocated_coupon += coupon_share
+            else:
+                coupon_share = Decimal("0.00")
+
+            tax_share = (line_total * gst).quantize(CENTS, rounding=ROUND_HALF_UP)
+
+            if ln.returned_quantity > 0:
+                ratio = Decimal(ln.returned_quantity) / Decimal(ln.quantity)
+
+                ret_subtotal = (line_total * ratio).quantize(CENTS)
+                ret_offer = (Decimal(str(ln.discount_amount)) * ratio).quantize(CENTS)
+                ret_coupon = (coupon_share * ratio).quantize(CENTS)
+                ret_tax = (tax_share * ratio).quantize(CENTS, rounding=ROUND_HALF_UP)
+
+                ret_grand = ret_subtotal + ret_tax - ret_coupon
+                if ret_grand < Decimal("0.00"):
+                    ret_grand = Decimal("0.00")
+
+                subtotal -= ret_subtotal
+                offer_discount -= ret_offer
+                discount_total -= ret_coupon
+                tax_total -= ret_tax
+                grand_total -= ret_grand
+
+    offer_discount = _quantize_money(
+        offer_discount,
     )
 
     subtotal = _quantize_money(
-        order.subtotal,
+        subtotal,
     )
 
     return {
@@ -673,17 +853,17 @@ def serialize_sales_report_order(
         ),
         "coupon_discount_total": str(
             _quantize_money(
-                order.discount_total,
+                discount_total,
             ),
         ),
         "total_discount": str(
             _quantize_money(
-                offer_discount + order.discount_total,
+                offer_discount + discount_total,
             ),
         ),
         "tax_total": str(
             _quantize_money(
-                order.tax_total,
+                tax_total,
             ),
         ),
         "shipping_total": str(
@@ -693,7 +873,7 @@ def serialize_sales_report_order(
         ),
         "grand_total": str(
             _quantize_money(
-                order.grand_total,
+                grand_total,
             ),
         ),
         "coupon_code": order.coupon_code or "",

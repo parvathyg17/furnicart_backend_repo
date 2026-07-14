@@ -288,12 +288,6 @@ def build_dashboard_analytics(
         queryset,
     )
 
-    sales_summary = _serialize_summary(
-        _summary_from_aggregates(
-            agg,
-        ),
-    )
-
     granularity = _breakdown_granularity(
         "yearly" if normalized_period == "yearly" else "weekly",
         date_from,
@@ -304,9 +298,29 @@ def build_dashboard_analytics(
 
         granularity = "day"
 
+    from orders.services.sales_report_services import _calculate_returns_deductions
+
+    total_deductions, by_bucket = _calculate_returns_deductions(
+        queryset,
+        granularity,
+    )
+
+    agg["subtotal_sum"] -= total_deductions["subtotal_sum"]
+    agg["coupon_discount_sum"] -= total_deductions["coupon_discount_sum"]
+    agg["tax_sum"] -= total_deductions["tax_sum"]
+    agg["grand_total_sum"] -= total_deductions["grand_total_sum"]
+    agg["offer_discount_sum"] -= total_deductions["offer_discount_sum"]
+
+    sales_summary = _serialize_summary(
+        _summary_from_aggregates(
+            agg,
+        ),
+    )
+
     breakdown = _aggregate_breakdown(
         queryset,
         granularity=granularity,
+        return_deductions_by_bucket=by_bucket,
     )
 
     total_users = User.objects.count()
