@@ -16,32 +16,6 @@ from accounts.services.profile_services import (
     verify_email_change,
 )
 
-# class UserOfferSavingsView(APIView):
-#     permission_classes = [IsAuthenticated]
-#     def get(self, request):
-#         from orders.models import Order, OrderLine
-#         from django.db.models import Sum
-        
-#         offer_savings = OrderLine.objects.filter(
-#             order__user=request.user
-#         ).exclude(
-#             order__status__in=[Order.Status.CANCELLED, Order.Status.PARTIALLY_CANCELLED]
-#         ).exclude(
-#             status=OrderLine.LineStatus.CANCELLED
-#         ).aggregate(total=Sum('discount_amount'))['total'] or 0.00
-        
-#         coupon_savings = Order.objects.filter(f
-#             user=request.user
-#         ).exclude(
-#             status__in=[Order.Status.CANCELLED, Order.Status.PARTIALLY_CANCELLED]
-#         ).aggregate(total=Sum('discount_total'))['total'] or 0.00
-        
-#         return Response({
-#             "offer_savings": offer_savings,
-#             "coupon_savings": coupon_savings,
-#             "total_savings": offer_savings + coupon_savings
-#         })
-
 
 
 class UserProfileView(APIView):
