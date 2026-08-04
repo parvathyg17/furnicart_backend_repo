@@ -7,15 +7,10 @@ from rest_framework.views import APIView
 from accounts.models.otp import OTP
 from accounts.models.profile import UserProfile
 from accounts.serializers.profile_serializers import (
-    EmailChangeRequestSerializer,
-    EmailChangeVerifySerializer,
-    UserProfileSerializer,
-)
-from accounts.services.profile_services import (
-    send_email_change_otp,
-    verify_email_change,
-)
-
+    EmailChangeRequestSerializer, EmailChangeVerifySerializer,
+    UserProfileSerializer)
+from accounts.services.profile_services import (send_email_change_otp,
+                                                verify_email_change)
 
 
 class UserProfileView(APIView):

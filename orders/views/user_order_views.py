@@ -1,7 +1,8 @@
 from django.db.models import Count, Prefetch, Q
 from django.http import HttpResponse
 from rest_framework import status
-from rest_framework.exceptions import NotFound, PermissionDenied, ValidationError
+from rest_framework.exceptions import (NotFound, PermissionDenied,
+                                       ValidationError)
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
 from rest_framework.views import APIView
@@ -13,7 +14,7 @@ from orders.serializers import (OrderCancelRequestSerializer,
                                 OrderListSerializer, PurchaseLineSerializer,
                                 ReturnCreateSerializer)
 from orders.services.invoice_pdf import (build_order_invoice_pdf,
-                                        order_invoice_download_allowed)
+                                         order_invoice_download_allowed)
 from orders.services.order_services import (cancel_entire_order_for_user,
                                             cancel_order_line_for_user,
                                             create_order_from_cart,
@@ -334,8 +335,7 @@ class OrderInvoicePdfView(APIView):
 
             raise PermissionDenied(
                 detail=(
-                    "Invoice is not available for cancelled or returned "
-                    "orders."
+                    "Invoice is not available for cancelled or returned " "orders."
                 ),
             )
 

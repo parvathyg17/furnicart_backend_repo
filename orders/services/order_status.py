@@ -35,7 +35,6 @@ def _rollup_bucket(
 def compute_derived_order_status(
     order,
 ):
-    
 
     lines = list(
         order.lines.all(),

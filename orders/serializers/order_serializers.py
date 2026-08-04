@@ -85,8 +85,7 @@ class OrderLineQuantityMixin(
         obj,
     ):
 
-        from orders.services.order_services import \
-            cancellable_quantity
+        from orders.services.order_services import cancellable_quantity
 
         return cancellable_quantity(
             obj,
@@ -97,8 +96,7 @@ class OrderLineQuantityMixin(
         obj,
     ):
 
-        from orders.services.order_services import \
-            returnable_quantity
+        from orders.services.order_services import returnable_quantity
 
         return returnable_quantity(
             obj,
@@ -466,6 +464,10 @@ class OrderDetailSerializer(
 
         data["refund_transactions"] = report["refund_transactions"]
 
+        from orders.services.refund_reporting import _gst_rate
+
+        data["gst_rate"] = str(_gst_rate())
+
         return data
 
 
@@ -813,6 +815,10 @@ class AdminOrderDetailSerializer(
         data["return_refund_total"] = report["return_refund_total"]
 
         data["refund_transactions"] = report["refund_transactions"]
+
+        from orders.services.refund_reporting import _gst_rate
+
+        data["gst_rate"] = str(_gst_rate())
 
         return data
 

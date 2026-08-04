@@ -15,10 +15,10 @@ Including another URLconf
     2. Add a URL to urlpatterns:  path('blog/', include('blog.urls'))
 """
 
-from django.contrib import admin
-from django.urls import include, path
 from django.conf import settings
 from django.conf.urls.static import static
+from django.contrib import admin
+from django.urls import include, path
 
 from orders.views.admin_dashboard_views import AdminLedgerExportView
 from orders.views.admin_sales_report_views import AdminSalesReportExportView
@@ -45,102 +45,43 @@ urlpatterns = [
             "orders.admin_report_urls",
         ),
     ),
-    path('api/admin/', include('adminpanel.urls')),
-    path('api/users/', include('accounts.urls.auth_urls')),
-    path('api/profile/', include('accounts.urls.profile_urls')),
-    path('api/address/', include('accounts.urls.address_urls')),
-    path(
-        "api/admin/categories/",
-        include(
-            "catalog.urls.category_urls"
-        )
-    ),
-
-    
-
-    path(
-        "api/admin/products/",
-        include(
-            "catalog.urls.product_urls"
-        )
-    ),
-
-    path(
-        "api/",
-        include(
-            "catalog.urls.user.user_urls"
-        )
-    ),
-
-    path(
-        "api/admin/product-images/",
-        include(
-            "catalog.urls.image_urls"
-        )
-    ),
-    path(
-        "api/admin/products/",
-        include(
-            "catalog.urls.variant_urls"
-        )
-    ),
-
-    path(
-        "api/admin/room-types/",
-        include(
-            "catalog.urls.room_type_urls"
-        )
-    ),
-
+    path("api/admin/", include("adminpanel.urls")),
+    path("api/users/", include("accounts.urls.auth_urls")),
+    path("api/profile/", include("accounts.urls.profile_urls")),
+    path("api/address/", include("accounts.urls.address_urls")),
+    path("api/admin/categories/", include("catalog.urls.category_urls")),
+    path("api/admin/products/", include("catalog.urls.product_urls")),
+    path("api/", include("catalog.urls.user.user_urls")),
+    path("api/admin/product-images/", include("catalog.urls.image_urls")),
+    path("api/admin/products/", include("catalog.urls.variant_urls")),
+    path("api/admin/room-types/", include("catalog.urls.room_type_urls")),
     path(
         "api/admin/inventory/",
         include(
             "catalog.urls.inventory_urls",
         ),
     ),
-
     path(
         "api/admin/reviews/",
         include(
             "catalog.urls.review_urls",
         ),
     ),
-
-    path(
-        "api/cart/",
-        include(
-            "cart.urls"
-        )
-    ),
-
-    path(
-        "api/wishlist/",
-        include(
-            "wishlist.urls"
-        )
-    ),
-
-    path(
-        "api/orders/",
-        include(
-            "orders.urls"
-        )
-    ),
-
+    path("api/cart/", include("cart.urls")),
+    path("api/wishlist/", include("wishlist.urls")),
+    path("api/orders/", include("orders.urls")),
     path(
         "api/admin/coupons/",
         include(
             "promotions.admin_coupon_urls",
         ),
     ),
-
     path(
         "api/admin/offers/",
         include(
             "promotions.admin_offer_urls",
         ),
     ),
-
     path(
         "api/promotions/",
         include(
@@ -153,10 +94,8 @@ urlpatterns = [
             "promotions.public_offer_urls",
         ),
     ),
-
-    path('api/contact/', include('accounts.urls.contact_urls')),
-    path('api/admin/contact/', include('accounts.urls.admin_contact_urls')),
-
+    path("api/contact/", include("accounts.urls.contact_urls")),
+    path("api/admin/contact/", include("accounts.urls.admin_contact_urls")),
     path(
         "api/admin/",
         include(

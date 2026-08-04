@@ -52,7 +52,6 @@ class SignupSerializer(serializers.ModelSerializer):
         value,
     ):
 
-        
         username = " ".join(value.strip().split())
 
         if len(username) < 3:
@@ -63,7 +62,6 @@ class SignupSerializer(serializers.ModelSerializer):
 
             raise serializers.ValidationError("Username cannot exceed 20 characters")
 
-       
         if not re.match(
             r"^[A-Za-z0-9 ]+$",
             username,
@@ -73,7 +71,6 @@ class SignupSerializer(serializers.ModelSerializer):
                 "Username can contain only letters, numbers and spaces"
             )
 
-        
         if username.replace(" ", "").isdigit():
 
             raise serializers.ValidationError("Username cannot contain only numbers")

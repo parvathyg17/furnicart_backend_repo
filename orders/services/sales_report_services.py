@@ -529,11 +529,19 @@ def _aggregate_breakdown(
                 {},
             )
             if bucket_deductions:
-                row["subtotal_sum"] -= bucket_deductions.get("subtotal_sum", Decimal("0.00"))
-                row["coupon_discount_sum"] -= bucket_deductions.get("coupon_discount_sum", Decimal("0.00"))
+                row["subtotal_sum"] -= bucket_deductions.get(
+                    "subtotal_sum", Decimal("0.00")
+                )
+                row["coupon_discount_sum"] -= bucket_deductions.get(
+                    "coupon_discount_sum", Decimal("0.00")
+                )
                 row["tax_sum"] -= bucket_deductions.get("tax_sum", Decimal("0.00"))
-                row["grand_total_sum"] -= bucket_deductions.get("grand_total_sum", Decimal("0.00"))
-                row["offer_discount_sum"] -= bucket_deductions.get("offer_discount_sum", Decimal("0.00"))
+                row["grand_total_sum"] -= bucket_deductions.get(
+                    "grand_total_sum", Decimal("0.00")
+                )
+                row["offer_discount_sum"] -= bucket_deductions.get(
+                    "offer_discount_sum", Decimal("0.00")
+                )
 
         summary = _summary_from_aggregates(
             row,
@@ -560,19 +568,22 @@ def _calculate_returns_deductions(
 ):
 
     from decimal import ROUND_HALF_UP, Decimal
-    from django.utils import timezone
-    from orders.services.refund_reporting import (
-        _gst_rate,
-        _order_original_subtotal,
-        _order_original_coupon,
-        CENTS,
-    )
 
-    orders_with_returns = queryset.filter(
-        lines__returned_quantity__gt=0,
-    ).prefetch_related(
-        "lines",
-    ).distinct()
+    from django.utils import timezone
+
+    from orders.services.refund_reporting import (CENTS, _gst_rate,
+                                                  _order_original_coupon,
+                                                  _order_original_subtotal)
+
+    orders_with_returns = (
+        queryset.filter(
+            lines__returned_quantity__gt=0,
+        )
+        .prefetch_related(
+            "lines",
+        )
+        .distinct()
+    )
 
     total_deductions = {
         "subtotal_sum": Decimal("0.00"),
@@ -612,11 +623,15 @@ def _calculate_returns_deductions(
         for idx, ln in enumerate(lines):
             line_total = Decimal(str(ln.line_total)).quantize(CENTS)
 
-            if original_subtotal > Decimal("0.00") and original_coupon > Decimal("0.00"):
+            if original_subtotal > Decimal("0.00") and original_coupon > Decimal(
+                "0.00"
+            ):
                 if idx == count - 1:
                     coupon_share = (original_coupon - allocated_coupon).quantize(CENTS)
                 else:
-                    coupon_share = (original_coupon * line_total / original_subtotal).quantize(CENTS)
+                    coupon_share = (
+                        original_coupon * line_total / original_subtotal
+                    ).quantize(CENTS)
                     allocated_coupon += coupon_share
             else:
                 coupon_share = Decimal("0.00")
@@ -763,12 +778,9 @@ def serialize_sales_report_order(
 
     from decimal import ROUND_HALF_UP, Decimal
 
-    from orders.services.refund_reporting import (
-        CENTS,
-        _gst_rate,
-        _order_original_coupon,
-        _order_original_subtotal,
-    )
+    from orders.services.refund_reporting import (CENTS, _gst_rate,
+                                                  _order_original_coupon,
+                                                  _order_original_subtotal)
 
     subtotal = order.subtotal
     tax_total = order.tax_total
@@ -795,11 +807,15 @@ def serialize_sales_report_order(
         for idx, ln in enumerate(lines):
             line_total = Decimal(str(ln.line_total)).quantize(CENTS)
 
-            if original_subtotal > Decimal("0.00") and original_coupon > Decimal("0.00"):
+            if original_subtotal > Decimal("0.00") and original_coupon > Decimal(
+                "0.00"
+            ):
                 if idx == count - 1:
                     coupon_share = (original_coupon - allocated_coupon).quantize(CENTS)
                 else:
-                    coupon_share = (original_coupon * line_total / original_subtotal).quantize(CENTS)
+                    coupon_share = (
+                        original_coupon * line_total / original_subtotal
+                    ).quantize(CENTS)
                     allocated_coupon += coupon_share
             else:
                 coupon_share = Decimal("0.00")

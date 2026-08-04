@@ -15,9 +15,7 @@ from orders.serializers import (AdminFulfillmentUpdateSerializer,
                                 AdminReturnStatusSerializer,
                                 OrderCancelRequestSerializer)
 from orders.services.admin_order_services import (
-    admin_set_order_fulfillment_bulk,
-    admin_set_order_line_fulfillment,
-)
+    admin_set_order_fulfillment_bulk, admin_set_order_line_fulfillment)
 from orders.services.order_services import cancel_entire_order_for_admin
 from orders.services.return_services import admin_set_return_request_status
 

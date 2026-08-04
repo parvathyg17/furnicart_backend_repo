@@ -75,10 +75,7 @@ def admin_set_order_fulfillment_bulk(
     fulfillment_status,
 ):
 
-    valid = {
-        c
-        for c, _ in OrderLine.FulfillmentStatus.choices
-    }
+    valid = {c for c, _ in OrderLine.FulfillmentStatus.choices}
 
     if fulfillment_status not in valid:
 
@@ -113,10 +110,8 @@ def admin_set_order_fulfillment_bulk(
             continue
 
         if (
-            line.fulfillment_status
-            == OrderLine.FulfillmentStatus.DELIVERED
-            and fulfillment_status
-            != OrderLine.FulfillmentStatus.DELIVERED
+            line.fulfillment_status == OrderLine.FulfillmentStatus.DELIVERED
+            and fulfillment_status != OrderLine.FulfillmentStatus.DELIVERED
         ):
 
             continue

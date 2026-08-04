@@ -9,23 +9,19 @@ from rest_framework_simplejwt.tokens import RefreshToken
 
 from accounts.models.profile import UserProfile
 from accounts.models.users import User
-from accounts.serializers.auth_serializers import (
-    ChangePasswordSerializer,
-    ForgotPasswordSerializer,
-    LoginSerializer,
-    OTPVerifySerializer,
-    ResendOTPSerializer,
-    ResetPasswordSerializer,
-    SignupSerializer,
-)
-from accounts.services.auth_services import (
-    create_and_send_otp,
-    forgot_password_service,
-    resend_otp_service,
-    reset_password_service,
-    user_login_service,
-    verify_otp_service,
-)
+from accounts.serializers.auth_serializers import (ChangePasswordSerializer,
+                                                   ForgotPasswordSerializer,
+                                                   LoginSerializer,
+                                                   OTPVerifySerializer,
+                                                   ResendOTPSerializer,
+                                                   ResetPasswordSerializer,
+                                                   SignupSerializer)
+from accounts.services.auth_services import (create_and_send_otp,
+                                             forgot_password_service,
+                                             resend_otp_service,
+                                             reset_password_service,
+                                             user_login_service,
+                                             verify_otp_service)
 from core.utils.jwt import get_tokens_for_user
 
 
@@ -161,9 +157,8 @@ class VerifyOTPView(APIView):
             )
 
         if purpose == "signup":
-            from promotions.services.referral_services import (
-                try_attach_referral_on_signup,
-            )
+            from promotions.services.referral_services import \
+                try_attach_referral_on_signup
 
             try_attach_referral_on_signup(
                 user,
@@ -291,9 +286,8 @@ class GoogleLoginView(APIView):
         )
 
         if created:
-            from promotions.services.referral_services import (
-                try_attach_referral_on_signup,
-            )
+            from promotions.services.referral_services import \
+                try_attach_referral_on_signup
 
             try_attach_referral_on_signup(
                 user,

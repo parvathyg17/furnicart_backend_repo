@@ -34,7 +34,6 @@ def _q(
 def active_quantity(
     line,
 ):
-    
 
     return max(
         0,
@@ -53,7 +52,6 @@ def active_quantity(
 def cancellable_quantity(
     line,
 ):
-    
 
     return max(
         0,
@@ -69,7 +67,6 @@ def cancellable_quantity(
 def deliverable_quantity(
     line,
 ):
-    
 
     return max(
         0,
@@ -109,21 +106,20 @@ def _in_flight_return_quantity(
 def returnable_quantity(
     line,
 ):
-    
 
-    if _in_flight_return_quantity(
-        line,
-    ) > 0:
+    if (
+        _in_flight_return_quantity(
+            line,
+        )
+        > 0
+    ):
 
         return 0
 
-    remaining = (
-        deliverable_quantity(
-            line,
-        )
-        - int(
-            line.returned_quantity,
-        )
+    remaining = deliverable_quantity(
+        line,
+    ) - int(
+        line.returned_quantity,
     )
 
     return max(
@@ -137,7 +133,6 @@ def proportional_amount(
     qty,
     line_quantity,
 ):
-    
 
     total = _q(
         total,
@@ -151,10 +146,7 @@ def proportional_amount(
         qty,
     )
 
-    if (
-        qty <= 0
-        or line_quantity <= 0
-    ):
+    if qty <= 0 or line_quantity <= 0:
 
         return Decimal(
             "0.00",
@@ -165,9 +157,11 @@ def proportional_amount(
         return total
 
     return _q(
-        total * Decimal(
+        total
+        * Decimal(
             qty,
-        ) / Decimal(
+        )
+        / Decimal(
             line_quantity,
         ),
     )
@@ -176,7 +170,6 @@ def proportional_amount(
 def active_line_subtotal(
     line,
 ):
-    
 
     active_qty = int(
         line.quantity,
@@ -773,9 +766,7 @@ def _recalculate_order_financials_from_active_lines(
 ):
 
     from orders.services.refund_reporting import (
-        _gst_rate,
-        proportional_coupon_for_subtotal,
-    )
+        _gst_rate, proportional_coupon_for_subtotal)
 
     all_lines = list(
         order.lines.all(),
@@ -788,7 +779,6 @@ def _recalculate_order_financials_from_active_lines(
     for ln in all_lines:
 
         if ln.status == OrderLine.LineStatus.ACTIVE:
-
 
             active_subtotal += active_line_subtotal(
                 ln,
@@ -813,7 +803,6 @@ def _recalculate_order_financials_from_active_lines(
         rounding=ROUND_HALF_UP,
     )
 
-    
     discount_total = proportional_coupon_for_subtotal(
         order,
         active_subtotal,
@@ -826,7 +815,6 @@ def _recalculate_order_financials_from_active_lines(
 
     order.discount_total = discount_total
 
-    
     shipping_total = order.shipping_total.quantize(
         Decimal(
             "0.01",
@@ -834,10 +822,7 @@ def _recalculate_order_financials_from_active_lines(
     )
 
     order.grand_total = (
-        active_subtotal
-        + tax_total
-        + shipping_total
-        - discount_total
+        active_subtotal + tax_total + shipping_total - discount_total
     ).quantize(
         Decimal(
             "0.01",
@@ -1019,7 +1004,6 @@ def cancel_order_line_for_user(
             "entered fulfillment.",
         )
 
-
     try:
 
         cancel_qty = validate_cancel_quantity(
@@ -1035,9 +1019,12 @@ def cancel_order_line_for_user(
             ),
         )
 
-    if cancellable_quantity(
-        line,
-    ) <= 0:
+    if (
+        cancellable_quantity(
+            line,
+        )
+        <= 0
+    ):
 
         raise ValidationError(
             "This line has no units left to cancel.",
@@ -1158,7 +1145,6 @@ def cancel_entire_order_for_admin(
     *,
     reason=None,
 ):
-    
 
     reason_clean = _normalize_cancel_reason(
         reason,

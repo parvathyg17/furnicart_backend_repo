@@ -1,6 +1,5 @@
 from django.urls import path
 
-
 from promotions.views.admin_offer_views import (AdminOfferDetailView,
                                                 AdminOfferListCreateView)
 
@@ -13,5 +12,4 @@ urlpatterns = [
         "<int:offer_id>/",
         AdminOfferDetailView.as_view(),
     ),
-    
 ]

@@ -298,7 +298,8 @@ def build_dashboard_analytics(
 
         granularity = "day"
 
-    from orders.services.sales_report_services import _calculate_returns_deductions
+    from orders.services.sales_report_services import \
+        _calculate_returns_deductions
 
     total_deductions, by_bucket = _calculate_returns_deductions(
         queryset,

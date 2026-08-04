@@ -4,10 +4,8 @@ from rest_framework.exceptions import ValidationError
 
 from catalog.models import ProductVariant
 from orders.models import Order, OrderLine, ReturnRequest
-from orders.services.order_services import (
-    deliverable_quantity,
-    validate_return_quantity,
-)
+from orders.services.order_services import (deliverable_quantity,
+                                            validate_return_quantity)
 from orders.services.order_status import persist_derived_order_status
 
 
@@ -221,13 +219,10 @@ def admin_set_return_request_status(
                 "Invalid return quantity.",
             )
 
-        remaining = (
-            deliverable_quantity(
-                line,
-            )
-            - int(
-                line.returned_quantity,
-            )
+        remaining = deliverable_quantity(
+            line,
+        ) - int(
+            line.returned_quantity,
         )
 
         if return_qty > remaining:
@@ -287,12 +282,10 @@ def admin_set_return_request_status(
             line.order_id,
         )
 
-        from orders.services.order_services import \
-            line_paid_amount_for_qty
+        from orders.services.order_services import line_paid_amount_for_qty
         from orders.services.order_wallet_services import (
             credit_wallet_for_return_completion,
-            update_payment_status_after_return_completion,
-        )
+            update_payment_status_after_return_completion)
 
         credit_wallet_for_return_completion(
             req,

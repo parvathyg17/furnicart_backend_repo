@@ -92,6 +92,7 @@ class UserListView(APIView):
     def get(self, request):
 
         search = request.GET.get("search", "")
+        ordering = request.GET.get("ordering", "-date_joined")
 
         try:
             page = int(request.GET.get("page", 1))
@@ -99,9 +100,22 @@ class UserListView(APIView):
         except ValueError:
             page = 1
 
+        valid_orderings = [
+            "date_joined",
+            "-date_joined",
+            "username",
+            "-username",
+            "email",
+            "-email",
+            "id",
+            "-id",
+        ]
+        if ordering not in valid_orderings:
+            ordering = "-date_joined"
+
         users = User.objects.only(
             "id", "email", "username", "is_active", "is_verified", "date_joined"
-        ).order_by("-date_joined")
+        ).order_by(ordering)
 
         # SEARCH
         if search:
@@ -110,7 +124,7 @@ class UserListView(APIView):
                 Q(email__icontains=search) | Q(username__icontains=search)
             )
 
-        paginator = Paginator(users, 10)
+        paginator = Paginator(users, 6)
 
         page_obj = paginator.get_page(page)
 

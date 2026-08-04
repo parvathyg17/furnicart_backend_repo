@@ -1,11 +1,12 @@
-from django.db.models import Count, Max, Min, Prefetch, Q, F, Case, When, Value, DecimalField, OuterRef, Subquery
+from django.db.models import (Case, Count, DecimalField, F, Max, Min, OuterRef,
+                              Prefetch, Q, Subquery, Value, When)
 from django.db.models.functions import Coalesce, Least
 from django.utils import timezone
-from promotions.models import Offer
 
 from catalog.models import Category, Product, ProductVariant
 from catalog.selectors.category_selectors import get_all_child_categories
 from catalog.selectors.review_selectors import annotate_product_ratings
+from promotions.models import Offer
 
 LISTABLE_VARIANT_FILTER = Q(
     variants__is_active=True,
@@ -22,7 +23,9 @@ def annotate_catalog_prices(
             product=OuterRef("id"),
             is_active=True,
             stock__gt=0,
-        ).order_by("price").values("price")[:1]
+        )
+        .order_by("price")
+        .values("price")[:1]
     )
 
     in_stock_max = Subquery(
@@ -30,21 +33,27 @@ def annotate_catalog_prices(
             product=OuterRef("id"),
             is_active=True,
             stock__gt=0,
-        ).order_by("-price").values("price")[:1]
+        )
+        .order_by("-price")
+        .values("price")[:1]
     )
 
     active_min = Subquery(
         ProductVariant.objects.filter(
             product=OuterRef("id"),
             is_active=True,
-        ).order_by("price").values("price")[:1]
+        )
+        .order_by("price")
+        .values("price")[:1]
     )
 
     active_max = Subquery(
         ProductVariant.objects.filter(
             product=OuterRef("id"),
             is_active=True,
-        ).order_by("-price").values("price")[:1]
+        )
+        .order_by("-price")
+        .values("price")[:1]
     )
 
     return queryset.annotate(
@@ -62,61 +71,74 @@ def annotate_catalog_prices(
 def annotate_effective_prices(queryset):
     now = timezone.now()
 
-    applicable_offers = Offer.objects.filter(
-        is_active=True,
-    ).filter(
-        Q(valid_from__lte=now) | Q(valid_from__isnull=True)
-    ).filter(
-        Q(valid_until__gte=now) | Q(valid_until__isnull=True)
-    ).filter(
-        Q(offer_type=Offer.OfferType.PRODUCT, product_id=OuterRef("id")) |
-        Q(offer_type=Offer.OfferType.CATEGORY, category_id=OuterRef("category_id"))
+    applicable_offers = (
+        Offer.objects.filter(
+            is_active=True,
+        )
+        .filter(Q(valid_from__lte=now) | Q(valid_from__isnull=True))
+        .filter(Q(valid_until__gte=now) | Q(valid_until__isnull=True))
+        .filter(
+            Q(offer_type=Offer.OfferType.PRODUCT, product_id=OuterRef("id"))
+            | Q(
+                offer_type=Offer.OfferType.CATEGORY, category_id=OuterRef("category_id")
+            )
+        )
     )
 
     discount_amount = Case(
         When(
             discount_type=Offer.DiscountType.PERCENT,
             then=Least(
-                (OuterRef("catalog_min_price") * F("discount_value")) / Value(100.0, output_field=DecimalField()),
-                Coalesce(F("max_discount_amount"), OuterRef("catalog_min_price"))
-            )
+                (OuterRef("catalog_min_price") * F("discount_value"))
+                / Value(100.0, output_field=DecimalField()),
+                Coalesce(F("max_discount_amount"), OuterRef("catalog_min_price")),
+            ),
         ),
         When(
             discount_type=Offer.DiscountType.FIXED,
-            then=Least(F("discount_value"), OuterRef("catalog_min_price"))
+            then=Least(F("discount_value"), OuterRef("catalog_min_price")),
         ),
-        output_field=DecimalField()
+        output_field=DecimalField(),
     )
 
-    best_discount_subquery = applicable_offers.annotate(
-        calculated_discount=discount_amount
-    ).order_by("-calculated_discount").values("calculated_discount")[:1]
+    best_discount_subquery = (
+        applicable_offers.annotate(calculated_discount=discount_amount)
+        .order_by("-calculated_discount")
+        .values("calculated_discount")[:1]
+    )
 
     discount_amount_max = Case(
         When(
             discount_type=Offer.DiscountType.PERCENT,
             then=Least(
-                (OuterRef("catalog_max_price") * F("discount_value")) / Value(100.0, output_field=DecimalField()),
-                Coalesce(F("max_discount_amount"), OuterRef("catalog_max_price"))
-            )
+                (OuterRef("catalog_max_price") * F("discount_value"))
+                / Value(100.0, output_field=DecimalField()),
+                Coalesce(F("max_discount_amount"), OuterRef("catalog_max_price")),
+            ),
         ),
         When(
             discount_type=Offer.DiscountType.FIXED,
-            then=Least(F("discount_value"), OuterRef("catalog_max_price"))
+            then=Least(F("discount_value"), OuterRef("catalog_max_price")),
         ),
-        output_field=DecimalField()
+        output_field=DecimalField(),
     )
 
-    best_discount_max_subquery = applicable_offers.annotate(
-        calculated_discount=discount_amount_max
-    ).order_by("-calculated_discount").values("calculated_discount")[:1]
+    best_discount_max_subquery = (
+        applicable_offers.annotate(calculated_discount=discount_amount_max)
+        .order_by("-calculated_discount")
+        .values("calculated_discount")[:1]
+    )
 
     return queryset.annotate(
-        best_discount=Coalesce(Subquery(best_discount_subquery), Value(0, output_field=DecimalField())),
-        best_discount_max=Coalesce(Subquery(best_discount_max_subquery), Value(0, output_field=DecimalField()))
+        best_discount=Coalesce(
+            Subquery(best_discount_subquery), Value(0, output_field=DecimalField())
+        ),
+        best_discount_max=Coalesce(
+            Subquery(best_discount_max_subquery), Value(0, output_field=DecimalField())
+        ),
     ).annotate(
         effective_price=F("catalog_min_price") - F("best_discount"),
-        effective_max_price=F("catalog_max_price") - F("best_discount_max")
+        effective_max_price=F("catalog_max_price") - F("best_discount_max"),
     )
 
 
@@ -153,7 +175,6 @@ def get_user_filtered_products(params):
             variants__is_active=True,
         )
     )
-   
 
     products = annotate_catalog_prices(
         products,

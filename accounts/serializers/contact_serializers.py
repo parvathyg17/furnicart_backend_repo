@@ -1,5 +1,7 @@
 from rest_framework import serializers
+
 from accounts.models.contact import ContactMessage
+
 
 class ContactMessageSerializer(serializers.ModelSerializer):
     class Meta:

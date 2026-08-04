@@ -14,7 +14,6 @@ from core.utils.permissions import IsAdminUserCustom
 
 
 class AdminCategoryViewSet(viewsets.ModelViewSet):
-   
 
     serializer_class = CategorySerializer
     permission_classes = [IsAuthenticated, IsAdminUserCustom]

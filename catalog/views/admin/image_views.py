@@ -5,7 +5,8 @@ from rest_framework.response import Response
 from rest_framework.views import APIView
 
 from catalog.models import ProductVariant
-from catalog.serializers.variant_image_serializers import VariantImageUploadSerializer
+from catalog.serializers.variant_image_serializers import \
+    VariantImageUploadSerializer
 from core.utils.permissions import IsAdminUserCustom
 
 

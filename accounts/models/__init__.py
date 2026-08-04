@@ -1,6 +1,6 @@
-from .users import User
+from .address import Address
+from .contact import ContactMessage
 from .otp import OTP
 from .profile import UserProfile
-from .address import Address
+from .users import User
 from .wallet import Wallet, WalletTransaction
-from .contact import ContactMessage

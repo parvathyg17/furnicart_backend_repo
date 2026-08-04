@@ -1,6 +1,5 @@
 from django.contrib import admin
 
-
 from catalog.models import Category
 
 
@@ -23,6 +22,4 @@ class CategoryAdmin(admin.ModelAdmin):
         "is_active",
     ]
 
-    prepopulated_fields = {
-        "slug": ("name",)
-    }
+    prepopulated_fields = {"slug": ("name",)}

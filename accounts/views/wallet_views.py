@@ -4,9 +4,7 @@ from rest_framework.views import APIView
 
 from accounts.models.wallet import WalletTransaction
 from accounts.serializers.wallet_serializers import (
-    WalletSerializer,
-    WalletTransactionSerializer,
-)
+    WalletSerializer, WalletTransactionSerializer)
 from accounts.services.wallet_services import ensure_wallet
 from core.pagination import CustomPagination
 

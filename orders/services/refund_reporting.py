@@ -105,7 +105,6 @@ def line_coupon_share(
     original_subtotal=None,
     original_coupon=None,
 ):
-    
 
     if original_subtotal is None:
 
@@ -137,9 +136,11 @@ def line_coupon_share(
         )
 
     return _q(
-        original_coupon * _q(
+        original_coupon
+        * _q(
             line.line_total,
-        ) / original_subtotal,
+        )
+        / original_subtotal,
     )
 
 
@@ -149,7 +150,6 @@ def proportional_coupon_for_subtotal(
     *,
     lines=None,
 ):
-    
 
     active_subtotal = _q(
         active_subtotal,
@@ -170,13 +170,16 @@ def proportional_coupon_for_subtotal(
     )
 
     if (
-        original_subtotal <= Decimal(
+        original_subtotal
+        <= Decimal(
             "0.00",
         )
-        or original_coupon <= Decimal(
+        or original_coupon
+        <= Decimal(
             "0.00",
         )
-        or active_subtotal <= Decimal(
+        or active_subtotal
+        <= Decimal(
             "0.00",
         )
     ):
@@ -194,7 +197,6 @@ def line_paid_amount(
     order,
     line,
 ):
-    
 
     line_total = _q(
         line.line_total,
@@ -230,7 +232,6 @@ def _distribute_unattributed_cancel(
     unattributed_cancel,
     line_refund,
 ):
-    
 
     result = {}
 
@@ -243,8 +244,7 @@ def _distribute_unattributed_cancel(
     pool = [
         ln
         for ln in lines
-        if ln.status == OrderLine.LineStatus.CANCELLED
-        and ln.id not in line_refund
+        if ln.status == OrderLine.LineStatus.CANCELLED and ln.id not in line_refund
     ]
 
     base = Decimal(
@@ -267,9 +267,12 @@ def _distribute_unattributed_cancel(
         "0.00",
     )
 
-    last = len(
-        pool,
-    ) - 1
+    last = (
+        len(
+            pool,
+        )
+        - 1
+    )
 
     for idx, ln in enumerate(
         pool,
@@ -284,9 +287,11 @@ def _distribute_unattributed_cancel(
         else:
 
             share = _q(
-                unattributed_cancel * _q(
+                unattributed_cancel
+                * _q(
                     ln.line_total,
-                ) / base,
+                )
+                / base,
             )
 
             allocated += share
@@ -303,14 +308,12 @@ def _apply_cod_return_pickup_refunds(
     return_total,
     txn_rows,
 ):
-    
 
     if order.payment_method != Order.PaymentMethod.COD:
 
         return return_total, txn_rows
 
-    from orders.services.order_services import \
-        line_paid_amount_for_qty
+    from orders.services.order_services import line_paid_amount_for_qty
 
     completed_returns = ReturnRequest.objects.filter(
         order_line__order=order,
@@ -356,11 +359,7 @@ def _apply_cod_return_pickup_refunds(
 
         cod_return_delta += amt
 
-        resolved_at = (
-            rr.resolved_at
-            if rr.resolved_at
-            else order.updated_at
-        )
+        resolved_at = rr.resolved_at if rr.resolved_at else order.updated_at
 
         txn_rows.append(
             {
@@ -379,15 +378,17 @@ def _apply_cod_return_pickup_refunds(
             },
         )
 
-    return _q(
-        return_total + cod_return_delta,
-    ), txn_rows
+    return (
+        _q(
+            return_total + cod_return_delta,
+        ),
+        txn_rows,
+    )
 
 
 def order_refund_report(
     order,
 ):
-    
 
     lines = list(
         order.lines.all(),
@@ -434,10 +435,7 @@ def order_refund_report(
 
         line_id = None
 
-        if (
-            t.reason == WalletTransaction.Reason.RETURN_REFUND
-            and t.return_request_id
-        ):
+        if t.reason == WalletTransaction.Reason.RETURN_REFUND and t.return_request_id:
 
             line_id = t.return_request.order_line_id
 
@@ -461,7 +459,6 @@ def order_refund_report(
 
             else:
 
-                
                 unattributed_cancel += amt
 
         if line_id is not None:

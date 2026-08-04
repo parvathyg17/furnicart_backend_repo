@@ -1,33 +1,19 @@
 from decimal import Decimal
 
-from rest_framework.views import APIView
-from rest_framework.response import Response
-from rest_framework.permissions import IsAuthenticated
 from rest_framework import status
+from rest_framework.exceptions import ValidationError as DRFValidationError
+from rest_framework.permissions import IsAuthenticated
+from rest_framework.response import Response
+from rest_framework.views import APIView
 
-from rest_framework.exceptions import (
-    ValidationError as DRFValidationError,
-)
+from cart.serializers import CartItemQuantitySerializer, CartItemSerializer
+from promotions.services.coupon_cart_services import (apply_coupon_to_cart,
+                                                      remove_coupon_from_cart)
 
-from cart.serializers import (
-    CartItemSerializer,
-    CartItemQuantitySerializer,
-)
-
-from .services import (
-    add_to_cart,
-    build_checkout_preview,
-    get_available_coupons_payload,
-    get_cart_payload,
-    remove_cart_item,
-    update_cart_item_quantity,
-    validate_cart_for_checkout,
-)
-
-from promotions.services.coupon_cart_services import (
-    apply_coupon_to_cart,
-    remove_coupon_from_cart,
-)
+from .services import (add_to_cart, build_checkout_preview,
+                       get_available_coupons_payload, get_cart_payload,
+                       remove_cart_item, update_cart_item_quantity,
+                       validate_cart_for_checkout)
 
 
 class CartView(APIView):
@@ -66,27 +52,22 @@ class CartView(APIView):
         return Response(
             {
                 "items": serializer.data,
-
                 "item_count": item_count,
-
                 "subtotal": str(
                     subtotal.quantize(
                         Decimal("0.01"),
                     )
                 ),
-
                 "subtotal_gross": str(
                     gross_subtotal.quantize(
                         Decimal("0.01"),
                     )
                 ),
-
                 "offer_discount_total": str(
                     offer_discount_total.quantize(
                         Decimal("0.01"),
                     )
                 ),
-
                 "can_checkout": can_checkout,
             }
         )
@@ -169,7 +150,6 @@ class CartView(APIView):
         return Response(
             {
                 "item": serializer.data,
-
                 "items": CartItemSerializer(
                     items,
                     many=True,
@@ -178,27 +158,22 @@ class CartView(APIView):
                         "offer_resolver": resolver,
                     },
                 ).data,
-
                 "item_count": item_count,
-
                 "subtotal": str(
                     subtotal.quantize(
                         Decimal("0.01"),
                     )
                 ),
-
                 "subtotal_gross": str(
                     gross_subtotal.quantize(
                         Decimal("0.01"),
                     )
                 ),
-
                 "offer_discount_total": str(
                     offer_discount_total.quantize(
                         Decimal("0.01"),
                     )
                 ),
-
                 "can_checkout": can_checkout,
             },
             status=status.HTTP_201_CREATED,
@@ -295,27 +270,22 @@ class CartItemDetailView(APIView):
                         "offer_resolver": resolver,
                     },
                 ).data,
-
                 "item_count": item_count,
-
                 "subtotal": str(
                     subtotal.quantize(
                         Decimal("0.01"),
                     )
                 ),
-
                 "subtotal_gross": str(
                     gross_subtotal.quantize(
                         Decimal("0.01"),
                     )
                 ),
-
                 "offer_discount_total": str(
                     offer_discount_total.quantize(
                         Decimal("0.01"),
                     )
                 ),
-
                 "can_checkout": can_checkout,
             }
         )

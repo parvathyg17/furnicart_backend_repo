@@ -36,18 +36,16 @@ class UserProfileSerializer(serializers.ModelSerializer):
         today = date.today()
 
         if value > today:
-            raise serializers.ValidationError(
-                "Date of birth cannot be in the future"
-            )
+            raise serializers.ValidationError("Date of birth cannot be in the future")
 
-        age = today.year - value.year - (
-            (today.month, today.day) < (value.month, value.day)
+        age = (
+            today.year
+            - value.year
+            - ((today.month, today.day) < (value.month, value.day))
         )
 
         if age < 13:
-            raise serializers.ValidationError(
-                "You must be at least 13 years old"
-            )
+            raise serializers.ValidationError("You must be at least 13 years old")
 
         return value
 

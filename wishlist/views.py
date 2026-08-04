@@ -132,12 +132,12 @@ class WishlistToggleView(APIView):
                 exc.detail,
                 status=status.HTTP_400_BAD_REQUEST,
             )
-        wishlist=get_or_create_wishlist(request.user)
-        item_count=WishlistItem.objects.filter(wishlist=wishlist).count()
+        wishlist = get_or_create_wishlist(request.user)
+        item_count = WishlistItem.objects.filter(wishlist=wishlist).count()
 
         return Response(
             {
                 "is_wishlisted": is_wishlisted,
-                "item_count":item_count,
+                "item_count": item_count,
             }
         )

@@ -1,5 +1,8 @@
 import logging
+from datetime import timedelta
 
+from django.db.models import Sum
+from django.utils import timezone
 from rest_framework import status
 from rest_framework.exceptions import NotFound
 from rest_framework.permissions import IsAuthenticated
@@ -8,6 +11,7 @@ from rest_framework.views import APIView
 
 from core.pagination import CustomPagination
 from core.utils.permissions import IsAdminUserCustom
+from orders.models import Order
 from promotions.models import Coupon
 from promotions.selectors.admin_coupon_selectors import \
     get_admin_filtered_coupons
@@ -18,10 +22,6 @@ logger = logging.getLogger(__name__)
 
 
 class AdminCouponListCreateView(APIView):
-    """
-    GET: paginated coupon list (search, is_active).
-    POST: create coupon.
-    """
 
     permission_classes = [
         IsAuthenticated,

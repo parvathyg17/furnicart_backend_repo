@@ -31,10 +31,7 @@ def order_invoice_download_allowed(
 
             return False
 
-        if (
-            line.fulfillment_status
-            == OrderLine.FulfillmentStatus.RETURNED
-        ):
+        if line.fulfillment_status == OrderLine.FulfillmentStatus.RETURNED:
 
             return False
 
@@ -469,8 +466,8 @@ def build_order_invoice_pdf(
         ),
     )
 
-    from orders.services.checkout_pricing import (order_subtotal_gross,
-                                                  sum_order_line_offer_discount)
+    from orders.services.checkout_pricing import (
+        order_subtotal_gross, sum_order_line_offer_discount)
 
     offer_discount = sum_order_line_offer_discount(
         order,
@@ -538,9 +535,7 @@ def build_order_invoice_pdf(
     if coupon_discount > Decimal("0.00"):
 
         coupon_label = (
-            f"Coupon ({order.coupon_code})"
-            if order.coupon_code
-            else "Coupon discount"
+            f"Coupon ({order.coupon_code})" if order.coupon_code else "Coupon discount"
         )
 
         totals.append(

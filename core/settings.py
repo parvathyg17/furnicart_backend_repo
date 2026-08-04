@@ -100,7 +100,7 @@ DATABASES = {
         "USER": "postgres",
         "PASSWORD": os.getenv("DB_PASSWORD"),
         "HOST": "localhost",
-        "PORT": "5433",
+        "PORT": os.getenv("PORT"),
     }
 }
 
@@ -149,7 +149,7 @@ CSRF_COOKIE_SECURE = not DEBUG
 CSRF_COOKIE_SAMESITE = "Lax"
 
 CORS_ALLOWED_ORIGINS = [
-    "http://localhost:5173",  # Vite frontend
+    "http://localhost:5173",
 ]
 CSRF_TRUSTED_ORIGINS = [
     "http://localhost:5173",

@@ -20,7 +20,6 @@ def order_eligible_for_wallet_refund(
 def total_refunded_for_order(
     order,
 ):
-    
 
     agg = WalletTransaction.objects.filter(
         order=order,

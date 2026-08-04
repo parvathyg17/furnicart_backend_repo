@@ -1,15 +1,7 @@
 from orders.serializers.order_serializers import (
-    AdminFulfillmentUpdateSerializer,
-    AdminOrderDetailSerializer,
-    AdminOrderListSerializer,
-    AdminReturnListSerializer,
-    AdminReturnStatusSerializer,
-    OrderCancelRequestSerializer,
-    OrderCreateSerializer,
-    OrderDetailSerializer,
-    OrderListSerializer,
-    PurchaseLineSerializer,
-    ReturnCreateSerializer,
-    RazorpayInitiateSerializer,
-    RazorpayVerifySerializer,
-)
+    AdminFulfillmentUpdateSerializer, AdminOrderDetailSerializer,
+    AdminOrderListSerializer, AdminReturnListSerializer,
+    AdminReturnStatusSerializer, OrderCancelRequestSerializer,
+    OrderCreateSerializer, OrderDetailSerializer, OrderListSerializer,
+    PurchaseLineSerializer, RazorpayInitiateSerializer,
+    RazorpayVerifySerializer, ReturnCreateSerializer)

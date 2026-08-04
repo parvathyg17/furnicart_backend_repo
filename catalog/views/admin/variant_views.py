@@ -71,6 +71,7 @@ class ProductVariantDetailView(APIView):
 
         return Response(serializer.data)
 
+
 class VariantImageDeleteView(APIView):
 
     permission_classes = [IsAuthenticated, IsAdminUserCustom]

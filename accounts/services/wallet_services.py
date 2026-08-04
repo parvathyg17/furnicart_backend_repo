@@ -1,7 +1,6 @@
 from decimal import Decimal
 
 from django.db import transaction
-
 from rest_framework.exceptions import ValidationError
 
 from accounts.models.wallet import Wallet, WalletTransaction
@@ -11,16 +10,14 @@ def _quantize_amount(
     amount,
 ):
 
-    return (
+    return Decimal(
+        str(
+            amount,
+        ),
+    ).quantize(
         Decimal(
-            str(
-                amount,
-            ),
-        ).quantize(
-            Decimal(
-                "0.01",
-            ),
-        )
+            "0.01",
+        ),
     )
 
 
@@ -49,10 +46,8 @@ def _locked_wallet(
         user,
     )
 
-    return (
-        Wallet.objects.select_for_update().get(
-            user=user,
-        )
+    return Wallet.objects.select_for_update().get(
+        user=user,
     )
 
 
@@ -60,11 +55,9 @@ def get_wallet_balance(
     user,
 ):
 
-    wallet = (
-        Wallet.objects.filter(
-            user=user,
-        ).first()
-    )
+    wallet = Wallet.objects.filter(
+        user=user,
+    ).first()
 
     if wallet is None:
 
@@ -102,9 +95,7 @@ def credit_wallet(
         user,
     )
 
-    wallet.balance = (
-        wallet.balance + amount
-    ).quantize(
+    wallet.balance = (wallet.balance + amount).quantize(
         Decimal(
             "0.01",
         ),
@@ -124,11 +115,7 @@ def credit_wallet(
         reason=reason,
         order=order,
         return_request=return_request,
-        reference_note=(
-            reference_note or ""
-        )[
-            :255
-        ],
+        reference_note=(reference_note or "")[:255],
         balance_after=wallet.balance,
     )
 
@@ -167,9 +154,7 @@ def debit_wallet(
             "Insufficient wallet balance.",
         )
 
-    wallet.balance = (
-        wallet.balance - amount
-    ).quantize(
+    wallet.balance = (wallet.balance - amount).quantize(
         Decimal(
             "0.01",
         ),
@@ -188,11 +173,7 @@ def debit_wallet(
         amount=amount,
         reason=reason,
         order=order,
-        reference_note=(
-            reference_note or ""
-        )[
-            :255
-        ],
+        reference_note=(reference_note or "")[:255],
         balance_after=wallet.balance,
     )
 

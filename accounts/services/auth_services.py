@@ -81,7 +81,6 @@ def verify_otp_service(user, otp_input, purpose):
         # user.is_active = True
         user.save()
 
-        
         otp_obj.delete()
 
     return True, None
