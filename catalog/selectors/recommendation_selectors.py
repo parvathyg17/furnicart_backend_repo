@@ -46,4 +46,4 @@ def get_related_products(product):
         .order_by(
             "-created_at",
         ),
-    )[:8]
+    )[:4]

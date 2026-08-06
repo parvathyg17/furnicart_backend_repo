@@ -318,6 +318,8 @@ def _apply_cod_return_pickup_refunds(
     completed_returns = ReturnRequest.objects.filter(
         order_line__order=order,
         status=ReturnRequest.Status.COMPLETED,
+    ).exclude(
+        wallet_transactions__isnull=False
     ).select_related(
         "order_line",
     )

@@ -157,6 +157,16 @@ class Coupon(models.Model):
                     },
                 )
 
+            if self.min_order_subtotal < self.discount_value:
+
+                raise ValidationError(
+                    {
+                        "min_order_subtotal": (
+                            "Minimum order subtotal must be greater than or equal to the discount value for fixed coupons."
+                        ),
+                    },
+                )
+
     def save(self, *args, **kwargs):
 
         if self.code:

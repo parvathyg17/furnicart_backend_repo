@@ -49,6 +49,28 @@ class UserProfileSerializer(serializers.ModelSerializer):
 
         return value
 
+    def validate_profile_image(self, value):
+
+        if not value:
+            return value
+
+        import os
+        ext = os.path.splitext(value.name)[1].lower()
+        valid_extensions = {".jpg", ".jpeg", ".png", ".webp", ".gif"}
+
+        if ext not in valid_extensions:
+            raise serializers.ValidationError(
+                "Unsupported file extension. Only images (jpg, jpeg, png, webp, gif) are allowed."
+            )
+
+        if hasattr(value, "content_type"):
+            if not value.content_type.startswith("image/"):
+                raise serializers.ValidationError(
+                    "Uploaded file is not a valid image."
+                )
+
+        return value
+
     def validate_phone(self, value):
 
         request = self.context.get("request")

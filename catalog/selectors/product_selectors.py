@@ -176,12 +176,91 @@ def get_user_filtered_products(params):
         )
     )
 
-    products = annotate_catalog_prices(
-        products,
+    now = timezone.now()
+
+    applicable_offers = (
+        Offer.objects.filter(
+            is_active=True,
+        )
+        .filter(Q(valid_from__lte=now) | Q(valid_from__isnull=True))
+        .filter(Q(valid_until__gte=now) | Q(valid_until__isnull=True))
+        .filter(
+            Q(offer_type=Offer.OfferType.PRODUCT, product_id=OuterRef("product_id"))
+            | Q(
+                offer_type=Offer.OfferType.CATEGORY, category_id=OuterRef("product__category_id")
+            )
+        )
     )
 
-    products = annotate_effective_prices(
-        products,
+    discount_amount = Case(
+        When(
+            discount_type=Offer.DiscountType.PERCENT,
+            then=Least(
+                (OuterRef("price") * F("discount_value"))
+                / Value(100.0, output_field=DecimalField()),
+                Coalesce(F("max_discount_amount"), OuterRef("price")),
+            ),
+        ),
+        When(
+            discount_type=Offer.DiscountType.FIXED,
+            then=Least(F("discount_value"), OuterRef("price")),
+        ),
+        output_field=DecimalField(),
+    )
+
+    best_discount_subquery = (
+        applicable_offers.annotate(calculated_discount=discount_amount)
+        .order_by("-calculated_discount")
+        .values("calculated_discount")[:1]
+    )
+
+    variant_effective_price = F("price") - Coalesce(
+        Subquery(best_discount_subquery), Value(0, output_field=DecimalField())
+    )
+
+    variants_queryset = ProductVariant.objects.filter(is_active=True).annotate(
+        annotated_effective_price=variant_effective_price
+    )
+
+    variant_q = Q(product=OuterRef("id"))
+    if color:
+        variant_q &= Q(color__iexact=color)
+
+    in_stock_q = variant_q & Q(stock__gt=0)
+    if min_price:
+        in_stock_q &= Q(annotated_effective_price__gte=min_price)
+    if max_price:
+        in_stock_q &= Q(annotated_effective_price__lte=max_price)
+
+    in_stock_variants = variants_queryset.filter(in_stock_q)
+    in_stock_min = Subquery(
+        in_stock_variants.order_by("annotated_effective_price")
+        .values("annotated_effective_price")[:1]
+    )
+    in_stock_max = Subquery(
+        in_stock_variants.order_by("-annotated_effective_price")
+        .values("annotated_effective_price")[:1]
+    )
+
+    active_q = variant_q
+    if min_price:
+        active_q &= Q(annotated_effective_price__gte=min_price)
+    if max_price:
+        active_q &= Q(annotated_effective_price__lte=max_price)
+
+    active_variants = variants_queryset.filter(active_q)
+    active_min = Subquery(
+        active_variants.order_by("annotated_effective_price")
+        .values("annotated_effective_price")[:1]
+    )
+    active_max = Subquery(
+        active_variants.order_by("-annotated_effective_price")
+        .values("annotated_effective_price")[:1]
+    )
+
+    products = products.annotate(
+        effective_price=Coalesce(in_stock_min, active_min),
+        effective_max_price=Coalesce(in_stock_max, active_max),
     )
 
     featured_raw = (params.get("featured") or "").strip().lower()
@@ -233,23 +312,10 @@ def get_user_filtered_products(params):
             variants__is_active=True,
         )
 
-    if color:
+    if color or min_price or max_price:
 
         products = products.filter(
-            LISTABLE_VARIANT_FILTER,
-            variants__color__iexact=color,
-        )
-
-    if min_price:
-
-        products = products.filter(
-            effective_max_price__gte=min_price,
-        )
-
-    if max_price:
-
-        products = products.filter(
-            effective_price__lte=max_price,
+            effective_price__isnull=False,
         )
 
     products = products.distinct()

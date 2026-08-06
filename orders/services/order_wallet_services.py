@@ -104,9 +104,14 @@ def credit_wallet_for_return_completion(
 
     order = line.order
 
-    if not order_eligible_for_wallet_refund(
-        order,
-    ):
+    # Both prepaid (Razorpay/Wallet) and COD orders are eligible for refund upon successful return.
+    is_eligible = order.payment_method in (
+        Order.PaymentMethod.RAZORPAY,
+        Order.PaymentMethod.WALLET,
+        Order.PaymentMethod.COD,
+    )
+
+    if not is_eligible:
 
         return
 
@@ -144,10 +149,16 @@ def update_payment_status_after_return_completion(
     order,
 ):
 
-    if order.payment_status not in (
+    # For COD orders, the payment status might still be PENDING (default) when delivered.
+    # For RAZORPAY/WALLET, it will be PAID.
+    valid_statuses = (
         Order.PaymentStatus.PAID,
         Order.PaymentStatus.PARTIALLY_REFUNDED,
-    ):
+    )
+    if order.payment_method == Order.PaymentMethod.COD:
+        valid_statuses += (Order.PaymentStatus.PENDING,)
+
+    if order.payment_status not in valid_statuses:
 
         return False
 

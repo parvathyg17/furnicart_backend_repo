@@ -170,6 +170,22 @@ class AdminCouponSerializer(
                     },
                 )
 
+            min_order_subtotal = attrs.get("min_order_subtotal")
+            if self.instance and min_order_subtotal is None:
+                min_order_subtotal = self.instance.min_order_subtotal
+
+            if min_order_subtotal is None:
+                min_order_subtotal = Decimal("0.00")
+
+            if discount_value is not None and min_order_subtotal < discount_value:
+                raise serializers.ValidationError(
+                    {
+                        "min_order_subtotal": (
+                            "Minimum order subtotal must be greater than or equal to the discount value for fixed coupons."
+                        ),
+                    },
+                )
+
         return attrs
 
     def create(
