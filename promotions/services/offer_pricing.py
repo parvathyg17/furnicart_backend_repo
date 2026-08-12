@@ -133,6 +133,7 @@ class OfferResolver:
         self._category_offers = defaultdict(
             list,
         )
+        self._category_ancestors = {}
         self._loaded = False
 
     def preload(
@@ -159,6 +160,16 @@ class OfferResolver:
 
             return
 
+        from catalog.selectors.category_selectors import get_category_ancestor_ids_map
+
+        ancestors_map = get_category_ancestor_ids_map()
+
+        all_resolved_category_ids = set()
+        for cat_id in category_ids:
+            ancestors = ancestors_map.get(cat_id, [cat_id])
+            self._category_ancestors[cat_id] = ancestors
+            all_resolved_category_ids.update(ancestors)
+
         qs = (
             Offer.objects.filter(
                 is_active=True,
@@ -170,7 +181,7 @@ class OfferResolver:
                 )
                 | Q(
                     offer_type=Offer.OfferType.CATEGORY,
-                    category_id__in=category_ids,
+                    category_id__in=all_resolved_category_ids,
                 ),
             )
             .select_related(
@@ -240,23 +251,32 @@ class OfferResolver:
             "0.00",
         )
 
-        for offer in self._category_offers.get(
-            variant.product.category_id,
-            [],
-        ):
+        cat_id = variant.product.category_id
+        ancestors = self._category_ancestors.get(cat_id)
+        if ancestors is None:
+            from catalog.selectors.category_selectors import get_category_ancestor_ids_map
+            ancestors = get_category_ancestor_ids_map().get(cat_id, [cat_id])
+            self._category_ancestors[cat_id] = ancestors
 
-            category_discount = max(
-                category_discount,
-                compute_offer_discount_amount(
-                    offer,
-                    line_subtotal,
-                ),
-            )
+        for ancestor_id in ancestors:
+            for offer in self._category_offers.get(
+                ancestor_id,
+                [],
+            ):
+
+                category_discount = max(
+                    category_discount,
+                    compute_offer_discount_amount(
+                        offer,
+                        line_subtotal,
+                    ),
+                )
 
         return max(
             product_discount,
             category_discount,
         )
+
 
     def line_net_subtotal(
         self,

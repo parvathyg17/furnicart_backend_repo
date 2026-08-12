@@ -80,7 +80,16 @@ def annotate_effective_prices(queryset):
         .filter(
             Q(offer_type=Offer.OfferType.PRODUCT, product_id=OuterRef("id"))
             | Q(
-                offer_type=Offer.OfferType.CATEGORY, category_id=OuterRef("category_id")
+                offer_type=Offer.OfferType.CATEGORY,
+                category_id=OuterRef("category_id"),
+            )
+            | Q(
+                offer_type=Offer.OfferType.CATEGORY,
+                category_id=OuterRef("category__parent_id"),
+            )
+            | Q(
+                offer_type=Offer.OfferType.CATEGORY,
+                category_id=OuterRef("category__parent__parent_id"),
             )
         )
     )
@@ -187,7 +196,16 @@ def get_user_filtered_products(params):
         .filter(
             Q(offer_type=Offer.OfferType.PRODUCT, product_id=OuterRef("product_id"))
             | Q(
-                offer_type=Offer.OfferType.CATEGORY, category_id=OuterRef("product__category_id")
+                offer_type=Offer.OfferType.CATEGORY,
+                category_id=OuterRef("product__category_id"),
+            )
+            | Q(
+                offer_type=Offer.OfferType.CATEGORY,
+                category_id=OuterRef("product__category__parent_id"),
+            )
+            | Q(
+                offer_type=Offer.OfferType.CATEGORY,
+                category_id=OuterRef("product__category__parent__parent_id"),
             )
         )
     )

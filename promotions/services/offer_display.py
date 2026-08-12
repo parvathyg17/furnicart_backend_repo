@@ -114,6 +114,17 @@ def _load_active_offer_maps(
 
         now = timezone.now()
 
+    from catalog.selectors.category_selectors import get_category_ancestor_ids_map
+
+    ancestors_map = get_category_ancestor_ids_map()
+
+    all_resolved_category_ids = set()
+    category_ancestors = {}
+    for cat_id in category_ids:
+        ancestors = ancestors_map.get(cat_id, [cat_id])
+        category_ancestors[cat_id] = ancestors
+        all_resolved_category_ids.update(ancestors)
+
     qs = Offer.objects.filter(
         is_active=True,
     ).filter(
@@ -123,9 +134,11 @@ def _load_active_offer_maps(
         )
         | Q(
             offer_type=Offer.OfferType.CATEGORY,
-            category_id__in=category_ids,
+            category_id__in=all_resolved_category_ids,
         ),
     )
+
+    raw_category_offers = defaultdict(list)
 
     for offer in qs:
 
@@ -144,9 +157,14 @@ def _load_active_offer_maps(
 
         elif offer.offer_type == Offer.OfferType.CATEGORY and offer.category_id:
 
-            category_map[offer.category_id].append(
+            raw_category_offers[offer.category_id].append(
                 offer,
             )
+
+    for cat_id, ancestors in category_ancestors.items():
+        for ancestor_id in ancestors:
+            if ancestor_id in raw_category_offers:
+                category_map[cat_id].extend(raw_category_offers[ancestor_id])
 
     return product_map, category_map
 
