@@ -11,5 +11,5 @@ urlpatterns = [
     path("email-change/verify/", EmailChangeVerifyView.as_view()),
     path("wallet/", WalletView.as_view()),
     path("wallet/transactions/", WalletTransactionListView.as_view()),
-    path("total_discount/",TotalDiscountView.as_view())
+    
 ]
