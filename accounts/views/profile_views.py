@@ -1,8 +1,13 @@
+from datetime import timedelta
+from decimal import Decimal
+from django.utils import timezone
+from orders.models import Order
 from rest_framework import status
 from rest_framework.parsers import FormParser, MultiPartParser
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
 from rest_framework.views import APIView
+from django.db.models import Sum
 
 from accounts.models.otp import OTP
 from accounts.models.profile import UserProfile
@@ -12,6 +17,14 @@ from accounts.serializers.profile_serializers import (
 from accounts.services.profile_services import (send_email_change_otp,
                                                 verify_email_change)
 
+class TotalDiscountView(APIView):
+    def get(self,request):
+        
+        user=request.user
+        total_discount=Order.objects.filter(user=user).order_by("-placed_at")[5].annotate(total=Sum("discount_total"))["total"] or Decimal(0.00)
+        return Response({"total_discount":total_discount})
+
+        
 
 class UserProfileView(APIView):
     permission_classes = [IsAuthenticated]
