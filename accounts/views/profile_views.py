@@ -1,6 +1,3 @@
-from decimal import Decimal
-from django.db.models import Sum
-from orders.models import Order
 from rest_framework import status
 from rest_framework.parsers import FormParser, MultiPartParser
 from rest_framework.permissions import IsAuthenticated
@@ -15,13 +12,6 @@ from accounts.serializers.profile_serializers import (
 from accounts.services.profile_services import (send_email_change_otp,
                                                 verify_email_change)
 
-class UserDiscountView(APIView):
-    def get(self,request):
-        user=request.user
-        user_orders_id=Order.objects.filter(user=user).order_by("-placed_at").values("id")[:5]
-        discount_total=Order.objects.filter(id__in=user_orders_id).aggregate(total=Sum("discount_total"))["total"] or Decimal("0.00")
-
-        return Response({"discount_total":discount_total})
 
 class UserProfileView(APIView):
     permission_classes = [IsAuthenticated]
