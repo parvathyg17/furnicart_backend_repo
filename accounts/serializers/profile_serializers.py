@@ -28,9 +28,13 @@ class UserProfileSerializer(serializers.ModelSerializer):
         model = UserProfile
         fields = ["username", "email", "phone", "date_of_birth", "profile_image"]
 
-    def validate_username(self,value):
-        return value.title()
+    def to_representation(self, instance):
+        data = super().to_representation(instance)
 
+        if data.get("username"):
+            data["username"] = data["username"].title()
+
+        return data
     def validate_date_of_birth(self, value):
 
         if not value:
