@@ -28,6 +28,9 @@ class UserProfileSerializer(serializers.ModelSerializer):
         model = UserProfile
         fields = ["username", "email", "phone", "date_of_birth", "profile_image"]
 
+    def validate_username(self,value):
+        return value.title()
+
     def validate_date_of_birth(self, value):
 
         if not value:
